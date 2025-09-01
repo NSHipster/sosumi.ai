@@ -27,8 +27,7 @@ export function createMcpServer() {
         const normalizedPath = normalizeDocumentationPath(decodedPath)
         const appleUrl = generateAppleDocUrl(normalizedPath)
 
-        const documentationPath = `/documentation/${decodedPath}`
-        const jsonData = await fetchJSONData(documentationPath)
+        const jsonData = await fetchJSONData(normalizedPath)
         const markdown = await renderFromJSON(jsonData, appleUrl)
 
         if (!markdown || markdown.trim().length < 100) {
@@ -188,8 +187,7 @@ export function createMcpServer() {
         const normalizedPath = normalizeDocumentationPath(path)
         const appleUrl = generateAppleDocUrl(normalizedPath)
 
-        const documentationPath = `/documentation/${path}`
-        const jsonData = await fetchJSONData(documentationPath)
+        const jsonData = await fetchJSONData(normalizedPath)
         const markdown = await renderFromJSON(jsonData, appleUrl)
 
         if (!markdown || markdown.trim().length < 100) {
