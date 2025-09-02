@@ -14,7 +14,7 @@ export function createMcpServer() {
 
   // Register doc://{path} resource template
   server.registerResource(
-    "documentation",
+    "appleDocumentation",
     new ResourceTemplate("doc://{path}", { list: undefined }),
     {
       title: "Apple Documentation",
@@ -60,7 +60,7 @@ export function createMcpServer() {
 
   // Register Apple search tool
   server.registerTool(
-    "search",
+    "searchAppleDocumentation",
     {
       title: "Search Apple Documentation",
       description: "Search Apple Developer documentation and return structured results",
@@ -163,7 +163,7 @@ export function createMcpServer() {
 
   // Register documentation fetch tool (complements resource template for tool-only clients)
   server.registerTool(
-    "fetch",
+    "fetchAppleDocumentation",
     {
       title: "Fetch Apple Documentation",
       description: "Fetch Apple Developer documentation by path and return as markdown",
