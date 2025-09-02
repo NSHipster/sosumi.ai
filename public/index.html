@@ -159,6 +159,10 @@
             list-style: none;
         }
 
+        #mcp ul li {
+            margin-bottom: 1rem;
+        }
+
         #mcp dd {
             color: var(--text-secondary);
         }
@@ -474,7 +478,7 @@
                 <ul>
                     <li>
                         <dl>
-                            <dt><code>search</code></dt>
+                            <dt><code>searchAppleDocumentation</code></dt>
                             <dd><strong>Search Apple Developer documentation</strong>
                                 <br>Parameters: <code>query</code> (string)
                                 <br><em>Returns structured results with titles, URLs, descriptions, breadcrumbs, and
@@ -484,7 +488,7 @@
                     </li>
                     <li>
                         <dl>
-                            <dt><code>fetch</code></dt>
+                            <dt><code>fetchAppleDocumentation</code></dt>
                             <dd><strong>Fetch Apple Developer documentation by path</strong>
                                 <br>Parameters: <code>path</code> (string) - Full or relative documentation path
                                 <br><em>Returns documentation content as markdown</em>

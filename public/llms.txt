@@ -5,9 +5,9 @@ It might not be their fault!
 
 Apple Developer docs are locked behind JavaScript,
 making them invisible to most LLMs.
-If they try to fetch it, all they see is
-"This page requires JavaScript.
-Please turn on JavaScript in your browser and refresh the page to view its content."
+If they try to fetch it, all they see is:
+> This page requires JavaScript.
+> Please turn on JavaScript in your browser and refresh the page to view its content.
 
 This service translates Apple Developer documentation pages into AI-friendly Markdown.
 
@@ -51,7 +51,7 @@ Connect your MCP client to `https://sosumi.ai/mcp`:
 
 ### Available Tools
 
-- `search` - Search Apple Developer documentation
+- `searchAppleDocumentation` - Search Apple Developer documentation
   - Parameters: `query` (string)
   - Returns structured results with titles,
     URLs,
@@ -59,7 +59,7 @@ Connect your MCP client to `https://sosumi.ai/mcp`:
     breadcrumbs,
     and tags
 
-- `fetch` - Fetch Apple Developer documentation by path
+- `fetchAppleDocumentation` - Fetch Apple Developer documentation by path
   - Parameters: `path` (string) - Full or relative documentation path
   - Returns documentation content as markdown
 
