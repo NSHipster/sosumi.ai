@@ -63,6 +63,34 @@ Connect your MCP client to `https://sosumi.ai/mcp`:
   - Parameters: `path` (string) - Full or relative documentation path
   - Returns documentation content as markdown
 
+## Troubleshooting
+
+If you're experiencing connection timeouts or network issues with the MCP server,
+you may need to configure a proxy. 
+This is particularly common in corporate environments 
+or regions with restricted internet access.
+
+Configure your MCP client to use a proxy by adding environment variables:
+
+```json
+{
+  "mcpServers": {
+    "sosumi": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://sosumi.ai/mcp"],
+      "env": {
+        "HTTP_PROXY": "http://proxy.example.com:8080",
+        "HTTPS_PROXY": "http://proxy.example.com:8080"
+      }
+    }
+  }
+}
+```
+
+Replace `proxy.example.com:8080` with your actual proxy server details.
+For authenticated proxies, use the format:
+`http://username:password@proxy.example.com:8080`
+
 ## About
 
 This is an unofficial,

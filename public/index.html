@@ -497,6 +497,39 @@
                     </li>
                 </ul>
             </div>
+
+            <div class="troubleshooting">
+                <h3>Troubleshooting</h3>
+                <p>
+                    If you're experiencing connection timeouts or network issues with the MCP server,
+                    you may need to configure a proxy.
+                    This is particularly common in corporate environments
+                    or regions with restricted internet access.
+                </p>
+                <p>
+                    Configure your MCP client to use a proxy by adding environment variables:
+                </p>
+                <pre><code class="mcp-config"><span class="dimmed"><span class="punctuation">{</span></span>
+<span class="dimmed">  <span class="key">"mcpServers"</span><span class="punctuation">:</span> <span class="punctuation">{</span></span>
+<span class="sosumi-entry">    <span class="key">"sosumi"</span><span class="punctuation">:</span> <span class="punctuation">{</span>
+      <span class="key">"command"</span><span class="punctuation">:</span> <span class="string">"npx"</span><span class="punctuation">,</span>
+      <span class="key">"args"</span><span class="punctuation">:</span> <span class="punctuation">[</span>
+        <span class="string">"-y"</span><span class="punctuation">,</span>
+        <span class="string">"mcp-remote"</span><span class="punctuation">,</span>
+        <span class="string">"https://sosumi.ai/mcp"</span>
+      <span class="punctuation">]</span><span class="punctuation">,</span>
+      <span class="key">"env"</span><span class="punctuation">:</span> <span class="punctuation">{</span>
+        <span class="key">"HTTP_PROXY"</span><span class="punctuation">:</span> <span class="string">"http://proxy.example.com:8080"</span><span class="punctuation">,</span>
+        <span class="key">"HTTPS_PROXY"</span><span class="punctuation">:</span> <span class="string">"http://proxy.example.com:8080"</span>
+      <span class="punctuation">}</span>
+    <span class="punctuation">}</span></span><span class="dimmed">  <span class="punctuation">}</span></span>
+<span class="dimmed"><span class="punctuation">}</span></span></code></pre>
+                <p>
+                    Replace <code>proxy.example.com:8080</code> with your actual proxy server details.
+                    For authenticated proxies, use the format:
+                    <code>http://username:password@proxy.example.com:8080</code>
+                </p>
+            </div>
         </section>
     </main>
 
