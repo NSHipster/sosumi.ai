@@ -46,12 +46,12 @@ Connect your MCP client to `https://sosumi.ai/mcp`:
 
 ### Available Resources
 
-- `doc://{path}` - Get Apple Developer documentation as markdown
+- `doc://{path}` - Apple Developer documentation in Markdown format
   - Example: `doc://swift/array` returns Swift Array documentation
 
 ### Available Tools
 
-- `searchAppleDocumentation` - Search Apple Developer documentation
+- `searchAppleDocumentation` - Searches Apple Developer documentation
   - Parameters: `query` (string)
   - Returns structured results with titles,
     URLs,
@@ -59,9 +59,9 @@ Connect your MCP client to `https://sosumi.ai/mcp`:
     breadcrumbs,
     and tags
 
-- `fetchAppleDocumentation` - Fetch Apple Developer documentation by path
+- `fetchAppleDocumentation` - Fetches Apple Developer documentation by path
   - Parameters: `path` (string) - Full or relative documentation path
-  - Returns documentation content as markdown
+  - Returns documentation content as Markdown
 
 ## Troubleshooting
 
