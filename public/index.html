@@ -151,6 +151,13 @@
             margin-top: 0.9375rem;
         }
 
+        var {
+            font-style: normal;
+            font-weight: 500;
+            font-family: var(--font-mono);
+            color: var(--accent);
+        }
+
         .icon {
             width: 1rem;
             height: 1rem;
@@ -610,6 +617,7 @@
                             <button class="tab-button" data-tab="cursor">Cursor</button>
                             <button class="tab-button" data-tab="vscode">VSCode</button>
                             <button class="tab-button" data-tab="claude-desktop">Claude Desktop</button>
+                            <button class="tab-button" data-tab="other">Other</button>
                         </div>
 
                         <div class="tab-content">
@@ -680,9 +688,9 @@
                                     <li>Open <strong>Claude Desktop</strong></li>
                                     <li>Go to <strong>Settings → Connectors</strong></li>
                                     <li>Click <strong>"Add custom connector"</strong></li>
-                                    <li>Set <strong>"Name"</strong> to <code>"sosumi"</code></li>
+                                    <li>Set <strong>"Name"</strong> to <var>sosumi</var></li>
                                     <li>Set <strong>"Remote MCP server URL"</strong> to
-                                        <code>"https://sosumi.ai/mcp"</code>
+                                        <var>https://sosumi.ai/mcp</var>
                                     </li>
                                     <li>Click "Add"</li>
                                 </ol>
@@ -690,6 +698,28 @@
                                         href="https://support.anthropic.com/en/articles/11725091-when-to-use-desktop-and-web-connectors"
                                         rel="noopener noreferrer">Claude Desktop documentation</a> for more information.
                                 </p>
+                            </div>
+
+                            <div class="tab-pane" id="other-tab">
+                                <h3>Other MCP Clients</h3>
+                                <p>Sosumi's MCP server supports Streamable HTTP and Server-Sent Events (SSE) transport.
+                                    If your client supports either of these,
+                                    configure it to connect directly to <code>https://sosumi.ai/mcp</code>.</p>
+
+                                <p>Otherwise,
+                                    you can run this command to proxy over stdio:</p>
+
+                                <pre><code class="mcp-config"><span class="dimmed"><span class="punctuation">{</span></span>
+<span class="dimmed">  <span class="key">"mcpServers"</span><span class="punctuation">:</span> <span class="punctuation">{</span></span>
+<span class="sosumi-entry">    <span class="key">"sosumi"</span><span class="punctuation">:</span> <span class="punctuation">{</span>
+      <span class="key">"command"</span><span class="punctuation">:</span> <span class="string">"npx"</span><span class="punctuation">,</span>
+      <span class="key">"args"</span><span class="punctuation">:</span> <span class="punctuation">[</span>
+        <span class="string">"-y"</span><span class="punctuation">,</span>
+        <span class="string">"mcp-remote"</span><span class="punctuation">,</span>
+        <span class="string">"https://sosumi.ai/mcp"</span>
+      <span class="punctuation">]</span>
+    <span class="punctuation">}</span></span><span class="dimmed">  <span class="punctuation">}</span></span>
+<span class="dimmed"><span class="punctuation">}</span></span></code></pre>
                             </div>
                         </div>
                     </div>
