@@ -174,7 +174,7 @@
             margin: 0;
         }
 
-        #editors {
+        #clients {
             margin-top: 1.5rem;
         }
 
@@ -201,29 +201,29 @@
             padding-bottom: 0.5rem;
         }
 
-        #editors .editor-config {
+        #clients .editor-config {
             margin-top: 1.5rem;
         }
 
-        #editors .config-tabs {
+        #clients .config-tabs {
             display: flex;
             flex-direction: column;
             gap: 2rem;
         }
 
-        #editors .interface-tabs,
-        #editors .client-tabs {
+        #clients .interface-tabs,
+        #clients .client-tabs {
             background: var(--surface-inset);
             border-radius: 0.5rem;
             overflow: hidden;
         }
 
-        #editors .tab-buttons {
+        #clients .tab-buttons {
             display: flex;
             border-bottom: 1px solid var(--border);
         }
 
-        #editors .tab-button {
+        #clients .tab-button {
             flex: 1;
             padding: 1rem 1.5rem;
             background: transparent;
@@ -236,72 +236,72 @@
             border-bottom: 2px solid transparent;
         }
 
-        #editors .tab-button:hover {
+        #clients .tab-button:hover {
             color: var(--text);
             background: var(--surface-inset-deep);
         }
 
-        #editors .tab-button.active {
+        #clients .tab-button.active {
             color: var(--text);
             border-bottom-color: var(--accent);
             background: var(--surface);
         }
 
-        #editors .tab-content {
+        #clients .tab-content {
             position: relative;
         }
 
-        #editors .tab-pane {
+        #clients .tab-pane {
             display: none;
             padding: 1.5rem;
         }
 
-        #editors .tab-pane.active {
+        #clients .tab-pane.active {
             display: block;
         }
 
-        #editors .tab-pane h3 {
+        #clients .tab-pane h3 {
             margin-top: 0;
             margin-bottom: 1rem;
             color: var(--text);
         }
 
-        #editors .tab-pane h4 {
+        #clients .tab-pane h4 {
             margin-top: 1.5rem;
             margin-bottom: 0.75rem;
             color: var(--text-secondary);
             font-size: 1rem;
         }
 
-        #editors .tab-pane ol {
+        #clients .tab-pane ol {
             margin: 0.75rem 0;
             padding-left: 1.5rem;
         }
 
-        #editors .tab-pane li {
+        #clients .tab-pane li {
             margin-bottom: 0.5rem;
         }
 
-        #editors .tab-pane p {
+        #clients .tab-pane p {
             margin: 0.75rem 0;
         }
 
-        #editors .tab-pane em {
+        #clients .tab-pane em {
             color: var(--text-secondary);
             font-style: italic;
         }
 
         @media (max-width: 768px) {
-            #editors .tab-buttons {
+            #clients .tab-buttons {
                 flex-direction: column;
             }
 
-            #editors .tab-button {
+            #clients .tab-button {
                 border-bottom: 1px solid var(--border);
                 border-right: none;
             }
 
-            #editors .tab-button.active {
+            #clients .tab-button.active {
                 border-bottom-color: var(--border);
                 border-right: 2px solid var(--accent);
             }
@@ -603,7 +603,7 @@
                     <code>https://sosumi.ai/mcp</code>.
                 </p>
 
-                <figure id="editors">
+                <figure id="clients">
                     <div class="client-tabs">
                         <div class="tab-buttons">
                             <button class="tab-button active" data-tab="copilot-xcode">GitHub Copilot for Xcode</button>
