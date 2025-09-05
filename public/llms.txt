@@ -33,6 +33,63 @@ https://sosumi.ai/documentation/swift/array
 
 Connect your MCP client to `https://sosumi.ai/mcp`:
 
+### GitHub Copilot for Xcode
+
+1. Open **GitHub Copilot for Xcode** and go to **Settings…**
+2. Select the **MCP** tab
+3. Click **Edit Config**
+4. Enter the following configuration:
+
+```json
+{
+  "servers": {
+    "sosumi": {
+      "type": "http",
+      "url": "https://sosumi.ai/mcp"
+    }
+  }
+}
+```
+
+### Cursor
+
+Open this deep link to automatically install the sosumi MCP server:
+
+[Add to Cursor](cursor://anysphere.cursor-deeplink/mcp/install?name=sosumi&config=eyJ0eXBlIjoiaHR0cCIsInVybCI6Imh0dHBzOi8vc29zdW1pLmFpL21jcCJ9)
+
+### VSCode
+
+Create a `.vscode/mcp.json` file in your workspace and enter the following configuration:
+
+```json
+{
+  "servers": {
+    "sosumi": {
+      "type": "http",
+      "url": "https://sosumi.ai/mcp"
+    }
+  }
+}
+```
+
+### Claude Desktop
+
+1. Open **Claude Desktop**
+2. Go to **Settings → Connectors**
+3. Click **"Add custom connector"**
+4. Set **"Name"** to `"sosumi"`
+5. Set **"Remote MCP server URL"** to `"https://sosumi.ai/mcp"`
+6. Click "Add"
+
+### Other
+
+Sosumi's MCP server supports Streamable HTTP and Server-Sent Events (SSE) transport. 
+If your client supports these transports, 
+configure it to connect directly to `https://sosumi.ai/mcp`.
+
+If your client doesn't support HTTP/SSE transport, 
+you can run this command to proxy over stdio:
+
 ```json
 {
   "mcpServers": {
