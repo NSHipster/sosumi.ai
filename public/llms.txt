@@ -81,6 +81,14 @@ Create a `.vscode/mcp.json` file in your workspace and enter the following confi
 5. Set **"Remote MCP server URL"** to `"https://sosumi.ai/mcp"`
 6. Click "Add"
 
+### Claude Code
+
+Run the following command in your terminal:
+
+```shell
+claude mcp add --transport http sosumi https://sosumi.ai/mcp
+```
+
 ### Other
 
 Sosumi's MCP server supports Streamable HTTP and Server-Sent Events (SSE) transport. 
