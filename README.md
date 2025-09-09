@@ -60,27 +60,57 @@ See [the website](https://sosumi.ai/#clients) for client-specific instructions.
   - Parameters: `path` (string) - Full or relative documentation path (e.g., '/documentation/swift', 'swiftui/view')
   - Returns documentation content as Markdown
 
-## Development
+## Self-Hosting
+
+This project is designed to be easily run on your own machine
+or deployed to a hosting provider.
+
+Sosumi.ai is currently hosted by 
+[Cloudflare Workers](https://workers.cloudflare.com).
 
 ### Prerequisites
 
 - Node.js 18+
 - npm
 
-### Setup
+### Quick Start
 
-```bash
-npm install
-npm run dev
-```
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/nshipster/sosumi.ai.git
+   cd sosumi.ai
+   ```
 
-### Deployment
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-```bash
-npm run deploy
-```
+3. **Start development server:**
+   ```bash
+   npm run dev
+   ```
+
+Once the application is up and running, press the <kbd>b</kbd>
+to open the URL in your browser.
+
+To configure MCP clients to use your development server, 
+replace `sosumi.ai` with the local server address
+(`http://localhost:8787` by default).
+
+> [!NOTE]  
+> The application is built with Hono, 
+> making it compatible with various runtimes.
+>
+> See the [Hono docs](https://hono.dev/docs/getting-started/basic)
+> for more information about deploying to different platforms.
+
+## Development
 
 ### Testing
+
+This project uses [vitest](https://vitest.dev)
+for  unit and integration testing.
 
 ```bash
 npm run test          # Run tests
@@ -88,12 +118,10 @@ npm run test:ui       # Run tests with UI
 npm run test:run      # Run tests once
 ```
 
-## Code Quality
+### Code Quality
 
-This project uses [Biome](https://biomejs.dev/) for 
-code formatting, linting, and import organization.
-
-### Available Commands
+This project uses [Biome](https://biomejs.dev/) 
+for code formatting, linting, and import organization.
 
 - `npm run format` - Format all code files
 - `npm run lint` - Lint and fix code issues
@@ -108,7 +136,7 @@ For the best development experience, install the Biome extension for your editor
 - [Vim/Neovim](https://github.com/biomejs/biome/tree/main/editors/vim)
 - [Emacs](https://github.com/biomejs/biome/tree/main/editors/emacs)
 
-## Cloudflare Workers
+### Cloudflare Workers
 
 Whenever you update your `wrangler.toml` or change your Worker bindings, 
 be sure to re-run:
