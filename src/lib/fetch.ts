@@ -6,6 +6,8 @@
 import type { AppleDocJSON } from "./types"
 import { normalizeDocumentationPath } from "./url"
 
+export class NotFoundError extends Error {}
+
 /**
  * Fetch Apple Developer documentation JSON data for a given path
  */
@@ -42,6 +44,9 @@ export async function fetchJSONData(path: string): Promise<AppleDocJSON> {
 
   if (!response.ok) {
     console.error(`Failed to fetch JSON: ${response.status} ${response.statusText}`)
+    if (response.status === 404) {
+      throw new NotFoundError(`Apple documentation page not found at ${jsonUrl}`)
+    }
     throw new Error(`Failed to fetch JSON: ${response.status} ${response.statusText}`)
   }
 

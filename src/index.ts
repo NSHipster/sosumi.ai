@@ -4,7 +4,7 @@ import { cache } from "hono/cache"
 import { cors } from "hono/cors"
 import { HTTPException } from "hono/http-exception"
 
-import { fetchJSONData } from "./lib/fetch"
+import { fetchJSONData, NotFoundError } from "./lib/fetch"
 import { createMcpServer } from "./lib/mcp"
 import { renderFromJSON } from "./lib/render"
 import { generateAppleDocUrl, isValidAppleDocUrl, normalizeDocumentationPath } from "./lib/url"
@@ -112,7 +112,10 @@ This service only works with Apple Developer documentation URLs:
     )
   }
 
-  return c.text(markdown, 200, { ...headers, "Content-Type": "text/markdown; charset=utf-8" })
+  return c.text(markdown, 200, {
+    ...headers,
+    "Content-Type": "text/markdown; charset=utf-8",
+  })
 })
 
 // Catch-all route for any other requests - returns 404
@@ -138,6 +141,42 @@ app.onError((err, c) => {
   if (err instanceof HTTPException) {
     // Get the custom response
     return err.getResponse()
+  }
+
+  if (err instanceof NotFoundError) {
+    const accept = c.req.header("Accept")
+    if (accept?.includes("application/json")) {
+      return c.json(
+        {
+          error: "Documentation not found",
+          message: "The requested Apple Developer documentation page does not exist.",
+        },
+        404,
+      )
+    }
+
+    return c.text(
+      `# Not Found
+
+The requested Apple Developer documentation page does not exist.
+
+## What you can try:
+
+1. **Check the URL** - Make sure the path is correct
+2. **Browse from a parent page** - Try starting from a higher-level documentation page
+3. **Search Apple Developer Documentation** - Use Apple's official search
+
+## Examples of valid URLs:
+
+- [Swift Documentation](https://sosumi.ai/documentation/swift)
+- [SwiftUI Documentation](https://sosumi.ai/documentation/swiftui)
+- [UIKit Documentation](https://sosumi.ai/documentation/uikit)
+
+---
+*[sosumi.ai](https://sosumi.ai) - Making Apple docs AI-readable*`,
+      404,
+      { "Content-Type": "text/markdown; charset=utf-8" },
+    )
   }
 
   // Handle unexpected errors
