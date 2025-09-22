@@ -276,8 +276,12 @@ function renderHIGInlineContent(
       } else if (item.type === "codeVoice") {
         return `\`${item.code}\``
       } else if (item.type === "reference") {
-        const title = item.title || item.text || ""
         const reference = item.identifier ? references[item.identifier] : undefined
+        const refTitle =
+          reference && !isHIGImageReference(reference)
+            ? (reference as HIGReference | HIGExternalReference).title
+            : undefined
+        const title = item.title || item.text || refTitle || ""
         const url = reference ? (isHIGImageReference(reference) ? "#" : reference.url) : "#"
         return `[${title}](${url})`
       } else if (item.type === "emphasis") {
