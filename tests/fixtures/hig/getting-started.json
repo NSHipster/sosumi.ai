@@ -1,0 +1,537 @@
+{
+  "sections": [],
+  "metadata": {
+    "role": "collectionGroup",
+    "title": "Getting started",
+    "images": [
+      {
+        "identifier": "overview.svg",
+        "type": "icon"
+      },
+      {
+        "identifier": "platforms.png",
+        "type": "card"
+      }
+    ],
+    "availableLocales": ["en-US", "ja-JP", "kh-KR", "zh-CN"]
+  },
+  "kind": "article",
+  "identifier": {
+    "interfaceLanguage": "swift",
+    "url": "doc://com.apple.HIG/design/Human-Interface-Guidelines/getting-started"
+  },
+  "hierarchy": {
+    "paths": [
+      [
+        "doc://com.apple.documentation/documentation/technologies",
+        "doc://com.apple.HIG/design/human-interface-guidelines"
+      ]
+    ]
+  },
+  "primaryContentSections": [
+    {
+      "kind": "content",
+      "content": [
+        {
+          "items": [
+            "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-ios",
+            "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-ipados",
+            "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-macos",
+            "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-tvos",
+            "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-visionos",
+            "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-watchos",
+            "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-games"
+          ],
+          "type": "links",
+          "style": "compactGrid"
+        }
+      ]
+    }
+  ],
+  "abstract": [
+    {
+      "text": "Create an app or game that feels at home on every platform you support.",
+      "type": "text"
+    }
+  ],
+  "topicSectionsStyle": "hidden",
+  "schemaVersion": {
+    "major": 0,
+    "minor": 3,
+    "patch": 0
+  },
+  "topicSections": [
+    {
+      "identifiers": [
+        "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-ios",
+        "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-ipados",
+        "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-macos",
+        "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-tvos",
+        "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-visionos",
+        "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-watchos",
+        "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-games"
+      ],
+      "anchor": "Topics"
+    }
+  ],
+  "references": {
+    "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-ios": {
+      "kind": "article",
+      "role": "article",
+      "title": "Designing for iOS",
+      "url": "/design/human-interface-guidelines/designing-for-ios",
+      "abstract": [
+        {
+          "text": "People depend on their iPhone to help them stay connected, play games, view",
+          "type": "text"
+        },
+        {
+          "text": " ",
+          "type": "text"
+        },
+        {
+          "text": "media, accomplish tasks, and track personal data in any location and while on",
+          "type": "text"
+        },
+        {
+          "text": " ",
+          "type": "text"
+        },
+        {
+          "text": "the go.",
+          "type": "text"
+        }
+      ],
+      "identifier": "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-ios",
+      "images": [
+        {
+          "type": "icon",
+          "identifier": "ios.svg"
+        },
+        {
+          "type": "card",
+          "identifier": "platforms-designing-for-ios-thumbnail.png"
+        }
+      ],
+      "type": "topic"
+    },
+    "platforms-designing-for-games-thumbnail.png": {
+      "variants": [
+        {
+          "url": "https://docs-assets.developer.apple.com/published/44e16abf0644173d1b5f896a2f5b4bef/platforms-designing-for-games-thumbnail%402x.png",
+          "traits": ["2x", "light"]
+        },
+        {
+          "url": "https://docs-assets.developer.apple.com/published/8b25ad07aaa021ae7b3ddd5d27060715/platforms-designing-for-games-thumbnail~dark%402x.png",
+          "traits": ["2x", "dark"]
+        }
+      ],
+      "alt": "A stylized representation of a game controller. The image is tinted green to subtly reflect the green in the original six-color Apple logo.",
+      "identifier": "platforms-designing-for-games-thumbnail.png",
+      "type": "image"
+    },
+    "ios.svg": {
+      "alt": "An icon of an iPhone frame.",
+      "variants": [
+        {
+          "svgID": "ios",
+          "traits": ["1x", "light"],
+          "url": "https://docs-assets.developer.apple.com/published/f2bc8c574fdc3a6998bb161b50510825/ios.svg"
+        }
+      ],
+      "type": "image",
+      "identifier": "ios.svg"
+    },
+    "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-ipados": {
+      "images": [
+        {
+          "identifier": "ipados.svg",
+          "type": "icon"
+        },
+        {
+          "identifier": "platforms-designing-for-ipados-thumbnail.png",
+          "type": "card"
+        }
+      ],
+      "title": "Designing for iPadOS",
+      "url": "/design/human-interface-guidelines/designing-for-ipados",
+      "abstract": [
+        {
+          "type": "text",
+          "text": "People value the power, mobility, and flexibility of iPad as they enjoy media, play games, perform detailed productivity tasks, and bring their creations to life."
+        }
+      ],
+      "role": "article",
+      "type": "topic",
+      "identifier": "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-ipados",
+      "kind": "article"
+    },
+    "platforms-designing-for-tvos-thumbnail.png": {
+      "alt": "A stylized representation of a TV screen. The image is tinted green to subtly reflect the green in the original six-color Apple logo.",
+      "variants": [
+        {
+          "traits": ["2x", "light"],
+          "url": "https://docs-assets.developer.apple.com/published/6afc96467783d4a828969e346841ff38/platforms-designing-for-tvos-thumbnail%402x.png"
+        },
+        {
+          "traits": ["2x", "dark"],
+          "url": "https://docs-assets.developer.apple.com/published/3b1e563fb4abdc714ded7ac4ae8ddbe5/platforms-designing-for-tvos-thumbnail~dark%402x.png"
+        }
+      ],
+      "type": "image",
+      "identifier": "platforms-designing-for-tvos-thumbnail.png"
+    },
+    "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-visionos": {
+      "images": [
+        {
+          "identifier": "visionos.svg",
+          "type": "icon"
+        },
+        {
+          "identifier": "platforms-designing-for-visionos-thumbnail.png",
+          "type": "card"
+        }
+      ],
+      "title": "Designing for visionOS",
+      "url": "/design/human-interface-guidelines/designing-for-visionos",
+      "abstract": [
+        {
+          "text": "When people wear Apple Vision Pro, they enter an infinite 3D space where they can engage with your app or game while staying connected to their surroundings.",
+          "type": "text"
+        }
+      ],
+      "role": "article",
+      "type": "topic",
+      "identifier": "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-visionos",
+      "kind": "article"
+    },
+    "tvos.svg": {
+      "alt": "An icon of a TV screen.",
+      "variants": [
+        {
+          "traits": ["1x", "light"],
+          "svgID": "tvos",
+          "url": "https://docs-assets.developer.apple.com/published/2c8728ccf7583e19a0f8d6061023283b/tvos.svg"
+        }
+      ],
+      "identifier": "tvos.svg",
+      "type": "image"
+    },
+    "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-watchos": {
+      "kind": "article",
+      "role": "article",
+      "title": "Designing for watchOS",
+      "url": "/design/human-interface-guidelines/designing-for-watchos",
+      "abstract": [
+        {
+          "text": "When people glance at their Apple Watch, they know they can access essential information and perform simple, timely tasks whether they’re stationary or in motion.",
+          "type": "text"
+        }
+      ],
+      "identifier": "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-watchos",
+      "images": [
+        {
+          "type": "icon",
+          "identifier": "watchos.svg"
+        },
+        {
+          "type": "card",
+          "identifier": "platforms-designing-for-watchos-thumbnail.png"
+        }
+      ],
+      "type": "topic"
+    },
+    "human-interface-guidelines-page-image-card.png": {
+      "alt": "An illustration of several Liquid Glass components such as toggles, sliders, and buttons, atop a neutral background. The transparent components cast shadows on the background and allow their colored elements, like a blue slider track and a green toggle backing, to show through, highlighting the Liquid Glass material's lensing effect.",
+      "variants": [
+        {
+          "traits": ["2x", "light"],
+          "url": "https://docs-assets.developer.apple.com/published/5a91c175146ec1b7252733d97d6ae994/human-interface-guidelines-page-image-card%402x.png"
+        }
+      ],
+      "identifier": "human-interface-guidelines-page-image-card.png",
+      "type": "image"
+    },
+    "platforms-designing-for-macos-thumbnail.png": {
+      "alt": "A stylized representation of a Mac. The image is tinted green to subtly reflect the green in the original six-color Apple logo.",
+      "variants": [
+        {
+          "traits": ["2x", "light"],
+          "url": "https://docs-assets.developer.apple.com/published/7b715538f806950fbc3d37fb8a07c5f8/platforms-designing-for-macos-thumbnail%402x.png"
+        },
+        {
+          "traits": ["2x", "dark"],
+          "url": "https://docs-assets.developer.apple.com/published/6d989c24bb6f6d5fda36a354e7a839b1/platforms-designing-for-macos-thumbnail~dark%402x.png"
+        }
+      ],
+      "identifier": "platforms-designing-for-macos-thumbnail.png",
+      "type": "image"
+    },
+    "platforms.png": {
+      "alt": null,
+      "variants": [
+        {
+          "traits": ["2x", "light"],
+          "url": "https://docs-assets.developer.apple.com/published/5f1118c7a04054c091da4877d8ad6a30/platforms%402x.png"
+        },
+        {
+          "traits": ["2x", "dark"],
+          "url": "https://docs-assets.developer.apple.com/published/e58f43448e82f7e07d3b2998362d9712/platforms~dark%402x.png"
+        }
+      ],
+      "identifier": "platforms.png",
+      "type": "image"
+    },
+    "doc://com.apple.HIG/design/human-interface-guidelines": {
+      "abstract": [
+        {
+          "type": "text",
+          "text": "The HIG contains guidance and best practices that can help you design a"
+        },
+        {
+          "type": "text",
+          "text": " "
+        },
+        {
+          "type": "text",
+          "text": "great experience for any Apple platform."
+        }
+      ],
+      "kind": "article",
+      "title": "Human Interface Guidelines",
+      "url": "/design/human-interface-guidelines",
+      "role": "collection",
+      "identifier": "doc://com.apple.HIG/design/human-interface-guidelines",
+      "type": "topic",
+      "images": [
+        {
+          "identifier": "human-interface-guidelines-page-image-card.png",
+          "type": "card"
+        }
+      ]
+    },
+    "watchos.svg": {
+      "alt": "An icon of an Apple Watch frame.",
+      "variants": [
+        {
+          "traits": ["1x", "light"],
+          "svgID": "watchos",
+          "url": "https://docs-assets.developer.apple.com/published/e3afc34edc848f8ea56d5cc1cb2b7495/watchos.svg"
+        }
+      ],
+      "type": "image",
+      "identifier": "watchos.svg"
+    },
+    "macos.svg": {
+      "alt": "An icon of a Mac.",
+      "variants": [
+        {
+          "svgID": "macos",
+          "traits": ["1x", "light"],
+          "url": "https://docs-assets.developer.apple.com/published/9cfd7b3f84bbabf333f2d80741391d29/macos.svg"
+        }
+      ],
+      "type": "image",
+      "identifier": "macos.svg"
+    },
+    "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-macos": {
+      "images": [
+        {
+          "identifier": "macos.svg",
+          "type": "icon"
+        },
+        {
+          "identifier": "platforms-designing-for-macos-thumbnail.png",
+          "type": "card"
+        }
+      ],
+      "title": "Designing for macOS",
+      "url": "/design/human-interface-guidelines/designing-for-macos",
+      "abstract": [
+        {
+          "type": "text",
+          "text": "People rely on the power, spaciousness, and flexibility of a Mac as they perform in-depth productivity tasks, view media or content, and play games, often using several apps at once."
+        }
+      ],
+      "role": "article",
+      "type": "topic",
+      "identifier": "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-macos",
+      "kind": "article"
+    },
+    "ipados.svg": {
+      "alt": "An icon of an iPad frame.",
+      "variants": [
+        {
+          "svgID": "ipados",
+          "traits": ["1x", "light"],
+          "url": "https://docs-assets.developer.apple.com/published/68041371bd3b88d3ace4704e7090bcef/ipados.svg"
+        }
+      ],
+      "type": "image",
+      "identifier": "ipados.svg"
+    },
+    "platforms-designing-for-ios-thumbnail.png": {
+      "alt": "A stylized representation of an iPhone frame. The image is tinted green to subtly reflect the green in the original six-color Apple logo.",
+      "variants": [
+        {
+          "traits": ["2x", "light"],
+          "url": "https://docs-assets.developer.apple.com/published/ac38957475654c7811bb0e2001242c6b/platforms-designing-for-ios-thumbnail%402x.png"
+        },
+        {
+          "traits": ["2x", "dark"],
+          "url": "https://docs-assets.developer.apple.com/published/405d663ed12983bd567e994c19ef9a66/platforms-designing-for-ios-thumbnail~dark%402x.png"
+        }
+      ],
+      "type": "image",
+      "identifier": "platforms-designing-for-ios-thumbnail.png"
+    },
+    "designing-for-games.svg": {
+      "alt": "An icon that depicts the outline of Apple Vision Pro.",
+      "variants": [
+        {
+          "svgID": "game-controllers",
+          "traits": ["1x", "light"],
+          "url": "https://docs-assets.developer.apple.com/published/39a75492d9fad387b2cb86138a8998eb/designing-for-games.svg"
+        }
+      ],
+      "type": "image",
+      "identifier": "designing-for-games.svg"
+    },
+    "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-games": {
+      "images": [
+        {
+          "identifier": "designing-for-games.svg",
+          "type": "icon"
+        },
+        {
+          "identifier": "platforms-designing-for-games-thumbnail.png",
+          "type": "card"
+        }
+      ],
+      "title": "Designing for games",
+      "url": "/design/human-interface-guidelines/designing-for-games",
+      "abstract": [
+        {
+          "type": "text",
+          "text": "When people play your game on an Apple device, they dive into the world you designed while relying on the platform features they love."
+        }
+      ],
+      "role": "article",
+      "type": "topic",
+      "identifier": "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-games",
+      "kind": "article"
+    },
+    "platforms-designing-for-ipados-thumbnail.png": {
+      "alt": "A stylized representation of an iPad frame. The image is tinted green to subtly reflect the green in the original six-color Apple logo.",
+      "variants": [
+        {
+          "traits": ["2x", "light"],
+          "url": "https://docs-assets.developer.apple.com/published/2d73dfa7931a035fd311f6f2495f75e8/platforms-designing-for-ipados-thumbnail%402x.png"
+        },
+        {
+          "traits": ["2x", "dark"],
+          "url": "https://docs-assets.developer.apple.com/published/a59a534cbd80dc967f5bdaf47a0e27c9/platforms-designing-for-ipados-thumbnail~dark%402x.png"
+        }
+      ],
+      "type": "image",
+      "identifier": "platforms-designing-for-ipados-thumbnail.png"
+    },
+    "overview.svg": {
+      "alt": null,
+      "variants": [
+        {
+          "svgID": "overview",
+          "traits": ["1x", "light"],
+          "url": "https://docs-assets.developer.apple.com/published/c9d2e563aa23997588edd7b4538f6c5b/overview.svg"
+        }
+      ],
+      "type": "image",
+      "identifier": "overview.svg"
+    },
+    "platforms-designing-for-watchos-thumbnail.png": {
+      "alt": "A stylized representation of an Apple Watch frame. The image is tinted green to subtly reflect the green in the original six-color Apple logo.",
+      "variants": [
+        {
+          "traits": ["2x", "light"],
+          "url": "https://docs-assets.developer.apple.com/published/dd69cccef7898c67b4c69998b9a766a3/platforms-designing-for-watchos-thumbnail%402x.png"
+        },
+        {
+          "traits": ["2x", "dark"],
+          "url": "https://docs-assets.developer.apple.com/published/0686f93dddf6ba103cc46001a38ee538/platforms-designing-for-watchos-thumbnail~dark%402x.png"
+        }
+      ],
+      "type": "image",
+      "identifier": "platforms-designing-for-watchos-thumbnail.png"
+    },
+    "visionos.svg": {
+      "alt": "An icon that depicts the outline of Apple Vision Pro.",
+      "variants": [
+        {
+          "svgID": "Design-Spec",
+          "traits": ["1x", "light"],
+          "url": "https://docs-assets.developer.apple.com/published/b88bc6c95b1a9950ef2b9f1495288a5b/visionos.svg"
+        }
+      ],
+      "type": "image",
+      "identifier": "visionos.svg"
+    },
+    "doc://com.apple.documentation/documentation/technologies": {
+      "abstract": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "kind": "technologies",
+      "title": "Technologies",
+      "url": "/documentation/technologies",
+      "role": "overview",
+      "identifier": "doc://com.apple.documentation/documentation/technologies",
+      "type": "topic"
+    },
+    "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-tvos": {
+      "kind": "article",
+      "role": "article",
+      "title": "Designing for tvOS",
+      "url": "/design/human-interface-guidelines/designing-for-tvos",
+      "abstract": [
+        {
+          "type": "text",
+          "text": "People enjoy the vibrant content, immersive experiences, and streamlined interactions that tvOS delivers in media and games, as well as in fitness, education, and home utility apps."
+        }
+      ],
+      "identifier": "doc://com.apple.HIG/design/Human-Interface-Guidelines/designing-for-tvos",
+      "images": [
+        {
+          "identifier": "tvos.svg",
+          "type": "icon"
+        },
+        {
+          "identifier": "platforms-designing-for-tvos-thumbnail.png",
+          "type": "card"
+        }
+      ],
+      "type": "topic"
+    },
+    "platforms-designing-for-visionos-thumbnail.png": {
+      "alt": "A stylized representation of Apple Vision Pro. The image is tinted green to subtly reflect the green in the original six-color Apple logo.",
+      "variants": [
+        {
+          "url": "https://docs-assets.developer.apple.com/published/303496febc1c50d59009e0606ae8cd30/platforms-designing-for-visionos-thumbnail%402x.png",
+          "traits": ["2x", "light"]
+        },
+        {
+          "url": "https://docs-assets.developer.apple.com/published/6d6f2ae421c8366fdceba83e33a93085/platforms-designing-for-visionos-thumbnail~dark%402x.png",
+          "traits": ["2x", "dark"]
+        }
+      ],
+      "identifier": "platforms-designing-for-visionos-thumbnail.png",
+      "type": "image"
+    }
+  },
+  "legalNotices": {
+    "copyright": "Copyright &copy; 2025 Apple Inc. All rights reserved.",
+    "termsOfUse": "https://www.apple.com/legal/internet-services/terms/site.html",
+    "privacyPolicy": "https://www.apple.com/privacy/privacy-policy"
+  }
+}

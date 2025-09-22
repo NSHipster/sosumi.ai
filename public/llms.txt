@@ -23,11 +23,10 @@ https://sosumi.ai/documentation/swift/array
 
 ### Examples
 
+**Developer Documentation:**
 - Swift: https://sosumi.ai/documentation/swift
 - SwiftUI: https://sosumi.ai/documentation/swiftui
-- UIKit: https://sosumi.ai/documentation/uikit
-- Xcode: https://sosumi.ai/documentation/xcode
-- Core Data: https://sosumi.ai/documentation/coredata
+- Human Interface Guidelines: https://sosumi.ai/design/human-interface-guidelines
 
 ## MCP Usage
 
@@ -91,8 +90,8 @@ claude mcp add --transport http sosumi https://sosumi.ai/mcp
 
 ### Other
 
-Sosumi's MCP server supports Streamable HTTP and Server-Sent Events (SSE) transport. 
-**If your client supports either of these, 
+Sosumi's MCP server supports Streamable HTTP and Server-Sent Events (SSE) transport.
+**If your client supports either of these,
 configure it to connect directly to `https://sosumi.ai/mcp`.**
 
 Otherwise,
@@ -111,8 +110,9 @@ you can run this command to proxy over stdio:
 
 ### Available Resources
 
-- `doc://{path}` - Apple Developer documentation in Markdown format
+- `doc://{path}` - Apple Developer documentation and Human Interface Guidelines in Markdown format
   - Example: `doc://swift/array` returns Swift Array documentation
+  - Example: `doc://design/human-interface-guidelines/foundations/color` returns HIG Color guidelines
 
 ### Available Tools
 
@@ -124,15 +124,15 @@ you can run this command to proxy over stdio:
     breadcrumbs,
     and tags
 
-- `fetchAppleDocumentation` - Fetches Apple Developer documentation by path
-  - Parameters: `path` (string) - Full or relative documentation path
-  - Returns documentation content as Markdown
+- `fetchAppleDocumentation` - Fetches Apple Developer documentation and Human Interface Guidelines by path
+  - Parameters: `path` (string) - Documentation path (e.g., '/documentation/swift', 'design/human-interface-guidelines/foundations/color')
+  - Returns content as Markdown
 
 ## Troubleshooting
 
 If you're experiencing connection timeouts or network issues with the MCP server,
-you may need to configure a proxy. 
-This is particularly common in corporate environments 
+you may need to configure a proxy.
+This is particularly common in corporate environments
 or regions with restricted internet access.
 
 Configure your MCP client to use a proxy by adding environment variables:

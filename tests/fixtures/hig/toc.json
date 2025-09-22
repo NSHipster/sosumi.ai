@@ -1,0 +1,66 @@
+{
+  "includedArchiveIdentifiers": ["com.apple.HIG"],
+  "interfaceLanguages": {
+    "swift": [
+      {
+        "children": [
+          {
+            "path": "/design/human-interface-guidelines/getting-started",
+            "title": "Getting started",
+            "type": "symbol",
+            "children": [
+              {
+                "path": "/design/human-interface-guidelines/designing-for-ios",
+                "title": "Designing for iOS",
+                "type": "article"
+              },
+              {
+                "path": "/design/human-interface-guidelines/designing-for-macos",
+                "title": "Designing for macOS",
+                "type": "article"
+              }
+            ]
+          },
+          {
+            "path": "/design/human-interface-guidelines/foundations",
+            "title": "Foundations",
+            "type": "symbol",
+            "children": [
+              {
+                "path": "/design/human-interface-guidelines/foundations/color",
+                "title": "Color",
+                "type": "article"
+              },
+              {
+                "path": "/design/human-interface-guidelines/foundations/typography",
+                "title": "Typography",
+                "type": "article"
+              }
+            ]
+          }
+        ],
+        "path": "/design/human-interface-guidelines",
+        "title": "Human Interface Guidelines",
+        "type": "module"
+      }
+    ]
+  },
+  "references": {
+    "overview.svg": {
+      "alt": "Overview icon",
+      "identifier": "overview.svg",
+      "type": "image",
+      "variants": [
+        {
+          "traits": ["2x"],
+          "url": "/assets/overview@2x.svg"
+        }
+      ]
+    }
+  },
+  "schemaVersion": {
+    "major": 0,
+    "minor": 3,
+    "patch": 0
+  }
+}

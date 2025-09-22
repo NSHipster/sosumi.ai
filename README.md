@@ -23,6 +23,9 @@ https://developer.apple.com/documentation/swift/array
 https://sosumi.ai/documentation/swift/array
 ```
 
+This works for all API reference docs, 
+as well as Apple's [Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/) (HIG).
+
 ### MCP Integration
 
 Sosumi's MCP server supports Streamable HTTP and Server-Sent Events (SSE) transport. 
@@ -47,18 +50,19 @@ See [the website](https://sosumi.ai/#clients) for client-specific instructions.
 
 #### Available Resources
 
-- `doc://{path}` - Apple Developer documentation in Markdown format
+- `doc://{path}` - Apple Developer documentation and Human Interface Guidelines in Markdown format
   - Example: `doc://swift/array` returns Swift Array documentation
+  - Example: `doc://design/human-interface-guidelines/foundations/color` returns HIG Color guidelines
 
 #### Available Tools
 
-- `search` - Searches Apple Developer documentation
+- `searchAppleDocumentation` - Searches Apple Developer documentation
   - Parameters: `query` (string)
   - Returns structured results with titles, URLs, descriptions, breadcrumbs, and tags
 
-- `fetch` - Fetches Apple Developer documentation by path
-  - Parameters: `path` (string) - Full or relative documentation path (e.g., '/documentation/swift', 'swiftui/view')
-  - Returns documentation content as Markdown
+- `fetchAppleDocumentation` - Fetches Apple Developer documentation and Human Interface Guidelines by path
+  - Parameters: `path` (string) - Documentation path (e.g., '/documentation/swift', 'swiftui/view', 'design/human-interface-guidelines/foundations/color')
+  - Returns content as Markdown
 
 ## Self-Hosting
 

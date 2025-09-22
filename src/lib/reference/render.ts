@@ -1,6 +1,5 @@
 /**
- * Rendering utilities for JSON-based extracted content
- * Renders Apple Developer documentation JSON data to markdown
+ * Apple Developer Reference documentation rendering functionality
  */
 
 import type { AppleDocJSON, ContentItem, IndexContentItem, TopicSection, Variant } from "./types"

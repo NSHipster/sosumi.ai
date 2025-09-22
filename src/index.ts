@@ -3,10 +3,17 @@ import { Hono } from "hono"
 import { cache } from "hono/cache"
 import { cors } from "hono/cors"
 import { HTTPException } from "hono/http-exception"
+import { trimTrailingSlash } from "hono/trailing-slash"
 
-import { fetchJSONData, NotFoundError } from "./lib/fetch"
+import { NotFoundError } from "./lib/fetch"
+import {
+  fetchHIGPageData,
+  fetchHIGTableOfContents,
+  renderHIGFromJSON,
+  renderHIGTableOfContents,
+} from "./lib/hig"
 import { createMcpServer } from "./lib/mcp"
-import { renderFromJSON } from "./lib/render"
+import { fetchJSONData, renderFromJSON } from "./lib/reference"
 import { generateAppleDocUrl, isValidAppleDocUrl, normalizeDocumentationPath } from "./lib/url"
 
 interface Env {
@@ -31,8 +38,10 @@ app.use("*", async (c, next) => {
 
 app.use("*", cors())
 
+app.use(trimTrailingSlash())
+
 app.use(
-  "/documentation/*",
+  "*",
   cache({
     cacheName: "sosumi-cache",
     cacheControl: "max-age=86400", // 24 hours
@@ -116,6 +125,85 @@ This service only works with Apple Developer documentation URLs:
     ...headers,
     "Content-Type": "text/markdown; charset=utf-8",
   })
+})
+
+app.get("/design/human-interface-guidelines", async (c) => {
+  // Handle the table of contents for HIG
+  const tocData = await fetchHIGTableOfContents()
+  const markdown = await renderHIGTableOfContents(tocData)
+
+  // Validate that we got meaningful content
+  if (!markdown || markdown.trim().length < 100) {
+    throw new HTTPException(502, {
+      message:
+        "The HIG table of contents loaded but contained insufficient content. This may be a temporary issue.",
+    })
+  }
+
+  const sourceUrl = "https://developer.apple.com/design/human-interface-guidelines/"
+  const headers = {
+    "Content-Type": "text/markdown; charset=utf-8",
+    "Content-Location": sourceUrl,
+    "Cache-Control": "public, max-age=3600, s-maxage=86400",
+    ETag: `"${Buffer.from(markdown).toString("base64").slice(0, 16)}"`,
+    "Last-Modified": new Date().toUTCString(),
+  }
+
+  if (c.req.header("Accept")?.includes("application/json")) {
+    return c.json(
+      {
+        url: sourceUrl,
+        content: markdown,
+      },
+      200,
+      { ...headers, "Content-Type": "application/json; charset=utf-8" },
+    )
+  }
+
+  return c.text(markdown, 200, headers)
+})
+
+app.get("/design/human-interface-guidelines/:path{.+}", async (c) => {
+  const higPath = c.req.param("path")
+  if (!higPath) {
+    // This should be caught by the route above, but just in case
+    throw new HTTPException(400, {
+      message: "Invalid HIG path",
+    })
+  }
+
+  const jsonData = await fetchHIGPageData(higPath)
+  const sourceUrl = `https://developer.apple.com/design/human-interface-guidelines/${higPath}`
+  const markdown = await renderHIGFromJSON(jsonData, sourceUrl)
+
+  // Validate that we got meaningful content
+  if (!markdown || markdown.trim().length < 100) {
+    throw new HTTPException(502, {
+      message:
+        "The HIG page loaded but contained insufficient content. This may be a temporary issue with the page.",
+    })
+  }
+
+  const headers = {
+    "Content-Type": "text/markdown; charset=utf-8",
+    "Content-Location": sourceUrl,
+    "Cache-Control": "public, max-age=3600, s-maxage=86400",
+    ETag: `"${Buffer.from(markdown).toString("base64").slice(0, 16)}"`,
+    "Last-Modified": new Date().toUTCString(),
+  }
+
+  if (c.req.header("Accept")?.includes("application/json")) {
+    return c.json(
+      {
+        url: sourceUrl,
+        content: markdown,
+      },
+      200,
+      { ...headers, "Content-Type": "application/json; charset=utf-8" },
+    )
+  }
+
+  return c.text(markdown, 200, headers)
 })
 
 // Catch-all route for any other requests - returns 404

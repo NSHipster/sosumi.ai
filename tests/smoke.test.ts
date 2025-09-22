@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
-import { renderFromJSON } from "../src/lib/render"
+import { renderFromJSON } from "../src/lib/reference"
 import type { AppleDocJSON } from "../src/lib/types"
-import arrayData from "./fixtures/array.json"
+import arrayData from "./fixtures/reference/array.json"
 
 // Skip this file in CI environments (e.g. GitHub Actions, etc.)
 if (process.env.CI === "1") {

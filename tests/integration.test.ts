@@ -1,7 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { fetchJSONData } from "../src/lib/fetch"
-import { renderFromJSON } from "../src/lib/render"
-import arrayData from "./fixtures/array.json"
+import { fetchJSONData, renderFromJSON } from "../src/lib/reference"
+import arrayData from "./fixtures/reference/array.json"
+import {
+  fetchHIGPageData,
+  fetchHIGTableOfContents,
+  renderHIGFromJSON,
+  renderHIGTableOfContents,
+} from "../src/lib/hig"
+import higTocData from "./fixtures/hig/toc.json"
+import higGettingStartedData from "./fixtures/hig/getting-started.json"
 
 describe("Integration Tests with Mocked Apple API", () => {
   const originalFetch = global.fetch
@@ -135,5 +142,262 @@ describe("Integration Tests with Mocked Apple API", () => {
 
     // Should have made 3 fetch calls to Apple API
     expect(global.fetch).toHaveBeenCalledTimes(3)
+  })
+
+  // HIG tests consolidated from hig-integration.test.ts, reusing the same setup
+  it("should fetch and render HIG table of contents with mocked API response", async () => {
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(higTocData), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    )
+
+    const tocData = await fetchHIGTableOfContents()
+    const markdown = await renderHIGTableOfContents(tocData)
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://developer.apple.com/tutorials/data/index/design--human-interface-guidelines",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Accept: "application/json",
+          "Cache-Control": "no-cache",
+        }),
+      }),
+    )
+
+    expect(markdown).toContain("# Human Interface Guidelines")
+    expect(markdown).toContain("## Getting started")
+    expect(markdown).toContain("### Foundations")
+    expect(markdown).toContain("- [Color](/design/human-interface-guidelines/foundations/color)")
+    expect(markdown).toContain(
+      "*This is unofficial content. All Human Interface Guidelines belong to Apple Inc.*",
+    )
+  })
+
+  it("should fetch and render HIG page with mocked API response", async () => {
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(higGettingStartedData), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    )
+
+    const pageData = await fetchHIGPageData("getting-started")
+    const markdown = await renderHIGFromJSON(
+      pageData,
+      "https://developer.apple.com/design/human-interface-guidelines/getting-started",
+    )
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://developer.apple.com/tutorials/data/design/human-interface-guidelines/getting-started.json",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Accept: "application/json",
+          "Cache-Control": "no-cache",
+        }),
+      }),
+    )
+
+    expect(markdown).toContain("title: Getting started")
+    expect(markdown).toContain("**Guide Collection**")
+    expect(markdown).toContain("# Getting started")
+    expect(markdown).toContain(
+      "> Create an app or game that feels at home on every platform you support.",
+    )
+    expect(markdown).toContain(
+      "- [Designing for iOS](/design/human-interface-guidelines/designing-for-ios)",
+    )
+    expect(markdown).toContain(
+      "*This is unofficial content. All Human Interface Guidelines belong to Apple Inc.*",
+    )
+  })
+
+  it("should handle nested HIG page paths correctly", async () => {
+    const nestedPageData = {
+      ...higGettingStartedData,
+      metadata: {
+        ...higGettingStartedData.metadata,
+        title: "Color",
+      },
+      abstract: [
+        {
+          text: "Learn how to use color effectively in your designs.",
+          type: "text",
+        },
+      ],
+    }
+
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(nestedPageData), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    )
+
+    const pageData = await fetchHIGPageData("foundations/color")
+    const markdown = await renderHIGFromJSON(
+      pageData,
+      "https://developer.apple.com/design/human-interface-guidelines/foundations/color",
+    )
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://developer.apple.com/tutorials/data/design/human-interface-guidelines/foundations/color.json",
+      expect.any(Object),
+    )
+    expect(markdown).toContain("title: Color")
+    expect(markdown).toContain("> Learn how to use color effectively in your designs.")
+  })
+
+  it("should handle path normalization during fetch", async () => {
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(higGettingStartedData), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(higGettingStartedData), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(higGettingStartedData), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+
+    await fetchHIGPageData("/getting-started/")
+    await fetchHIGPageData("getting-started")
+    await fetchHIGPageData("//getting-started//")
+
+    expect(global.fetch).toHaveBeenCalledTimes(3)
+    expect(global.fetch).toHaveBeenNthCalledWith(
+      1,
+      "https://developer.apple.com/tutorials/data/design/human-interface-guidelines/getting-started.json",
+      expect.any(Object),
+    )
+    expect(global.fetch).toHaveBeenNthCalledWith(
+      2,
+      "https://developer.apple.com/tutorials/data/design/human-interface-guidelines/getting-started.json",
+      expect.any(Object),
+    )
+    expect(global.fetch).toHaveBeenNthCalledWith(
+      3,
+      "https://developer.apple.com/tutorials/data/design/human-interface-guidelines/getting-started.json",
+      expect.any(Object),
+    )
+  })
+
+  it("should render table of contents with proper hierarchical structure", async () => {
+    const complexTocData = {
+      ...higTocData,
+      interfaceLanguages: {
+        swift: [
+          {
+            path: "/design/human-interface-guidelines",
+            title: "Human Interface Guidelines",
+            type: "module" as const,
+            children: [
+              {
+                path: "/design/human-interface-guidelines/foundations",
+                title: "Foundations",
+                type: "symbol" as const,
+                children: [
+                  {
+                    path: "/design/human-interface-guidelines/foundations/accessibility",
+                    title: "Accessibility",
+                    type: "article" as const,
+                  },
+                  {
+                    path: "/design/human-interface-guidelines/foundations/color",
+                    title: "Color",
+                    type: "article" as const,
+                  },
+                ],
+              },
+              {
+                path: "/design/human-interface-guidelines/patterns",
+                title: "Patterns",
+                type: "symbol" as const,
+                children: [
+                  {
+                    path: "/design/human-interface-guidelines/patterns/loading",
+                    title: "Loading",
+                    type: "article" as const,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    }
+
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(complexTocData), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    )
+
+    const tocData = await fetchHIGTableOfContents()
+    const markdown = await renderHIGTableOfContents(tocData)
+
+    expect(markdown).toContain("# Human Interface Guidelines")
+    expect(markdown).toContain("## Foundations")
+    expect(markdown).toContain(
+      "- [Accessibility](/design/human-interface-guidelines/foundations/accessibility)",
+    )
+    expect(markdown).toContain("- [Color](/design/human-interface-guidelines/foundations/color)")
+    expect(markdown).toContain("## Patterns")
+    expect(markdown).toContain("- [Loading](/design/human-interface-guidelines/patterns/loading)")
+  })
+
+  it("should handle error responses appropriately", async () => {
+    global.fetch = vi.fn().mockResolvedValue(new Response("Not Found", { status: 404 }))
+
+    await expect(fetchHIGTableOfContents()).rejects.toThrow("HIG table of contents not found")
+    await expect(fetchHIGPageData("nonexistent")).rejects.toThrow("HIG page not found")
+
+    global.fetch = vi.fn().mockResolvedValue(new Response("Internal Server Error", { status: 500 }))
+
+    await expect(fetchHIGTableOfContents()).rejects.toThrow(
+      "Failed to fetch HIG ToC: 500 Internal Server Error",
+    )
+    await expect(fetchHIGPageData("test")).rejects.toThrow(
+      "Failed to fetch HIG page: 500 Internal Server Error",
+    )
+  })
+
+  it("should handle malformed JSON responses", async () => {
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response("Invalid JSON", {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    )
+
+    await expect(fetchHIGTableOfContents()).rejects.toThrow()
+    await expect(fetchHIGPageData("test")).rejects.toThrow()
+  })
+
+  it("should preserve user agent rotation in requests", async () => {
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(higTocData), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    )
+
+    await fetchHIGTableOfContents()
+
+    const call = (global.fetch as any).mock.calls[0]
+    expect(call[1].headers["User-Agent"]).toBeDefined()
+    expect(call[1].headers["User-Agent"]).toMatch(/Mozilla\/5\.0/)
   })
 })

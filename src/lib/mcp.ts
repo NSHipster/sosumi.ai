@@ -1,10 +1,10 @@
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { z } from "zod"
 
-import { fetchJSONData } from "./fetch"
-import { renderFromJSON } from "./render"
+import { fetchJSONData, renderFromJSON } from "./reference"
 import { searchAppleDeveloperDocs } from "./search"
 import { generateAppleDocUrl, normalizeDocumentationPath } from "./url"
+import { fetchHIGPageData, renderHIGFromJSON } from "./hig"
 
 export function createMcpServer() {
   const server = new McpServer({
@@ -12,36 +12,62 @@ export function createMcpServer() {
     version: "1.0.0",
   })
 
-  // Register doc://{path} resource template
+  // Register doc://{path} resource template (supports both dev docs and HIG)
   server.registerResource(
     "appleDocumentation",
     new ResourceTemplate("doc://{path}", { list: undefined }),
     {
       title: "Apple Documentation",
-      description: "Apple Developer documentation as Markdown",
+      description: "Apple Developer documentation and Human Interface Guidelines as Markdown",
     },
     async (uri, { path }) => {
       try {
-        // Percent decode the path first, then generate URL
+        // Percent decode the path first
         const decodedPath = decodeURIComponent(path.toString())
-        const normalizedPath = normalizeDocumentationPath(decodedPath)
-        const appleUrl = generateAppleDocUrl(normalizedPath)
 
-        const jsonData = await fetchJSONData(normalizedPath)
-        const markdown = await renderFromJSON(jsonData, appleUrl)
+        // Check if this is a HIG path
+        if (decodedPath.includes("design/human-interface-guidelines")) {
+          // Handle HIG content
+          const higPath = decodedPath.replace(/^\/?(design\/human-interface-guidelines\/)/, "")
+          const sourceUrl = `https://developer.apple.com/design/human-interface-guidelines/${higPath}`
 
-        if (!markdown || markdown.trim().length < 100) {
-          throw new Error("Insufficient content in documentation")
-        }
+          const jsonData = await fetchHIGPageData(higPath)
+          const markdown = await renderHIGFromJSON(jsonData, sourceUrl)
 
-        return {
-          contents: [
-            {
-              uri: uri.href,
-              text: markdown,
-              mimeType: "text/markdown",
-            },
-          ],
+          if (!markdown || markdown.trim().length < 100) {
+            throw new Error("Insufficient content in HIG page")
+          }
+
+          return {
+            contents: [
+              {
+                uri: uri.href,
+                text: markdown,
+                mimeType: "text/markdown",
+              },
+            ],
+          }
+        } else {
+          // Handle regular developer documentation
+          const normalizedPath = normalizeDocumentationPath(decodedPath)
+          const appleUrl = generateAppleDocUrl(normalizedPath)
+
+          const jsonData = await fetchJSONData(normalizedPath)
+          const markdown = await renderFromJSON(jsonData, appleUrl)
+
+          if (!markdown || markdown.trim().length < 100) {
+            throw new Error("Insufficient content in documentation")
+          }
+
+          return {
+            contents: [
+              {
+                uri: uri.href,
+                text: markdown,
+                mimeType: "text/markdown",
+              },
+            ],
+          }
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error"
@@ -49,7 +75,7 @@ export function createMcpServer() {
           contents: [
             {
               uri: uri.href,
-              text: `Error fetching documentation: ${errorMessage}`,
+              text: `Error fetching content: ${errorMessage}`,
               mimeType: "text/plain",
             },
           ],
@@ -161,17 +187,18 @@ export function createMcpServer() {
     },
   )
 
-  // Register documentation fetch tool (complements resource template for tool-only clients)
+  // Register documentation fetch tool (supports both dev docs and HIG)
   server.registerTool(
     "fetchAppleDocumentation",
     {
       title: "Fetch Apple Documentation",
-      description: "Fetch Apple Developer documentation by path and return as markdown",
+      description:
+        "Fetch Apple Developer documentation and Human Interface Guidelines by path and return as markdown",
       inputSchema: {
         path: z
           .string()
           .describe(
-            "Full or relative documentation path (e.g., '/documentation/swift', 'swiftui/view')",
+            "Documentation path (e.g., '/documentation/swift', 'swiftui/view', 'design/human-interface-guidelines/foundations/color')",
           ),
       },
       annotations: {
@@ -183,24 +210,47 @@ export function createMcpServer() {
     },
     async ({ path }) => {
       try {
-        // Generate Apple Developer URL (path normalization handled by fetchJSONData)
-        const normalizedPath = normalizeDocumentationPath(path)
-        const appleUrl = generateAppleDocUrl(normalizedPath)
+        // Check if this is a HIG path
+        if (path.includes("design/human-interface-guidelines")) {
+          // Handle HIG content
+          const higPath = path.replace(/^\/?(design\/human-interface-guidelines\/)/, "")
+          const sourceUrl = `https://developer.apple.com/design/human-interface-guidelines/${higPath}`
 
-        const jsonData = await fetchJSONData(normalizedPath)
-        const markdown = await renderFromJSON(jsonData, appleUrl)
+          const jsonData = await fetchHIGPageData(higPath)
+          const markdown = await renderHIGFromJSON(jsonData, sourceUrl)
 
-        if (!markdown || markdown.trim().length < 100) {
-          throw new Error("Insufficient content in documentation")
-        }
+          if (!markdown || markdown.trim().length < 100) {
+            throw new Error("Insufficient content in HIG page")
+          }
 
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: markdown,
-            },
-          ],
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: markdown,
+              },
+            ],
+          }
+        } else {
+          // Handle regular developer documentation
+          const normalizedPath = normalizeDocumentationPath(path)
+          const appleUrl = generateAppleDocUrl(normalizedPath)
+
+          const jsonData = await fetchJSONData(normalizedPath)
+          const markdown = await renderFromJSON(jsonData, appleUrl)
+
+          if (!markdown || markdown.trim().length < 100) {
+            throw new Error("Insufficient content in documentation")
+          }
+
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: markdown,
+              },
+            ],
+          }
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error"
@@ -209,7 +259,7 @@ export function createMcpServer() {
           content: [
             {
               type: "text" as const,
-              text: `Error fetching documentation for "${path}": ${errorMessage}`,
+              text: `Error fetching content for "${path}": ${errorMessage}`,
             },
           ],
         }

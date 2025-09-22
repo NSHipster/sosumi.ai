@@ -1,6 +1,6 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: pedantic type check */
 import { describe, expect, it } from "vitest"
-import { renderFromJSON } from "../src/lib/render"
+import { renderFromJSON } from "../src/lib/reference"
 import {
   circularReferenceData,
   deeplyNestedData,

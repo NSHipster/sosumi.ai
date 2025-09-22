@@ -565,7 +565,7 @@
                 <br />
             </p>
             <p>
-                This service translates Apple Developer documentation pages into AI-friendly Markdown.
+                This service translates Apple Developer documentation and Human Interface Guidelines into AI-friendly Markdown.
             </p>
         </header>
 
@@ -593,9 +593,7 @@
                 <ul>
                     <li><a href="/documentation/swift">Swift</a></li>
                     <li><a href="/documentation/swiftui">SwiftUI</a></li>
-                    <li><a href="/documentation/uikit">UIKit</a></li>
-                    <li><a href="/documentation/xcode">Xcode</a></li>
-                    <li><a href="/documentation/coredata">Core Data</a></li>
+                    <li><a href="/design/human-interface-guidelines/">Human Interface Guidelines</a></li>
                 </ul>
             </section>
         </section>
@@ -744,9 +742,9 @@
                     <li>
                         <dl>
                             <dt><code>doc://{path}</code></dt>
-                            <dd><strong>Apple Developer documentation in Markdown format</strong>
-                                <br><em>Example: <code>doc://swift/array</code> returns Swift Array
-                                    documentation</em>
+                            <dd><strong>Apple Developer documentation and Human Interface Guidelines in Markdown format</strong>
+                                <br><em>Example: <code>doc://swift/array</code> returns Swift Array documentation</em>
+                                <br><em>Example: <code>doc://design/human-interface-guidelines/foundations/color</code> returns HIG Color guidelines</em>
                             </dd>
                         </dl>
                     </li>
@@ -769,9 +767,9 @@
                     <li>
                         <dl>
                             <dt><code>fetchAppleDocumentation</code></dt>
-                            <dd><strong>Fetches Apple Developer documentation by path</strong>
-                                <br>Parameters: <code>path</code> (string) - Full or relative documentation path
-                                <br><em>Returns documentation content as Markdown</em>
+                            <dd><strong>Fetches Apple Developer documentation and Human Interface Guidelines by path</strong>
+                                <br>Parameters: <code>path</code> (string) - Documentation path (e.g., '/documentation/swift', 'design/human-interface-guidelines/foundations/color')
+                                <br><em>Returns content as Markdown</em>
                             </dd>
                         </dl>
                     </li>
