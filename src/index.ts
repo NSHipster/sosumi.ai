@@ -18,6 +18,7 @@ import { generateAppleDocUrl, isValidAppleDocUrl, normalizeDocumentationPath } f
 
 interface Env {
   ASSETS: Fetcher
+  NODE_ENV: string
 }
 
 const app = new Hono<{ Bindings: Env }>()
@@ -34,19 +35,26 @@ app.use("*", async (c, next) => {
 
   // Performance headers
   c.header("Vary", "Accept")
+
+  // Development-specific headers
+  if (c.env.NODE_ENV === "development") {
+    c.header("Cache-Control", "no-store")
+  }
 })
 
 app.use("*", cors())
 
 app.use(trimTrailingSlash())
 
-app.use(
-  "*",
-  cache({
-    cacheName: "sosumi-cache",
-    cacheControl: "max-age=86400", // 24 hours
-  }),
-)
+app.use("*", async (c, next) => {
+  if (c.env.NODE_ENV !== "development") {
+    cache({
+      cacheName: "sosumi-cache",
+      cacheControl: "max-age=86400", // 24 hours
+    })
+  }
+  await next()
+})
 
 const mcpServer = createMcpServer()
 app.all("/mcp", async (c) => {
