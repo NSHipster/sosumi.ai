@@ -306,7 +306,10 @@ function renderInlineContent(
       } else if (item.type === "codeVoice") {
         return `\`${item.code}\``
       } else if (item.type === "reference") {
-        const title = item.title || item.text || ""
+        const title =
+          item.title ||
+          item.text ||
+          (item.identifier ? extractTitleFromIdentifier(item.identifier) : "")
         const url = item.identifier ? convertIdentifierToURL(item.identifier, references) : ""
         return `[${title}](${url})`
       } else if (item.type === "emphasis") {
@@ -512,23 +515,28 @@ function convertIdentifierToURL(
 /**
  * Extract title from identifier
  */
-function extractTitleFromIdentifier(identifier: string): string {
+export function extractTitleFromIdentifier(identifier: string): string {
   const parts = identifier.split("/")
   const lastPart = parts[parts.length - 1]
 
-  // Handle Swift method signatures with disambiguation suffixes
-  // e.g., "init(exactly:)-63925" -> "init(exactly:)"
-  const methodMatch = lastPart.match(/^(.+?)(?:-\w+)?$/)
-  if (methodMatch) {
-    const methodSignature = methodMatch[1]
+  // Handle disambiguation suffixes (e.g., "body-8kl5o" -> "body", "init(exactly:)-63925" -> "init(exactly:)")
+  const disambiguationMatch = lastPart.match(/^(.+?)(?:-\w+)?$/)
+  if (disambiguationMatch) {
+    const baseName = disambiguationMatch[1]
 
     // If it looks like a method signature (contains parentheses), preserve it
-    if (methodSignature.includes("(") && methodSignature.includes(")")) {
-      return methodSignature
+    if (baseName.includes("(") && baseName.includes(")")) {
+      return baseName
     }
+
+    // For simple identifiers, convert camelCase to readable format
+    return baseName
+      .replace(/([a-z])([A-Z])/g, "$1 $2")
+      .replace(/\s+/g, " ")
+      .trim()
   }
 
-  // For non-method identifiers, convert camelCase to readable format
+  // Fallback: convert camelCase to readable format
   return lastPart
     .replace(/([a-z])([A-Z])/g, "$1 $2")
     .replace(/\s+/g, " ")

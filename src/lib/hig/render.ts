@@ -2,15 +2,16 @@
  * Human Interface Guidelines (HIG) rendering functionality
  */
 
+import { extractTitleFromIdentifier } from "../reference/render"
 import type { ContentItem, TextFragment } from "../types"
 import type {
+  HIGExternalReference,
+  HIGImageReference,
   HIGPageJSON,
+  HIGReference,
   HIGTableOfContents,
   HIGTocItem,
   HIGTopicSection,
-  HIGReference,
-  HIGImageReference,
-  HIGExternalReference,
 } from "./types"
 import { isHIGImageReference } from "./util"
 
@@ -281,7 +282,11 @@ function renderHIGInlineContent(
           reference && !isHIGImageReference(reference)
             ? (reference as HIGReference | HIGExternalReference).title
             : undefined
-        const title = item.title || item.text || refTitle || ""
+        const title =
+          item.title ||
+          item.text ||
+          refTitle ||
+          (item.identifier ? extractTitleFromIdentifier(item.identifier) : "")
         const url = reference ? (isHIGImageReference(reference) ? "#" : reference.url) : "#"
         return `[${title}](${url})`
       } else if (item.type === "emphasis") {
