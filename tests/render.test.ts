@@ -482,6 +482,42 @@ describe("Render Function", () => {
         expect(result).toContain(`[${signature}]`)
       }
     })
+
+    it("should handle disambiguation suffixes correctly", async () => {
+      const disambiguationIdentifiers = [
+        {
+          id: "doc://test/body-8kl5o",
+          expectedTitle: "body",
+        },
+        {
+          id: "doc://test/someProperty-abc123",
+          expectedTitle: "some Property",
+        },
+        {
+          id: "doc://test/myMethod-xyz789",
+          expectedTitle: "my Method",
+        },
+        {
+          id: "doc://test/init(exactly:)-63925",
+          expectedTitle: "init(exactly:)",
+        },
+      ]
+
+      for (const test of disambiguationIdentifiers) {
+        const data = {
+          metadata: { title: "Disambiguation Test" },
+          topicSections: [
+            {
+              title: "Properties",
+              identifiers: [test.id],
+            },
+          ],
+        }
+
+        const result = await renderFromJSON(data as any, "https://test.com")
+        expect(result).toContain(`[${test.expectedTitle}]`)
+      }
+    })
   })
 
   describe("Platform Information Rendering", () => {
