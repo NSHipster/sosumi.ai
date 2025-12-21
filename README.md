@@ -109,6 +109,14 @@ replace `sosumi.ai` with the local server address
 > See the [Hono docs](https://hono.dev/docs/getting-started/basic)
 > for more information about deploying to different platforms.
 
+### Chrome Extension
+
+A community-contributed 
+[Chrome extension](https://chromewebstore.google.com/detail/donffakeimppgoehccpfhlchmbfdmfpj?utm_source=item-share-cb) 
+adds a "Copy sosumi Link" button to Apple Developer documentation pages,
+making it easy to convert and copy URLs for use with AI tools.
+[Source code](https://github.com/FromAtom/Link-Generator-for-sosumi.ai) is available on GitHub.
+
 ## Development
 
 ### Testing
