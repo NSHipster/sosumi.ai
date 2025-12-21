@@ -64,6 +64,14 @@ See [the website](https://sosumi.ai/#clients) for client-specific instructions.
   - Parameters: `path` (string) - Documentation path (e.g., '/documentation/swift', 'swiftui/view', 'design/human-interface-guidelines/foundations/color')
   - Returns content as Markdown
 
+### Chrome Extension
+
+You can also use Sosumi from a community-contributed 
+[Chrome extension](https://chromewebstore.google.com/detail/donffakeimppgoehccpfhlchmbfdmfpj?utm_source=item-share-cb),
+which adds a "Copy sosumi Link" button 
+to Apple Developer documentation pages.
+[Source code](https://github.com/FromAtom/Link-Generator-for-sosumi.ai) is available on GitHub.
+
 ## Self-Hosting
 
 This project is designed to be easily run on your own machine
