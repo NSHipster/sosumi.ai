@@ -111,10 +111,10 @@ replace `sosumi.ai` with the local server address
 
 ### Chrome Extension
 
-A community-contributed 
-[Chrome extension](https://chromewebstore.google.com/detail/donffakeimppgoehccpfhlchmbfdmfpj?utm_source=item-share-cb) 
-adds a "Copy sosumi Link" button to Apple Developer documentation pages,
-making it easy to convert and copy URLs for use with AI tools.
+You can also use Sosumi from a community-contributed 
+[Chrome extension](https://chromewebstore.google.com/detail/donffakeimppgoehccpfhlchmbfdmfpj?utm_source=item-share-cb),
+which adds a "Copy sosumi Link" button 
+to Apple Developer documentation pages.
 [Source code](https://github.com/FromAtom/Link-Generator-for-sosumi.ai) is available on GitHub.
 
 ## Development
