@@ -89,7 +89,7 @@ Sosumi.ai is currently hosted by
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/nshipster/sosumi.ai.git
+   git clone https://github.com/NSHipster/sosumi.ai.git
    cd sosumi.ai
    ```
 
