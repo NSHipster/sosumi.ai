@@ -279,10 +279,48 @@ function renderContentArray(
         : ""
       const cleanContent = asideContent.trim().replace(/\n/g, "\n> ")
       markdown += `> [!${calloutType}]\n> ${cleanContent}\n\n`
+    } else if (item.type === "table") {
+      markdown += renderTable(item, references, depth)
     }
   }
 
   return markdown
+}
+
+/**
+ * Render a table content item to markdown.
+ * Apple's JSON uses header: "row" (first row is header) and rows where each cell is ContentItem[].
+ */
+function renderTable(
+  item: ContentItem,
+  references?: Record<string, ContentItem>,
+  depth: number = 0,
+): string {
+  const table = item as ContentItem & {
+    header?: string
+    rows?: ContentItem[][][] // rows[rowIndex][cellIndex] = ContentItem[]
+  }
+  const rows = table.rows ?? []
+  if (rows.length === 0) return ""
+
+  const escapeCell = (s: string) => s.replace(/\|/g, "\\|").replace(/\n/g, " ").trim()
+  const renderCell = (cell: ContentItem | ContentItem[]) => {
+    const items = Array.isArray(cell) ? cell : [cell]
+    const s = renderContentArray(items, references, depth + 1)
+    return escapeCell(s)
+  }
+
+  const firstRowIsHeader = table.header === "row"
+  let markdown = ""
+  rows.forEach((row, rowIndex) => {
+    const cells = row.map((c) => renderCell(c))
+    if (cells.length === 0) return
+    markdown += `| ${cells.join(" | ")} |\n`
+    if (firstRowIsHeader && rowIndex === 0) {
+      markdown += `| ${cells.map(() => "---").join(" | ")} |\n`
+    }
+  })
+  return markdown ? `${markdown}\n` : ""
 }
 
 /**
