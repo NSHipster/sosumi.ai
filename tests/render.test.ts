@@ -264,6 +264,52 @@ describe("Render Function", () => {
     })
   })
 
+  describe("Table rendering", () => {
+    it("should render tables with header row and body rows", async () => {
+      const data = {
+        metadata: { title: "Import Options" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [
+              {
+                type: "table",
+                header: "row",
+                rows: [
+                  [
+                    [{ type: "paragraph", inlineContent: [{ type: "text", text: "Attributes" }] }],
+                    [{ type: "paragraph", inlineContent: [{ type: "text", text: "Description" }] }],
+                  ],
+                  [
+                    [
+                      {
+                        type: "paragraph",
+                        inlineContent: [{ type: "codeVoice", code: "key" }],
+                      },
+                    ],
+                    [
+                      {
+                        type: "paragraph",
+                        inlineContent: [
+                          { type: "text", text: "The value for the import option." },
+                        ],
+                      },
+                    ],
+                  ],
+                ],
+              },
+            ],
+          },
+        ],
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).toContain("| Attributes | Description |")
+      expect(result).toContain("| --- | --- |")
+      expect(result).toContain("| `key` | The value for the import option. |")
+    })
+  })
+
   describe("URL Conversion", () => {
     it("should convert SwiftUI doc identifiers to proper URLs", async () => {
       const data = {
