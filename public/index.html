@@ -594,8 +594,33 @@
                     <li><a href="/documentation/swift">Swift</a></li>
                     <li><a href="/documentation/swiftui">SwiftUI</a></li>
                     <li><a href="/design/human-interface-guidelines/">Human Interface Guidelines</a></li>
+                    <li><a
+                            href="/external/https://apple.github.io/swift-argument-parser/documentation/argumentparser/">Swift
+                            Argument Parser (external)</a></li>
+                    <li><a
+                            href="/external/https://swiftpackageindex.com/pointfreeco/swift-composable-architecture/1.23.1/documentation/composablearchitecture">The
+                            Composable Architecture (external)</a></li>
                 </ul>
             </section>
+        </section>
+
+
+        <section id="bot">
+            <header>
+                <h2>Bot & Crawling Policy</h2>
+                <p>
+                    Automated fetches with the user agent
+                    <code>sosumi-ai/1.0 (+https://sosumi.ai/#bot)</code>.
+                </p>
+                <p>
+                    For external Swift-DocC hosts, sosumi.ai honors
+                    <code>robots.txt</code> rules and opt-out response directives such as
+                    <code>X-Robots-Tag: noai</code>.
+                </p>
+                <p>
+                    Questions or issues: <a href="mailto:info@sosumi.ai">info@sosumi.ai</a>
+                </p>
+            </header>
         </section>
 
 
@@ -769,6 +794,15 @@
                             <dt><code>fetchAppleDocumentation</code></dt>
                             <dd><strong>Fetches Apple Developer documentation and Human Interface Guidelines by path</strong>
                                 <br>Parameters: <code>path</code> (string) - Documentation path (e.g., '/documentation/swift', 'design/human-interface-guidelines/foundations/color')
+                                <br><em>Returns content as Markdown</em>
+                            </dd>
+                        </dl>
+                    </li>
+                    <li>
+                        <dl>
+                            <dt><code>fetchExternalDocumentation</code></dt>
+                            <dd><strong>Fetches external Swift-DocC documentation by absolute HTTPS URL</strong>
+                                <br>Parameters: <code>url</code> (string) - External URL (e.g., 'https://apple.github.io/swift-argument-parser/documentation/argumentparser')
                                 <br><em>Returns content as Markdown</em>
                             </dd>
                         </dl>

@@ -4,17 +4,25 @@
 
 import type { AppleDocJSON, ContentItem, IndexContentItem, TopicSection, Variant } from "./types"
 
+interface RenderOptions {
+  externalOrigin?: string
+}
+
 /**
  * Render JSON-based extracted content to markdown
  */
-export async function renderFromJSON(jsonData: AppleDocJSON, sourceUrl: string): Promise<string> {
+export async function renderFromJSON(
+  jsonData: AppleDocJSON,
+  sourceUrl: string,
+  options: RenderOptions = {},
+): Promise<string> {
   let markdown = ""
 
   // Generate front matter
   markdown += generateFrontMatterFromJSON(jsonData, sourceUrl)
 
   // Add navigation breadcrumbs
-  const breadcrumbs = generateBreadcrumbs(sourceUrl)
+  const breadcrumbs = generateBreadcrumbs(sourceUrl, options.externalOrigin)
   if (breadcrumbs) {
     markdown += breadcrumbs
   }
@@ -62,14 +70,18 @@ export async function renderFromJSON(jsonData: AppleDocJSON, sourceUrl: string):
     // Add parameters
     const parametersSection = jsonData.primaryContentSections.find((s) => s.kind === "parameters")
     if (parametersSection?.parameters) {
-      markdown += renderParameters(parametersSection.parameters, jsonData.references)
+      markdown += renderParameters(
+        parametersSection.parameters,
+        jsonData.references,
+        options.externalOrigin,
+      )
     }
 
     // Add content sections
     const contentSections = jsonData.primaryContentSections.filter((s) => s.kind === "content")
     for (const section of contentSections) {
       if (section.content) {
-        markdown += renderContent(section.content, jsonData.references)
+        markdown += renderContent(section.content, jsonData.references, options.externalOrigin)
       }
     }
   }
@@ -80,25 +92,36 @@ export async function renderFromJSON(jsonData: AppleDocJSON, sourceUrl: string):
       jsonData.relationshipsSections,
       jsonData.variants,
       jsonData.references,
+      options.externalOrigin,
     )
   }
 
   // Add topic sections
   if (jsonData.topicSections) {
-    markdown += renderTopicSections(jsonData.topicSections, jsonData.variants, jsonData.references)
+    markdown += renderTopicSections(
+      jsonData.topicSections,
+      jsonData.variants,
+      jsonData.references,
+      options.externalOrigin,
+    )
   }
 
   // Add index content for framework pages
   if (jsonData.interfaceLanguages?.swift) {
     const swiftContent = jsonData.interfaceLanguages.swift[0]
     if (swiftContent.children) {
-      markdown += renderIndexContent(swiftContent.children)
+      markdown += renderIndexContent(swiftContent.children, options.externalOrigin)
     }
   }
 
   // Add see also sections
   if (jsonData.seeAlsoSections) {
-    markdown += renderSeeAlso(jsonData.seeAlsoSections, jsonData.variants, jsonData.references)
+    markdown += renderSeeAlso(
+      jsonData.seeAlsoSections,
+      jsonData.variants,
+      jsonData.references,
+      options.externalOrigin,
+    )
   }
 
   // Trim whitespace
@@ -147,21 +170,27 @@ function generateFrontMatterFromJSON(jsonData: AppleDocJSON, sourceUrl: string):
 /**
  * Generate breadcrumb navigation
  */
-function generateBreadcrumbs(sourceUrl: string): string {
+function generateBreadcrumbs(sourceUrl: string, externalOrigin?: string): string {
   const url = new URL(sourceUrl)
   const pathParts = url.pathname.split("/").filter(Boolean)
+  const documentationIndex = pathParts.indexOf("documentation")
 
-  if (pathParts.length < 3) return "" // Need at least /documentation/framework
+  if (documentationIndex === -1 || pathParts.length <= documentationIndex + 2) {
+    return ""
+  }
 
-  const framework = pathParts[1]
-  let breadcrumbs = `**Navigation:** [${framework.charAt(0).toUpperCase() + framework.slice(1)}](/documentation/${framework})`
+  const framework = pathParts[documentationIndex + 1]
+  let breadcrumbs = `**Navigation:** [${framework.charAt(0).toUpperCase() + framework.slice(1)}](${rewriteDocumentationPath(
+    `/documentation/${framework}`,
+    externalOrigin,
+  )})`
 
-  if (pathParts.length > 2) {
+  if (pathParts.length > documentationIndex + 2) {
     // Add intermediate breadcrumbs if needed
-    for (let i = 2; i < pathParts.length - 1; i++) {
+    for (let i = documentationIndex + 2; i < pathParts.length - 1; i++) {
       const part = pathParts[i]
-      const path = pathParts.slice(0, i + 1).join("/")
-      breadcrumbs += ` › [${part}](/${path})`
+      const path = pathParts.slice(documentationIndex, i + 1).join("/")
+      breadcrumbs += ` › [${part}](${rewriteDocumentationPath(`/${path}`, externalOrigin)})`
     }
   }
 
@@ -196,6 +225,7 @@ function renderDeclarations(declarations: Array<{ tokens?: Array<{ text?: string
 function renderParameters(
   parameters: Array<{ name: string; content?: ContentItem[] }>,
   references?: Record<string, ContentItem>,
+  externalOrigin?: string,
 ): string {
   if (parameters.length === 0) return ""
 
@@ -204,7 +234,7 @@ function renderParameters(
   for (const param of parameters) {
     markdown += `**${param.name}**\n\n`
     if (param.content && Array.isArray(param.content)) {
-      const paramText = renderContentArray(param.content, references, 0)
+      const paramText = renderContentArray(param.content, references, 0, externalOrigin)
       markdown += `${paramText}\n\n`
     }
   }
@@ -215,8 +245,12 @@ function renderParameters(
 /**
  * Render main content sections
  */
-function renderContent(content: ContentItem[], references?: Record<string, ContentItem>): string {
-  return renderContentArray(content, references)
+function renderContent(
+  content: ContentItem[],
+  references?: Record<string, ContentItem>,
+  externalOrigin?: string,
+): string {
+  return renderContentArray(content, references, 0, externalOrigin)
 }
 
 /**
@@ -226,6 +260,7 @@ function renderContentArray(
   content: ContentItem[],
   references?: Record<string, ContentItem>,
   depth: number = 0,
+  externalOrigin?: string,
 ): string {
   // Prevent infinite recursion by limiting depth
   if (depth > 50) {
@@ -242,7 +277,7 @@ function renderContentArray(
       markdown += `${hashes} ${item.text}\n\n`
     } else if (item.type === "paragraph") {
       if (item.inlineContent) {
-        const text = renderInlineContent(item.inlineContent, references, depth)
+        const text = renderInlineContent(item.inlineContent, references, depth, externalOrigin)
         markdown += `${text}\n\n`
       }
     } else if (item.type === "codeListing") {
@@ -258,7 +293,12 @@ function renderContentArray(
     } else if (item.type === "unorderedList") {
       if (item.items) {
         for (const listItem of item.items) {
-          const itemText = renderContentArray(listItem.content || [], references, depth + 1)
+          const itemText = renderContentArray(
+            listItem.content || [],
+            references,
+            depth + 1,
+            externalOrigin,
+          )
           markdown += `- ${itemText.replace(/\n\n$/, "")}\n`
         }
         markdown += "\n"
@@ -266,7 +306,12 @@ function renderContentArray(
     } else if (item.type === "orderedList") {
       if (item.items) {
         item.items.forEach((listItem: ContentItem, index: number) => {
-          const itemText = renderContentArray(listItem.content || [], references, depth + 1)
+          const itemText = renderContentArray(
+            listItem.content || [],
+            references,
+            depth + 1,
+            externalOrigin,
+          )
           markdown += `${index + 1}. ${itemText.replace(/\n\n$/, "")}\n`
         })
         markdown += "\n"
@@ -275,12 +320,12 @@ function renderContentArray(
       const style = item.style || "note"
       const calloutType = mapAsideStyleToCallout(style)
       const asideContent = item.content
-        ? renderContentArray(item.content, references, depth + 1)
+        ? renderContentArray(item.content, references, depth + 1, externalOrigin)
         : ""
       const cleanContent = asideContent.trim().replace(/\n/g, "\n> ")
       markdown += `> [!${calloutType}]\n> ${cleanContent}\n\n`
     } else if (item.type === "table") {
-      markdown += renderTable(item, references, depth)
+      markdown += renderTable(item, references, depth, externalOrigin)
     }
   }
 
@@ -295,6 +340,7 @@ function renderTable(
   item: ContentItem,
   references?: Record<string, ContentItem>,
   depth: number = 0,
+  externalOrigin?: string,
 ): string {
   const table = item as ContentItem & {
     header?: string
@@ -306,7 +352,7 @@ function renderTable(
   const escapeCell = (s: string) => s.replace(/\|/g, "\\|").replace(/\n/g, " ").trim()
   const renderCell = (cell: ContentItem | ContentItem[]) => {
     const items = Array.isArray(cell) ? cell : [cell]
-    const s = renderContentArray(items, references, depth + 1)
+    const s = renderContentArray(items, references, depth + 1, externalOrigin)
     return escapeCell(s)
   }
 
@@ -330,6 +376,7 @@ function renderInlineContent(
   inlineContent: ContentItem[],
   references?: Record<string, ContentItem>,
   depth: number = 0,
+  externalOrigin?: string,
 ): string {
   // Prevent infinite recursion by limiting depth
   if (depth > 20) {
@@ -348,12 +395,14 @@ function renderInlineContent(
           item.title ||
           item.text ||
           (item.identifier ? extractTitleFromIdentifier(item.identifier) : "")
-        const url = item.identifier ? convertIdentifierToURL(item.identifier, references) : ""
+        const url = item.identifier
+          ? convertIdentifierToURL(item.identifier, references, externalOrigin)
+          : ""
         return `[${title}](${url})`
       } else if (item.type === "emphasis") {
-        return `*${item.inlineContent ? renderInlineContent(item.inlineContent, references, depth + 1) : ""}*`
+        return `*${item.inlineContent ? renderInlineContent(item.inlineContent, references, depth + 1, externalOrigin) : ""}*`
       } else if (item.type === "strong") {
-        return `**${item.inlineContent ? renderInlineContent(item.inlineContent, references, depth + 1) : ""}**`
+        return `**${item.inlineContent ? renderInlineContent(item.inlineContent, references, depth + 1, externalOrigin) : ""}**`
       }
       return item.text || ""
     })
@@ -367,6 +416,7 @@ function renderRelationships(
   relationships: ContentItem[],
   variants?: Variant[],
   references?: Record<string, ContentItem>,
+  externalOrigin?: string,
 ): string {
   let markdown = ""
 
@@ -377,7 +427,7 @@ function renderRelationships(
         const info = variants?.find((v: Variant) => v.identifier === id)
         const reference = references?.[id]
         const title = info?.title || reference?.title || extractTitleFromIdentifier(id)
-        const url = convertIdentifierToURL(id, references)
+        const url = convertIdentifierToURL(id, references, externalOrigin)
         markdown += `- [${title}](${url})\n`
       }
       markdown += "\n"
@@ -394,6 +444,7 @@ function renderTopicSections(
   topics: TopicSection[],
   variants?: Variant[],
   references?: Record<string, ContentItem>,
+  externalOrigin?: string,
 ): string {
   let markdown = ""
 
@@ -407,7 +458,7 @@ function renderTopicSections(
           const reference = references?.[id]
           if (info || reference) {
             const title = info?.title || reference?.title || extractTitleFromIdentifier(id)
-            const url = convertIdentifierToURL(id, references)
+            const url = convertIdentifierToURL(id, references, externalOrigin)
             const abstract = info?.abstract
               ? info.abstract.map((a: { text: string }) => a.text).join("")
               : reference?.abstract
@@ -421,7 +472,7 @@ function renderTopicSections(
             markdown += "\n"
           } else {
             const title = extractTitleFromIdentifier(id)
-            const url = convertIdentifierToURL(id, references)
+            const url = convertIdentifierToURL(id, references, externalOrigin)
             markdown += `- [${title}](${url})\n`
           }
         }
@@ -436,14 +487,18 @@ function renderTopicSections(
 /**
  * Render index content for framework pages
  */
-function renderIndexContent(children: IndexContentItem[]): string {
-  return renderIndexContentWithIndent(children, 2)
+function renderIndexContent(children: IndexContentItem[], externalOrigin?: string): string {
+  return renderIndexContentWithIndent(children, 2, externalOrigin)
 }
 
 /**
  * Render index content with proper indentation and spacing
  */
-function renderIndexContentWithIndent(children: IndexContentItem[], headingLevel: number): string {
+function renderIndexContentWithIndent(
+  children: IndexContentItem[],
+  headingLevel: number,
+  externalOrigin?: string,
+): string {
   let markdown = ""
 
   for (let i = 0; i < children.length; i++) {
@@ -462,13 +517,18 @@ function renderIndexContentWithIndent(children: IndexContentItem[], headingLevel
       const beta = child.beta ? " **Beta**" : ""
 
       // List items are always unindented under their heading
-      markdown += `- [${child.title}](${child.path})${beta}\n`
+      const rewrittenPath = rewriteDocumentationPath(child.path, externalOrigin)
+      markdown += `- [${child.title}](${rewrittenPath})${beta}\n`
 
       if (child.children) {
         // Add spacing before nested content
         markdown += "\n"
         // Nested content gets a deeper heading level
-        const nestedContent = renderIndexContentWithIndent(child.children, headingLevel + 1)
+        const nestedContent = renderIndexContentWithIndent(
+          child.children,
+          headingLevel + 1,
+          externalOrigin,
+        )
         markdown += nestedContent
       }
     }
@@ -484,6 +544,7 @@ function renderSeeAlso(
   seeAlso: Array<{ title: string; identifiers?: string[] }>,
   variants?: Variant[],
   references?: Record<string, ContentItem>,
+  externalOrigin?: string,
 ): string {
   let markdown = ""
 
@@ -494,7 +555,7 @@ function renderSeeAlso(
         const info = variants?.find((v: Variant) => v.identifier === id)
         const reference = references?.[id]
         const title = info?.title || reference?.title || extractTitleFromIdentifier(id)
-        const url = convertIdentifierToURL(id, references)
+        const url = convertIdentifierToURL(id, references, externalOrigin)
         markdown += `- [${title}](${url})\n`
       }
       markdown += "\n"
@@ -530,24 +591,42 @@ function mapAsideStyleToCallout(style: string): string {
 function convertIdentifierToURL(
   identifier: string,
   references?: Record<string, ContentItem>,
+  externalOrigin?: string,
 ): string {
   // Check if we have a reference with a URL for this identifier
   const reference = references?.[identifier]
   if (reference?.url) {
-    return reference.url
+    return rewriteDocumentationPath(reference.url, externalOrigin)
   }
 
   if (identifier.startsWith("doc://com.apple.SwiftUI/documentation/")) {
     const path = identifier.replace("doc://com.apple.SwiftUI/documentation/", "/documentation/")
-    return path
+    return rewriteDocumentationPath(path, externalOrigin)
   } else if (identifier.startsWith("doc://com.apple.")) {
     // Handle other Apple docs
     const matches = identifier.match(/\/documentation\/(.+)/)
     if (matches) {
-      return `/documentation/${matches[1]}`
+      return rewriteDocumentationPath(`/documentation/${matches[1]}`, externalOrigin)
+    }
+  } else if (identifier.startsWith("doc://")) {
+    const matches = identifier.match(/\/documentation\/(.+)/)
+    if (matches) {
+      return rewriteDocumentationPath(`/documentation/${matches[1]}`, externalOrigin)
     }
   }
   return identifier
+}
+
+function rewriteDocumentationPath(path: string | undefined, externalOrigin?: string): string {
+  if (!path) {
+    return ""
+  }
+
+  if (!externalOrigin || !path.startsWith("/documentation/")) {
+    return path
+  }
+
+  return `/external/${externalOrigin}${path}`
 }
 
 /**

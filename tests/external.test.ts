@@ -1,0 +1,200 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { fetchExternalDocCJSON } from "../src/lib/external"
+import {
+  EXTERNAL_DOC_USER_AGENT,
+  assertExternalDocumentationAccess,
+  ExternalAccessError,
+  validateExternalDocumentationUrl,
+} from "../src/lib/external/policy"
+import { renderFromJSON } from "../src/lib/reference"
+
+describe("External Swift-DocC support", () => {
+  const originalFetch = global.fetch
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    global.fetch = originalFetch
+  })
+
+  it("should reject non-https external URLs", () => {
+    expect(() =>
+      validateExternalDocumentationUrl(
+        "http://apple.github.io/swift-argument-parser/documentation/argumentparser",
+      ),
+    ).toThrow(/Only https/)
+  })
+
+  it("should enforce host blocklist", async () => {
+    await expect(
+      assertExternalDocumentationAccess(
+        new URL("https://apple.github.io/swift-argument-parser/documentation/argumentparser"),
+        {
+          EXTERNAL_DOC_HOST_BLOCKLIST: "example.com\napple.github.io",
+        },
+      ),
+    ).rejects.toThrow(/blocked by configuration/)
+  })
+
+  it("should enforce host allowlist when configured", async () => {
+    await expect(
+      assertExternalDocumentationAccess(
+        new URL("https://apple.github.io/swift-argument-parser/documentation/argumentparser"),
+        {
+          EXTERNAL_DOC_HOST_ALLOWLIST: "developer.apple.com\nswift.org",
+        },
+      ),
+    ).rejects.toThrow(/not allowlisted/)
+  })
+
+  it("should deny when robots.txt disallows", async () => {
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response("User-agent: *\nDisallow: /swift-argument-parser/documentation/", {
+        status: 200,
+        headers: { "Content-Type": "text/plain" },
+      }),
+    )
+
+    await expect(
+      assertExternalDocumentationAccess(
+        new URL("https://apple.github.io/swift-argument-parser/documentation/argumentparser"),
+        {},
+      ),
+    ).rejects.toThrow(/robots\.txt/)
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://apple.github.io/robots.txt",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "User-Agent": EXTERNAL_DOC_USER_AGENT,
+        }),
+      }),
+    )
+  })
+
+  it("should cache robots.txt policy per origin to reduce repeated fetches", async () => {
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response("User-agent: *\nAllow: /", {
+        status: 200,
+        headers: { "Content-Type": "text/plain" },
+      }),
+    )
+
+    await assertExternalDocumentationAccess(
+      new URL("https://docs.example.com/documentation/one"),
+      {},
+    )
+    await assertExternalDocumentationAccess(
+      new URL("https://docs.example.com/documentation/two"),
+      {},
+    )
+
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+  })
+
+  it("should build and fetch external DocC JSON", async () => {
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ metadata: { title: "Daily" } }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    )
+
+    const data = await fetchExternalDocCJSON(
+      new URL("https://apple.github.io/documentation/argumentparser"),
+    )
+
+    expect(data.metadata?.title).toBe("Daily")
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://apple.github.io/data/documentation/argumentparser.json",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Accept: "application/json",
+        }),
+      }),
+    )
+  })
+
+  it("should build and fetch external DocC JSON for hosted base paths", async () => {
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ metadata: { title: "ArgumentParser" } }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    )
+
+    const data = await fetchExternalDocCJSON(
+      new URL("https://apple.github.io/swift-argument-parser/documentation/argumentparser"),
+    )
+
+    expect(data.metadata?.title).toBe("ArgumentParser")
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://apple.github.io/swift-argument-parser/data/documentation/argumentparser.json",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Accept: "application/json",
+        }),
+      }),
+    )
+  })
+
+  it("should honor restrictive X-Robots-Tag on external JSON responses", async () => {
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ metadata: { title: "Daily" } }), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "X-Robots-Tag": "noai",
+        },
+      }),
+    )
+
+    await expect(
+      fetchExternalDocCJSON(new URL("https://apple.github.io/documentation/argumentparser")),
+    ).rejects.toThrow(ExternalAccessError)
+  })
+
+  it("should rewrite relative /documentation links for external origins", async () => {
+    const result = await renderFromJSON(
+      {
+        metadata: { title: "Daily" },
+        topicSections: [
+          {
+            title: "Classes",
+            identifiers: [
+              "doc://org.swift.ArgumentParser/documentation/ArgumentParser/ArgumentParser",
+            ],
+          },
+        ],
+        references: {
+          "doc://org.swift.ArgumentParser/documentation/ArgumentParser/ArgumentParser": {
+            title: "ArgumentParser",
+            url: "/documentation/argumentparser/argumentparser",
+          },
+        },
+      },
+      "https://apple.github.io/documentation/argumentparser",
+      { externalOrigin: "https://apple.github.io" },
+    )
+
+    expect(result).toContain(
+      "[ArgumentParser](/external/https://apple.github.io/documentation/argumentparser/argumentparser)",
+    )
+  })
+
+  it("should build navigation for nested hosted base-path documentation URLs", async () => {
+    const result = await renderFromJSON(
+      {
+        metadata: { title: "ArgumentParser" },
+      },
+      "https://apple.github.io/swift-argument-parser/documentation/argumentparser/commandconfiguration",
+      { externalOrigin: "https://apple.github.io/swift-argument-parser" },
+    )
+
+    expect(result).toContain(
+      "**Navigation:** [Argumentparser](/external/https://apple.github.io/swift-argument-parser/documentation/argumentparser)",
+    )
+  })
+})

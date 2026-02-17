@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { buildExternalDocCJsonUrl } from "../src/lib/external"
 import { generateAppleDocUrl, isValidAppleDocUrl, normalizeDocumentationPath } from "../src/lib/url"
 
 describe("URL Helper Functions", () => {
@@ -211,6 +212,32 @@ describe("URL Helper Functions", () => {
       expect(normalizedPath).toBe("invalid/path/with/special/chars!@#")
       expect(url).toBe(
         "https://developer.apple.com/documentation/invalid/path/with/special/chars!@#",
+      )
+    })
+  })
+
+  describe("external DocC URL generation", () => {
+    it("should convert external documentation URLs to data JSON URLs", () => {
+      const jsonUrl = buildExternalDocCJsonUrl(
+        new URL("https://reference-ios.daily.co/documentation/daily"),
+      )
+      expect(jsonUrl.toString()).toBe(
+        "https://reference-ios.daily.co/data/documentation/daily.json",
+      )
+    })
+
+    it("should convert external documentation URLs hosted under a base path", () => {
+      const jsonUrl = buildExternalDocCJsonUrl(
+        new URL("https://apple.github.io/swift-argument-parser/documentation/argumentparser"),
+      )
+      expect(jsonUrl.toString()).toBe(
+        "https://apple.github.io/swift-argument-parser/data/documentation/argumentparser.json",
+      )
+    })
+
+    it("should reject non-DocC paths", () => {
+      expect(() => buildExternalDocCJsonUrl(new URL("https://example.com/docs/daily"))).toThrow(
+        /Swift-DocC documentation path/,
       )
     })
   })
