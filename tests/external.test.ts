@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { fetchExternalDocCJSON } from "../src/lib/external"
 import {
+  decodeExternalTargetPath,
   EXTERNAL_DOC_USER_AGENT,
   assertExternalDocumentationAccess,
   ExternalAccessError,
@@ -25,6 +26,10 @@ describe("External Swift-DocC support", () => {
         "http://apple.github.io/swift-argument-parser/documentation/argumentparser",
       ),
     ).toThrow(/Only https/)
+  })
+
+  it("should reject malformed percent-encoded external paths", () => {
+    expect(() => decodeExternalTargetPath("/external/%E0%A4%A")).toThrow(/Invalid external URL/)
   })
 
   it("should enforce host blocklist", async () => {
@@ -114,6 +119,22 @@ describe("External Swift-DocC support", () => {
         {},
       ),
     ).resolves.toBeUndefined()
+  })
+
+  it("should deny when robots has Disallow: / even with empty Allow:", async () => {
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response("User-agent: *\nAllow:\nDisallow: /", {
+        status: 200,
+        headers: { "Content-Type": "text/plain" },
+      }),
+    )
+
+    await expect(
+      assertExternalDocumentationAccess(
+        new URL("https://deny-all.example.com/documentation/example"),
+        {},
+      ),
+    ).rejects.toThrow(/robots\.txt/)
   })
 
   it("should cache robots.txt policy per origin to reduce repeated fetches", async () => {

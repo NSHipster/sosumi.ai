@@ -42,6 +42,14 @@ export function validateExternalDocumentationUrl(rawUrl: string): URL {
   return parsedUrl
 }
 
+export function decodeExternalTargetPath(path: string): string {
+  try {
+    return decodeURIComponent(path.replace("/external/", ""))
+  } catch {
+    throw new ExternalAccessError("Invalid external URL.", 400)
+  }
+}
+
 export async function assertExternalDocumentationAccess(
   targetUrl: URL,
   env: ExternalPolicyEnv,

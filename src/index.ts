@@ -8,6 +8,7 @@ import { trimTrailingSlash } from "hono/trailing-slash"
 import { NotFoundError } from "./lib/fetch"
 import {
   assertExternalDocumentationAccess,
+  decodeExternalTargetPath,
   extractExternalDocumentationBasePath,
   ExternalAccessError,
   fetchExternalDocCJSON,
@@ -166,12 +167,7 @@ This service only works with Apple Developer documentation URLs:
 
 app.get("/external/*", async (c) => {
   const path = c.req.path
-  let rawTarget: string
-  try {
-    rawTarget = decodeURIComponent(path.replace("/external/", ""))
-  } catch {
-    throw new ExternalAccessError("Invalid external URL.", 400)
-  }
+  const rawTarget = decodeExternalTargetPath(path)
   const targetUrl = validateExternalDocumentationUrl(rawTarget)
 
   await assertExternalDocumentationAccess(targetUrl, c.env)

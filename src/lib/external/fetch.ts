@@ -1,5 +1,12 @@
 import type { AppleDocJSON } from "../types"
-import { EXTERNAL_DOC_USER_AGENT, ExternalAccessError } from "./policy"
+import { renderFromJSON } from "../reference"
+import type { ExternalPolicyEnv } from "./policy"
+import {
+  assertExternalDocumentationAccess,
+  EXTERNAL_DOC_USER_AGENT,
+  ExternalAccessError,
+  validateExternalDocumentationUrl,
+} from "./policy"
 
 const RESTRICTIVE_X_ROBOTS_TAGS = ["none", "noindex", "noai", "noimageai"] as const
 
@@ -54,6 +61,19 @@ export async function fetchExternalDocCJSON(sourceUrl: URL): Promise<AppleDocJSO
   }
 
   return (await response.json()) as AppleDocJSON
+}
+
+export async function fetchExternalDocumentationMarkdown(
+  url: string,
+  externalPolicyEnv: ExternalPolicyEnv = {},
+): Promise<string> {
+  const targetUrl = validateExternalDocumentationUrl(url)
+  await assertExternalDocumentationAccess(targetUrl, externalPolicyEnv)
+  const jsonData = await fetchExternalDocCJSON(targetUrl)
+  const externalBasePath = extractExternalDocumentationBasePath(targetUrl)
+  return renderFromJSON(jsonData, targetUrl.toString(), {
+    externalOrigin: `${targetUrl.origin}${externalBasePath}`,
+  })
 }
 
 function containsRestrictiveXRobotsTag(headerValue: string | null): boolean {

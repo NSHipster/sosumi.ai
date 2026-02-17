@@ -1,13 +1,8 @@
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { z } from "zod"
 
-import {
-  assertExternalDocumentationAccess,
-  type ExternalPolicyEnv,
-  extractExternalDocumentationBasePath,
-  fetchExternalDocCJSON,
-  validateExternalDocumentationUrl,
-} from "./external"
+import type { ExternalPolicyEnv } from "./external"
+import { fetchExternalDocumentationMarkdown } from "./external"
 import { fetchJSONData, renderFromJSON } from "./reference"
 import { searchAppleDeveloperDocs } from "./search"
 import { generateAppleDocUrl, normalizeDocumentationPath } from "./url"
@@ -297,13 +292,7 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
     },
     async ({ url }) => {
       try {
-        const targetUrl = validateExternalDocumentationUrl(url)
-        await assertExternalDocumentationAccess(targetUrl, externalPolicyEnv)
-        const jsonData = await fetchExternalDocCJSON(targetUrl)
-        const externalBasePath = extractExternalDocumentationBasePath(targetUrl)
-        const markdown = await renderFromJSON(jsonData, targetUrl.toString(), {
-          externalOrigin: `${targetUrl.origin}${externalBasePath}`,
-        })
+        const markdown = await fetchExternalDocumentationMarkdown(url, externalPolicyEnv)
 
         if (!markdown || markdown.trim().length < 100) {
           throw new Error("Insufficient content in external documentation")
