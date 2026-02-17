@@ -349,7 +349,7 @@ ${err.message}
 
 ## Opt-out controls supported
 
-- \`robots.txt\` disallow for \`sosumi-ai-bot\` (or \`*\`)
+- \`robots.txt\` disallow for \`sosumi-ai\` (or \`*\`)
 - \`X-Robots-Tag\` response directives such as \`noai\`, \`noimageai\`, \`noindex\`
 - Local operator host controls: \`EXTERNAL_DOC_HOST_ALLOWLIST\`, \`EXTERNAL_DOC_HOST_BLOCKLIST\`
 
