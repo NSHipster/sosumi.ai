@@ -1,4 +1,3 @@
-import { NotFoundError } from "../fetch"
 import type { AppleDocJSON } from "../types"
 import { EXTERNAL_DOC_USER_AGENT, ExternalAccessError } from "./policy"
 
@@ -45,7 +44,10 @@ export async function fetchExternalDocCJSON(sourceUrl: URL): Promise<AppleDocJSO
 
   if (!response.ok) {
     if (response.status === 404) {
-      throw new NotFoundError(`External documentation page not found at ${jsonUrl.toString()}`)
+      throw new ExternalAccessError(
+        `External documentation page not found at ${jsonUrl.toString()}`,
+        404,
+      )
     }
 
     throw new Error(`Failed to fetch external DocC JSON: ${response.status} ${response.statusText}`)

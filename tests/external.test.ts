@@ -100,6 +100,22 @@ describe("External Swift-DocC support", () => {
     )
   })
 
+  it("should treat empty robots disallow as allow-all", async () => {
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response("User-agent: *\nDisallow:", {
+        status: 200,
+        headers: { "Content-Type": "text/plain" },
+      }),
+    )
+
+    await expect(
+      assertExternalDocumentationAccess(
+        new URL("https://allow-empty.example.com/documentation/example"),
+        {},
+      ),
+    ).resolves.toBeUndefined()
+  })
+
   it("should cache robots.txt policy per origin to reduce repeated fetches", async () => {
     global.fetch = vi.fn().mockResolvedValue(
       new Response("User-agent: *\nAllow: /", {
@@ -180,6 +196,20 @@ describe("External Swift-DocC support", () => {
     await expect(
       fetchExternalDocCJSON(new URL("https://apple.github.io/documentation/argumentparser")),
     ).rejects.toThrow(ExternalAccessError)
+  })
+
+  it("should return external not found as ExternalAccessError with 404", async () => {
+    global.fetch = vi.fn().mockResolvedValue(new Response("Not Found", { status: 404 }))
+
+    await expect(
+      fetchExternalDocCJSON(new URL("https://apple.github.io/documentation/argumentparser")),
+    ).rejects.toThrow(ExternalAccessError)
+
+    try {
+      await fetchExternalDocCJSON(new URL("https://apple.github.io/documentation/argumentparser"))
+    } catch (error) {
+      expect((error as ExternalAccessError).status).toBe(404)
+    }
   })
 
   it("should rewrite relative /documentation links for external origins", async () => {

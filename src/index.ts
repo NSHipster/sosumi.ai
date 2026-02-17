@@ -166,7 +166,12 @@ This service only works with Apple Developer documentation URLs:
 
 app.get("/external/*", async (c) => {
   const path = c.req.path
-  const rawTarget = decodeURIComponent(path.replace("/external/", ""))
+  let rawTarget: string
+  try {
+    rawTarget = decodeURIComponent(path.replace("/external/", ""))
+  } catch {
+    throw new ExternalAccessError("Invalid external URL.", 400)
+  }
   const targetUrl = validateExternalDocumentationUrl(rawTarget)
 
   await assertExternalDocumentationAccess(targetUrl, c.env)
@@ -356,7 +361,7 @@ The requested Apple Developer documentation page does not exist.
           error: "External documentation access denied",
           message: err.message,
         },
-        { status: err.status as 400 | 403 },
+        { status: err.status as 400 | 403 | 404 },
       )
     }
 
@@ -373,7 +378,7 @@ ${err.message}
 
 ---
 *[sosumi.ai](https://sosumi.ai) - Making docs AI-readable*`,
-      err.status as 400 | 403,
+      err.status as 400 | 403 | 404,
       { "Content-Type": "text/markdown; charset=utf-8" },
     )
   }

@@ -2,6 +2,8 @@ export const EXTERNAL_DOC_USER_AGENT = "sosumi-ai/1.0 (+https://sosumi.ai/#bot)"
 
 const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1"])
 const ROBOTS_CACHE_TTL_MS = 5 * 60 * 1000
+const ROBOTS_CACHE_MAX_ENTRIES = 1000
+const ROBOTS_INFLIGHT_MAX_ENTRIES = 1000
 const robotsPolicyCache = new Map<string, { expiresAt: number; policy: RobotsPolicyResult }>()
 const robotsPolicyInFlight = new Map<string, Promise<RobotsPolicyResult>>()
 
@@ -192,9 +194,10 @@ function userAgentMatches(ruleUserAgent: string, actualUserAgent: string): boole
 }
 
 function patternMatchesPath(pattern: string, path: string): boolean {
-  // "Disallow:" empty value means allow all.
+  // Empty "Disallow:" means allow all by producing no matching disallow rule.
+  // Empty "Allow:" is also effectively a no-op.
   if (pattern.length === 0) {
-    return true
+    return false
   }
 
   const endsWithDollar = pattern.endsWith("$")
@@ -240,6 +243,8 @@ type RobotsPolicyResult =
 
 async function getRobotsPolicy(origin: string): Promise<RobotsPolicyResult> {
   const now = Date.now()
+  pruneExpiredRobotsPolicyEntries(now)
+
   const cached = robotsPolicyCache.get(origin)
   if (cached && cached.expiresAt > now) {
     return cached.policy
@@ -256,12 +261,14 @@ async function getRobotsPolicy(origin: string): Promise<RobotsPolicyResult> {
         expiresAt: Date.now() + ROBOTS_CACHE_TTL_MS,
         policy,
       })
+      enforceMaxMapEntries(robotsPolicyCache, ROBOTS_CACHE_MAX_ENTRIES)
       return policy
     })
     .finally(() => {
       robotsPolicyInFlight.delete(origin)
     })
 
+  enforceMaxMapEntries(robotsPolicyInFlight, ROBOTS_INFLIGHT_MAX_ENTRIES, origin)
   robotsPolicyInFlight.set(origin, request)
   return request
 }
@@ -313,6 +320,27 @@ function isHostListed(hostname: string, list: Set<string>): boolean {
   }
 
   return false
+}
+
+function pruneExpiredRobotsPolicyEntries(now: number): void {
+  for (const [origin, entry] of robotsPolicyCache.entries()) {
+    if (entry.expiresAt <= now) {
+      robotsPolicyCache.delete(origin)
+    }
+  }
+}
+
+function enforceMaxMapEntries<K, V>(map: Map<K, V>, maxEntries: number, incomingKey?: K): void {
+  while (
+    map.size > maxEntries ||
+    (incomingKey !== undefined && map.size >= maxEntries && !map.has(incomingKey))
+  ) {
+    const oldestKey = map.keys().next().value
+    if (oldestKey === undefined) {
+      break
+    }
+    map.delete(oldestKey)
+  }
 }
 
 function isLocalOrPrivateHost(hostname: string): boolean {
