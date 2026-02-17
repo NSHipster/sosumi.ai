@@ -49,6 +49,32 @@ describe("External Swift-DocC support", () => {
     ).rejects.toThrow(/not allowlisted/)
   })
 
+  it("should block local and private hosts unless explicitly allowlisted", async () => {
+    const blockedHosts = ["127.0.0.1", "10.0.0.1", "192.168.1.1", "172.16.0.1", "[::1]"]
+
+    global.fetch = vi.fn()
+    for (const host of blockedHosts) {
+      await expect(
+        assertExternalDocumentationAccess(new URL(`https://${host}/documentation/example`), {}),
+      ).rejects.toThrow(/local or private host/)
+    }
+
+    // Host policy should reject before any robots.txt request is made.
+    expect(global.fetch).not.toHaveBeenCalled()
+  })
+
+  it("should allow an explicitly allowlisted private host", async () => {
+    global.fetch = vi
+      .fn()
+      .mockResolvedValue(new Response("User-agent: *\nAllow: /", { status: 200 }))
+
+    await expect(
+      assertExternalDocumentationAccess(new URL("https://127.0.0.1/documentation/example"), {
+        EXTERNAL_DOC_HOST_ALLOWLIST: "127.0.0.1",
+      }),
+    ).resolves.toBeUndefined()
+  })
+
   it("should deny when robots.txt disallows", async () => {
     global.fetch = vi.fn().mockResolvedValue(
       new Response("User-agent: *\nDisallow: /swift-argument-parser/documentation/", {

@@ -341,10 +341,11 @@ function isPrivateIPv4(hostname: string): boolean {
     return false
   }
 
-  const [a, b] = octets.map((octet) => Number.parseInt(octet, 10))
-  if (a > 255 || b > 255) {
+  const octetNumbers = octets.map((octet) => Number.parseInt(octet, 10))
+  if (octetNumbers.some((value) => value > 255)) {
     return false
   }
+  const [a, b] = octetNumbers
 
   return (
     a === 10 ||

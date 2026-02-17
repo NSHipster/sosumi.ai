@@ -3,6 +3,7 @@ import { z } from "zod"
 
 import {
   assertExternalDocumentationAccess,
+  type ExternalPolicyEnv,
   extractExternalDocumentationBasePath,
   fetchExternalDocCJSON,
   validateExternalDocumentationUrl,
@@ -12,7 +13,7 @@ import { searchAppleDeveloperDocs } from "./search"
 import { generateAppleDocUrl, normalizeDocumentationPath } from "./url"
 import { fetchHIGPageData, renderHIGFromJSON } from "./hig"
 
-export function createMcpServer() {
+export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
   const server = new McpServer({
     name: "sosumi.ai",
     version: "1.0.0",
@@ -297,7 +298,7 @@ export function createMcpServer() {
     async ({ url }) => {
       try {
         const targetUrl = validateExternalDocumentationUrl(url)
-        await assertExternalDocumentationAccess(targetUrl, {})
+        await assertExternalDocumentationAccess(targetUrl, externalPolicyEnv)
         const jsonData = await fetchExternalDocCJSON(targetUrl)
         const externalBasePath = extractExternalDocumentationBasePath(targetUrl)
         const markdown = await renderFromJSON(jsonData, targetUrl.toString(), {

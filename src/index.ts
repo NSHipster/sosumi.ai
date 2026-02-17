@@ -65,8 +65,8 @@ app.use("*", async (c, next) => {
   await next()
 })
 
-const mcpServer = createMcpServer()
 app.all("/mcp", async (c) => {
+  const mcpServer = createMcpServer(c.env)
   const transport = new StreamableHTTPTransport()
   await mcpServer.connect(transport)
   return transport.handleRequest(c)
