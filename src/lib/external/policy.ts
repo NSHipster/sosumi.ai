@@ -3,6 +3,7 @@ import robotsParser from "robots-parser"
 export const EXTERNAL_DOC_USER_AGENT = "sosumi-ai/1.0 (+https://sosumi.ai/#bot)"
 
 const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1"])
+const EXTERNAL_PATH_PREFIX = "/external/"
 const ROBOTS_CACHE_TTL_MS = 5 * 60 * 1000
 const ROBOTS_CACHE_MAX_ENTRIES = 1000
 const ROBOTS_INFLIGHT_MAX_ENTRIES = 1000
@@ -25,6 +26,10 @@ export class ExternalAccessError extends Error {
 }
 
 export function validateExternalDocumentationUrl(rawUrl: string): URL {
+  if (!rawUrl || hasControlOrWhitespace(rawUrl)) {
+    throw new ExternalAccessError("Invalid external URL.", 400)
+  }
+
   let parsedUrl: URL
 
   try {
@@ -41,12 +46,29 @@ export function validateExternalDocumentationUrl(rawUrl: string): URL {
     throw new ExternalAccessError("Credentialed URLs are not supported.", 400)
   }
 
+  if (parsedUrl.hash) {
+    throw new ExternalAccessError("URL fragments are not supported.", 400)
+  }
+
   return parsedUrl
 }
 
 export function decodeExternalTargetPath(path: string): string {
+  if (!path.startsWith(EXTERNAL_PATH_PREFIX)) {
+    throw new ExternalAccessError("Invalid external URL.", 400)
+  }
+
+  const encodedTarget = path.slice(EXTERNAL_PATH_PREFIX.length)
+  if (!encodedTarget) {
+    throw new ExternalAccessError("Invalid external URL.", 400)
+  }
+
   try {
-    return decodeURIComponent(path.replace("/external/", ""))
+    const decodedTarget = decodeURIComponent(encodedTarget)
+    if (!decodedTarget || hasControlOrWhitespace(decodedTarget)) {
+      throw new ExternalAccessError("Invalid external URL.", 400)
+    }
+    return decodedTarget
   } catch {
     throw new ExternalAccessError("Invalid external URL.", 400)
   }
@@ -277,4 +299,14 @@ function isPrivateIPv6(hostname: string): boolean {
     normalized.startsWith("fea") ||
     normalized.startsWith("feb")
   )
+}
+
+function hasControlOrWhitespace(value: string): boolean {
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index)
+    if (code <= 0x20 || code === 0x7f) {
+      return true
+    }
+  }
+  return false
 }

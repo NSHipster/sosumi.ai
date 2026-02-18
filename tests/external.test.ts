@@ -32,6 +32,48 @@ describe("External Swift-DocC support", () => {
     expect(() => decodeExternalTargetPath("/external/%E0%A4%A")).toThrow(/Invalid external URL/)
   })
 
+  it("should reject non-/external/* paths when decoding targets", () => {
+    expect(() => decodeExternalTargetPath("/documentation/swift")).toThrow(/Invalid external URL/)
+  })
+
+  it("should reject empty /external/ targets", () => {
+    expect(() => decodeExternalTargetPath("/external/")).toThrow(/Invalid external URL/)
+  })
+
+  it("should reject control characters and whitespace in external URLs", () => {
+    expect(() =>
+      validateExternalDocumentationUrl(" https://apple.github.io/documentation/argumentparser"),
+    ).toThrow(/Invalid external URL/)
+    expect(() =>
+      validateExternalDocumentationUrl("https://apple.github.io/documentation/argumentparser\n"),
+    ).toThrow(/Invalid external URL/)
+  })
+
+  it("should reject fragment identifiers in external URLs", () => {
+    expect(() =>
+      validateExternalDocumentationUrl(
+        "https://apple.github.io/swift-argument-parser/documentation/argumentparser#section",
+      ),
+    ).toThrow(/fragments are not supported/i)
+  })
+
+  it("should decode valid percent-encoded external targets", () => {
+    const decoded = decodeExternalTargetPath(
+      "/external/https%3A%2F%2Fapple.github.io%2Fswift-argument-parser%2Fdocumentation%2Fargumentparser%3Fid%3D1",
+    )
+    expect(decoded).toBe(
+      "https://apple.github.io/swift-argument-parser/documentation/argumentparser?id=1",
+    )
+  })
+
+  it("should reject encoded control characters in /external/* targets", () => {
+    expect(() =>
+      decodeExternalTargetPath(
+        "/external/https%3A%2F%2Fapple.github.io%2Fswift-argument-parser%2Fdocumentation%2Fargumentparser%0A",
+      ),
+    ).toThrow(/Invalid external URL/)
+  })
+
   it("should enforce host blocklist", async () => {
     await expect(
       assertExternalDocumentationAccess(
@@ -41,6 +83,27 @@ describe("External Swift-DocC support", () => {
         },
       ),
     ).rejects.toThrow(/blocked by configuration/)
+  })
+
+  it("should prefer blocklist over allowlist when both match", async () => {
+    await expect(
+      assertExternalDocumentationAccess(new URL("https://docs.example.com/documentation/example"), {
+        EXTERNAL_DOC_HOST_ALLOWLIST: "example.com",
+        EXTERNAL_DOC_HOST_BLOCKLIST: "docs.example.com",
+      }),
+    ).rejects.toThrow(/blocked by configuration/)
+  })
+
+  it("should match allowlist domain suffixes", async () => {
+    global.fetch = vi
+      .fn()
+      .mockResolvedValue(new Response("User-agent: *\nAllow: /", { status: 200 }))
+
+    await expect(
+      assertExternalDocumentationAccess(new URL("https://a.b.example.com/documentation/example"), {
+        EXTERNAL_DOC_HOST_ALLOWLIST: ".example.com",
+      }),
+    ).resolves.toBeUndefined()
   })
 
   it("should enforce host allowlist when configured", async () => {
@@ -55,7 +118,19 @@ describe("External Swift-DocC support", () => {
   })
 
   it("should block local and private hosts unless explicitly allowlisted", async () => {
-    const blockedHosts = ["127.0.0.1", "10.0.0.1", "192.168.1.1", "172.16.0.1", "[::1]"]
+    const blockedHosts = [
+      "localhost",
+      "example.local",
+      "127.0.0.1",
+      "10.0.0.1",
+      "192.168.1.1",
+      "172.16.0.1",
+      "169.254.1.1",
+      "[::1]",
+      "[fc00::1]",
+      "[fd12::1]",
+      "[fe80::1]",
+    ]
 
     global.fetch = vi.fn()
     for (const host of blockedHosts) {
