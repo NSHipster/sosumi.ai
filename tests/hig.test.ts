@@ -1,22 +1,22 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: pedantic type check */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { NotFoundError } from "../src/lib/fetch"
 import {
   extractHIGPaths,
   fetchHIGPageData,
   fetchHIGTableOfContents,
   findHIGItemByPath,
   getHIGBreadcrumbs,
+  type HIGPageJSON,
+  type HIGTableOfContents,
   hasChildren,
   isHIGImageReference,
   isHIGTopicReference,
   renderHIGFromJSON,
   renderHIGTableOfContents,
-  type HIGPageJSON,
-  type HIGTableOfContents,
 } from "../src/lib/hig"
-import { NotFoundError } from "../src/lib/fetch"
-import higTocData from "./fixtures/hig/toc.json"
 import higGettingStartedData from "./fixtures/hig/getting-started.json"
+import higTocData from "./fixtures/hig/toc.json"
 
 describe("HIG Module", () => {
   const originalFetch = global.fetch

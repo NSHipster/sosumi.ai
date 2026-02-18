@@ -1,4 +1,4 @@
-import type { HIGReference, HIGImageReference, HIGExternalReference, HIGTocItem } from "./types"
+import type { HIGExternalReference, HIGImageReference, HIGReference, HIGTocItem } from "./types"
 
 // ============================================================================
 // TYPE GUARDS

@@ -3,10 +3,10 @@ import { z } from "zod"
 
 import type { ExternalPolicyEnv } from "./external"
 import { fetchExternalDocumentationMarkdown } from "./external"
+import { fetchHIGPageData, renderHIGFromJSON } from "./hig"
 import { fetchJSONData, renderFromJSON } from "./reference"
 import { searchAppleDeveloperDocs } from "./search"
 import { generateAppleDocUrl, normalizeDocumentationPath } from "./url"
-import { fetchHIGPageData, renderHIGFromJSON } from "./hig"
 
 export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
   const server = new McpServer({

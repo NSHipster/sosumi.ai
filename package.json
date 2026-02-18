@@ -10,8 +10,8 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
-    "format": "biome format --write .",
-    "lint": "biome lint --write .",
+    "format": "biome check --write --linter-enabled=false .",
+    "lint": "biome check --formatter-enabled=false .",
     "check": "biome check --write .",
     "check:ci": "biome check ."
   },
