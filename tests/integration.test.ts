@@ -405,6 +405,13 @@ describe("Integration Tests with Mocked Apple API", () => {
   it("should fetch and render external Swift-DocC JSON", async () => {
     global.fetch = vi
       .fn()
+      // robots.txt allows access
+      .mockResolvedValueOnce(
+        new Response("User-agent: *\nAllow: /", {
+          status: 200,
+          headers: { "Content-Type": "text/plain" },
+        }),
+      )
       // external JSON response
       .mockResolvedValueOnce(
         new Response(JSON.stringify(arrayData), {

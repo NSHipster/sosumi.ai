@@ -137,6 +137,25 @@ describe("External Swift-DocC support", () => {
     ).rejects.toThrow(/robots\.txt/)
   })
 
+  it("should prefer specific user-agent robots group over wildcard", async () => {
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response(
+        "User-agent: *\nDisallow: /\n\nUser-agent: sosumi-ai\nAllow: /documentation/\nDisallow: /",
+        {
+          status: 200,
+          headers: { "Content-Type": "text/plain" },
+        },
+      ),
+    )
+
+    await expect(
+      assertExternalDocumentationAccess(
+        new URL("https://specific-ua.example.com/documentation/example"),
+        {},
+      ),
+    ).resolves.toBeUndefined()
+  })
+
   it("should cache robots.txt policy per origin to reduce repeated fetches", async () => {
     global.fetch = vi.fn().mockResolvedValue(
       new Response("User-agent: *\nAllow: /", {
@@ -158,20 +177,23 @@ describe("External Swift-DocC support", () => {
   })
 
   it("should build and fetch external DocC JSON", async () => {
-    global.fetch = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ metadata: { title: "Daily" } }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }),
-    )
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("User-agent: *\nAllow: /", { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ metadata: { title: "Daily" } }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
 
     const data = await fetchExternalDocCJSON(
-      new URL("https://apple.github.io/documentation/argumentparser"),
+      new URL("https://json-basic.example.com/documentation/example"),
     )
 
     expect(data.metadata?.title).toBe("Daily")
     expect(global.fetch).toHaveBeenCalledWith(
-      "https://apple.github.io/data/documentation/argumentparser.json",
+      "https://json-basic.example.com/data/documentation/example.json",
       expect.objectContaining({
         headers: expect.objectContaining({
           Accept: "application/json",
@@ -181,20 +203,23 @@ describe("External Swift-DocC support", () => {
   })
 
   it("should build and fetch external DocC JSON for hosted base paths", async () => {
-    global.fetch = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ metadata: { title: "ArgumentParser" } }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }),
-    )
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("User-agent: *\nAllow: /", { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ metadata: { title: "ArgumentParser" } }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
 
     const data = await fetchExternalDocCJSON(
-      new URL("https://apple.github.io/swift-argument-parser/documentation/argumentparser"),
+      new URL("https://docs-hosted.example.com/swift-argument-parser/documentation/argumentparser"),
     )
 
     expect(data.metadata?.title).toBe("ArgumentParser")
     expect(global.fetch).toHaveBeenCalledWith(
-      "https://apple.github.io/swift-argument-parser/data/documentation/argumentparser.json",
+      "https://docs-hosted.example.com/swift-argument-parser/data/documentation/argumentparser.json",
       expect.objectContaining({
         headers: expect.objectContaining({
           Accept: "application/json",
@@ -204,33 +229,33 @@ describe("External Swift-DocC support", () => {
   })
 
   it("should honor restrictive X-Robots-Tag on external JSON responses", async () => {
-    global.fetch = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ metadata: { title: "Daily" } }), {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "X-Robots-Tag": "noai",
-        },
-      }),
-    )
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("User-agent: *\nAllow: /", { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ metadata: { title: "Daily" } }), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            "X-Robots-Tag": "noai",
+          },
+        }),
+      )
 
     await expect(
-      fetchExternalDocCJSON(new URL("https://apple.github.io/documentation/argumentparser")),
+      fetchExternalDocCJSON(new URL("https://xrobots.example.com/documentation/argumentparser")),
     ).rejects.toThrow(ExternalAccessError)
   })
 
   it("should return external not found as ExternalAccessError with 404", async () => {
-    global.fetch = vi.fn().mockResolvedValue(new Response("Not Found", { status: 404 }))
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("User-agent: *\nAllow: /", { status: 200 }))
+      .mockResolvedValueOnce(new Response("Not Found", { status: 404 }))
 
     await expect(
-      fetchExternalDocCJSON(new URL("https://apple.github.io/documentation/argumentparser")),
-    ).rejects.toThrow(ExternalAccessError)
-
-    try {
-      await fetchExternalDocCJSON(new URL("https://apple.github.io/documentation/argumentparser"))
-    } catch (error) {
-      expect((error as ExternalAccessError).status).toBe(404)
-    }
+      fetchExternalDocCJSON(new URL("https://notfound.example.com/documentation/argumentparser")),
+    ).rejects.toMatchObject({ name: "ExternalAccessError", status: 404 })
   })
 
   it("should rewrite relative /documentation links for external origins", async () => {

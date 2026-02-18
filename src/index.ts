@@ -7,7 +7,6 @@ import { trimTrailingSlash } from "hono/trailing-slash"
 
 import { NotFoundError } from "./lib/fetch"
 import {
-  assertExternalDocumentationAccess,
   decodeExternalTargetPath,
   extractExternalDocumentationBasePath,
   ExternalAccessError,
@@ -145,7 +144,6 @@ This service only works with Apple Developer documentation URLs:
     "Content-Location": appleUrl,
     "Cache-Control": "public, max-age=3600, s-maxage=86400",
     ETag: `"${Buffer.from(markdown).toString("base64").slice(0, 16)}"`,
-    "Last-Modified": new Date().toUTCString(),
   }
 
   if (c.req.header("Accept")?.includes("application/json")) {
@@ -170,8 +168,7 @@ app.get("/external/*", async (c) => {
   const rawTarget = decodeExternalTargetPath(path)
   const targetUrl = validateExternalDocumentationUrl(rawTarget)
 
-  await assertExternalDocumentationAccess(targetUrl, c.env)
-  const jsonData = await fetchExternalDocCJSON(targetUrl)
+  const jsonData = await fetchExternalDocCJSON(targetUrl, c.env)
   const externalBasePath = extractExternalDocumentationBasePath(targetUrl)
   const markdown = await renderFromJSON(jsonData, targetUrl.toString(), {
     externalOrigin: `${targetUrl.origin}${externalBasePath}`,
@@ -189,7 +186,6 @@ app.get("/external/*", async (c) => {
     "Content-Location": targetUrl.toString(),
     "Cache-Control": "public, max-age=3600, s-maxage=86400",
     ETag: `"${Buffer.from(markdown).toString("base64").slice(0, 16)}"`,
-    "Last-Modified": new Date().toUTCString(),
   }
 
   if (c.req.header("Accept")?.includes("application/json")) {
@@ -228,7 +224,6 @@ app.get("/design/human-interface-guidelines", async (c) => {
     "Content-Location": sourceUrl,
     "Cache-Control": "public, max-age=3600, s-maxage=86400",
     ETag: `"${Buffer.from(markdown).toString("base64").slice(0, 16)}"`,
-    "Last-Modified": new Date().toUTCString(),
   }
 
   if (c.req.header("Accept")?.includes("application/json")) {
@@ -271,7 +266,6 @@ app.get("/design/human-interface-guidelines/:path{.+}", async (c) => {
     "Content-Location": sourceUrl,
     "Cache-Control": "public, max-age=3600, s-maxage=86400",
     ETag: `"${Buffer.from(markdown).toString("base64").slice(0, 16)}"`,
-    "Last-Modified": new Date().toUTCString(),
   }
 
   if (c.req.header("Accept")?.includes("application/json")) {

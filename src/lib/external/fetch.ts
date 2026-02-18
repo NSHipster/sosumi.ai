@@ -32,8 +32,13 @@ export function buildExternalDocCJsonUrl(sourceUrl: URL): URL {
   return new URL(`${hostBasePath}/data${jsonPath}`, sourceUrl.origin)
 }
 
-export async function fetchExternalDocCJSON(sourceUrl: URL): Promise<AppleDocJSON> {
-  const jsonUrl = buildExternalDocCJsonUrl(sourceUrl)
+export async function fetchExternalDocCJSON(
+  sourceUrl: URL,
+  externalPolicyEnv: ExternalPolicyEnv = {},
+): Promise<AppleDocJSON> {
+  const validatedUrl = validateExternalDocumentationUrl(sourceUrl.toString())
+  await assertExternalDocumentationAccess(validatedUrl, externalPolicyEnv)
+  const jsonUrl = buildExternalDocCJsonUrl(validatedUrl)
   const response = await fetch(jsonUrl.toString(), {
     headers: {
       "User-Agent": EXTERNAL_DOC_USER_AGENT,
@@ -68,8 +73,7 @@ export async function fetchExternalDocumentationMarkdown(
   externalPolicyEnv: ExternalPolicyEnv = {},
 ): Promise<string> {
   const targetUrl = validateExternalDocumentationUrl(url)
-  await assertExternalDocumentationAccess(targetUrl, externalPolicyEnv)
-  const jsonData = await fetchExternalDocCJSON(targetUrl)
+  const jsonData = await fetchExternalDocCJSON(targetUrl, externalPolicyEnv)
   const externalBasePath = extractExternalDocumentationBasePath(targetUrl)
   return renderFromJSON(jsonData, targetUrl.toString(), {
     externalOrigin: `${targetUrl.origin}${externalBasePath}`,

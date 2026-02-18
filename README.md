@@ -41,25 +41,11 @@ https://sosumi.ai/external/https://apple.github.io/swift-argument-parser/documen
 https://sosumi.ai/external/https://swiftpackageindex.com/pointfreeco/swift-composable-architecture/1.23.1/documentation/composablearchitecture
 ```
 
-Under the hood, Sosumi resolves these to the source DocC JSON endpoint
-(`https://<host>/data/documentation/<path>.json`) and renders Markdown.
-
-#### External access controls (self-hosting)
-
-You can restrict which external hosts are allowed:
-
-- `EXTERNAL_DOC_HOST_ALLOWLIST` - optional newline-delimited host allowlist
-- `EXTERNAL_DOC_HOST_BLOCKLIST` - optional newline-delimited host blocklist
-
-If an allowlist is set, only listed hosts are permitted.
-Blocklist entries always deny access.
-
-Sosumi also checks `robots.txt` for external hosts before fetching content.
-Site owners can block Sosumi by disallowing:
-
-- User-agent: `sosumi-ai` (full UA: `sosumi-ai/1.0 (+https://sosumi.ai/#bot)`)
-- or wildcard `*`
-
+Sosumi resolves the URL to the site's underlying DocC JSON endpoint
+and renders Markdown, preserving any base path from the original URL.
+External hosts can opt out via `robots.txt`
+by disallowing user-agent `sosumi-ai`
+(full UA: `sosumi-ai/1.0 (+https://sosumi.ai/#bot)`).
 See `/bot` for the crawler policy and contact details.
 
 ### MCP Integration
@@ -120,6 +106,13 @@ or deployed to a hosting provider.
 Sosumi.ai is currently hosted by 
 [Cloudflare Workers](https://workers.cloudflare.com).
 
+> [!NOTE]  
+> The application is built with Hono, 
+> making it compatible with various runtimes.
+>
+> See the [Hono docs](https://hono.dev/docs/getting-started/basic)
+> for more information about deploying to different platforms.
+
 ### Prerequisites
 
 - Node.js 18+
@@ -150,12 +143,17 @@ To configure MCP clients to use your development server,
 replace `sosumi.ai` with the local server address
 (`http://localhost:8787` by default).
 
-> [!NOTE]  
-> The application is built with Hono, 
-> making it compatible with various runtimes.
->
-> See the [Hono docs](https://hono.dev/docs/getting-started/basic)
-> for more information about deploying to different platforms.
+### External Host Restrictions
+
+You can restrict which external Swift-DocC hosts are reachable
+with two environment variables (both newline-delimited):
+
+- `EXTERNAL_DOC_HOST_ALLOWLIST` — only listed hosts are permitted
+- `EXTERNAL_DOC_HOST_BLOCKLIST` — listed hosts are always denied
+
+> [!IMPORTANT]
+> Hostname-based private-network checks cannot fully prevent DNS rebinding.
+> Set an explicit `EXTERNAL_DOC_HOST_ALLOWLIST` in production.
 
 ## Development
 

@@ -1,3 +1,5 @@
+import robotsParser from "robots-parser"
+
 export const EXTERNAL_DOC_USER_AGENT = "sosumi-ai/1.0 (+https://sosumi.ai/#bot)"
 
 const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1"])
@@ -76,6 +78,8 @@ function assertHostPolicy(targetUrl: URL, env: ExternalPolicyEnv): void {
   }
 
   if (isLocalOrPrivateHost(hostname) && !explicitlyAllowlisted) {
+    // This blocks obvious local/private hostnames, but DNS rebinding on public hostnames
+    // still requires explicit allowlists for strict SSRF protection in runtimes without DNS resolution APIs.
     throw new ExternalAccessError(
       "External URL points to a local or private host and is not allowlisted.",
       403,
@@ -91,144 +95,13 @@ async function isAllowedByRobotsTxt(targetUrl: URL): Promise<boolean> {
   if (policy.kind === "deny-all") {
     return false
   }
-  return evaluateRobotsPolicy(
-    policy.robotsText,
-    targetUrl.pathname + targetUrl.search,
-    EXTERNAL_DOC_USER_AGENT,
-  )
+  return evaluateRobotsPolicy(policy.robotsText, targetUrl, EXTERNAL_DOC_USER_AGENT)
 }
 
-function evaluateRobotsPolicy(robotsText: string, path: string, userAgent: string): boolean {
-  const groups = parseRobotsGroups(robotsText)
-  const matchingGroups = groups.filter((group) =>
-    group.agents.some((agent) => userAgentMatches(agent, userAgent)),
-  )
-
-  if (matchingGroups.length === 0) {
-    return true
-  }
-
-  let winningRule: { kind: "allow" | "disallow"; length: number } | null = null
-  for (const group of matchingGroups) {
-    for (const rule of group.rules) {
-      if (!patternMatchesPath(rule.pattern, path)) {
-        continue
-      }
-
-      const current = { kind: rule.kind, length: normalizedPatternLength(rule.pattern) }
-      if (!winningRule || current.length > winningRule.length) {
-        winningRule = current
-      } else if (winningRule && current.length === winningRule.length && current.kind === "allow") {
-        winningRule = current
-      }
-    }
-  }
-
-  if (!winningRule) {
-    return true
-  }
-
-  return winningRule.kind === "allow"
-}
-
-function parseRobotsGroups(robotsText: string): Array<{
-  agents: string[]
-  rules: Array<{ kind: "allow" | "disallow"; pattern: string }>
-}> {
-  const groups: Array<{
-    agents: string[]
-    rules: Array<{ kind: "allow" | "disallow"; pattern: string }>
-  }> = []
-
-  let currentGroup: {
-    agents: string[]
-    rules: Array<{ kind: "allow" | "disallow"; pattern: string }>
-  } = {
-    agents: [],
-    rules: [],
-  }
-
-  const lines = robotsText.split(/\r?\n/)
-  for (const rawLine of lines) {
-    const line = stripComments(rawLine).trim()
-    if (!line) {
-      continue
-    }
-
-    const delimiterIndex = line.indexOf(":")
-    if (delimiterIndex === -1) {
-      continue
-    }
-
-    const key = line.slice(0, delimiterIndex).trim().toLowerCase()
-    const value = line.slice(delimiterIndex + 1).trim()
-
-    if (key === "user-agent") {
-      if (currentGroup.agents.length > 0 && currentGroup.rules.length > 0) {
-        groups.push(currentGroup)
-        currentGroup = { agents: [], rules: [] }
-      }
-      currentGroup.agents.push(value.toLowerCase())
-      continue
-    }
-
-    if (key === "allow" || key === "disallow") {
-      if (currentGroup.agents.length === 0) {
-        continue
-      }
-
-      currentGroup.rules.push({
-        kind: key,
-        pattern: value,
-      })
-    }
-  }
-
-  if (currentGroup.agents.length > 0) {
-    groups.push(currentGroup)
-  }
-
-  return groups
-}
-
-function userAgentMatches(ruleUserAgent: string, actualUserAgent: string): boolean {
-  if (!ruleUserAgent) {
-    return false
-  }
-  if (ruleUserAgent === "*") {
-    return true
-  }
-  return actualUserAgent.toLowerCase().includes(ruleUserAgent.toLowerCase())
-}
-
-function patternMatchesPath(pattern: string, path: string): boolean {
-  // Empty "Disallow:" means allow all by producing no matching disallow rule.
-  // Empty "Allow:" is also effectively a no-op.
-  if (pattern.length === 0) {
-    return false
-  }
-
-  const endsWithDollar = pattern.endsWith("$")
-  const patternBody = endsWithDollar ? pattern.slice(0, -1) : pattern
-  const escaped = escapeRegExp(patternBody).replace(/\\\*/g, ".*")
-  const regex = new RegExp(`^${escaped}${endsWithDollar ? "$" : ""}`)
-  return regex.test(path)
-}
-
-function normalizedPatternLength(pattern: string): number {
-  return pattern.replace(/\$/g, "").length
-}
-
-function stripComments(line: string): string {
-  const hashIndex = line.indexOf("#")
-  if (hashIndex === -1) {
-    return line
-  }
-  return line.slice(0, hashIndex)
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+function evaluateRobotsPolicy(robotsText: string, targetUrl: URL, userAgent: string): boolean {
+  const robots = robotsParser(new URL("/robots.txt", targetUrl.origin).toString(), robotsText)
+  const isAllowed = robots.isAllowed(targetUrl.toString(), userAgent)
+  return isAllowed !== false
 }
 
 function parseHostList(rawList: string | undefined): Set<string> {
