@@ -403,6 +403,13 @@ function renderInlineContent(
         return `*${item.inlineContent ? renderInlineContent(item.inlineContent, references, depth + 1, externalOrigin) : ""}*`
       } else if (item.type === "strong") {
         return `**${item.inlineContent ? renderInlineContent(item.inlineContent, references, depth + 1, externalOrigin) : ""}**`
+      } else if (item.type === "image" && item.identifier) {
+        const ref = references?.[item.identifier] as
+          | (ContentItem & { variants?: Array<{ url: string }>; alt?: string })
+          | undefined
+        const url = ref?.variants?.[0]?.url
+        const alt = ref?.alt ?? ""
+        return url ? `![${alt}](${url})` : ""
       }
       return item.text || ""
     })

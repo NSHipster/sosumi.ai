@@ -308,6 +308,127 @@ describe("Render Function", () => {
     })
   })
 
+  describe("Inline image rendering", () => {
+    it("should render inline image with alt and URL from reference", async () => {
+      const data = {
+        metadata: { title: "Image Test" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [
+              {
+                type: "paragraph",
+                inlineContent: [
+                  { type: "text", text: "See figure: " },
+                  { type: "image", identifier: "media-123" },
+                ],
+              },
+            ],
+          },
+        ],
+        references: {
+          "media-123": {
+            type: "image",
+            identifier: "media-123",
+            alt: "Screenshot showing the timeline.",
+            variants: [
+              {
+                traits: ["2x", "light"],
+                url: "https://docs-assets.developer.apple.com/published/media-123%402x.png",
+              },
+            ],
+          } as any,
+        },
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).toContain(
+        "![Screenshot showing the timeline.](https://docs-assets.developer.apple.com/published/media-123%402x.png)",
+      )
+    })
+
+    it("should render image with empty alt when alt is missing", async () => {
+      const data = {
+        metadata: { title: "Image Test" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [
+              {
+                type: "paragraph",
+                inlineContent: [{ type: "image", identifier: "media-no-alt" }],
+              },
+            ],
+          },
+        ],
+        references: {
+          "media-no-alt": {
+            type: "image",
+            identifier: "media-no-alt",
+            variants: [{ url: "https://example.com/diagram.png" }],
+          } as any,
+        },
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).toContain("![](https://example.com/diagram.png)")
+    })
+
+    it("should output nothing when image reference is missing", async () => {
+      const data = {
+        metadata: { title: "Image Test" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [
+              {
+                type: "paragraph",
+                inlineContent: [
+                  { type: "text", text: "Before " },
+                  { type: "image", identifier: "media-missing" },
+                  { type: "text", text: " after." },
+                ],
+              },
+            ],
+          },
+        ],
+        references: {},
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).toContain("Before  after.")
+      expect(result).not.toMatch(/!\[.*\]\(.*\)/)
+    })
+
+    it("should output nothing when image reference has no variants URL", async () => {
+      const data = {
+        metadata: { title: "Image Test" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [
+              {
+                type: "paragraph",
+                inlineContent: [{ type: "image", identifier: "media-no-url" }],
+              },
+            ],
+          },
+        ],
+        references: {
+          "media-no-url": {
+            type: "image",
+            identifier: "media-no-url",
+            alt: "Missing URL",
+            variants: [],
+          } as any,
+        },
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).not.toMatch(/!\[.*\]\(https?:\/\//)
+    })
+  })
+
   describe("URL Conversion", () => {
     it("should convert SwiftUI doc identifiers to proper URLs", async () => {
       const data = {
