@@ -91,13 +91,13 @@ export async function fetchRobotsPolicy(
     },
   })
 
-  // Missing robots.txt is treated as no policy restrictions.
-  if (response.status === 404 || response.status === 410) {
-    return { kind: "allow-all" }
+  // Missing or inaccessible robots.txt — caller may try root domain or allow.
+  if (response.status === 404 || response.status === 410 || response.status === 403) {
+    return { kind: "not-found" }
   }
 
-  // Explicit access denial when robots cannot be read due to auth restrictions.
-  if (response.status === 401 || response.status === 403) {
+  // Explicit access denial when robots cannot be read due to auth.
+  if (response.status === 401) {
     return { kind: "deny-all" }
   }
 

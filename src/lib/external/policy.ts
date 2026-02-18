@@ -113,7 +113,10 @@ async function isAllowedByRobotsTxt(targetUrl: URL): Promise<boolean> {
   if (policy.kind === "deny-all") {
     return false
   }
-  return evaluateRobotsPolicy(policy.robotsText, targetUrl, EXTERNAL_DOC_USER_AGENT)
+  if (policy.kind === "rules") {
+    return evaluateRobotsPolicy(policy.robotsText, targetUrl, EXTERNAL_DOC_USER_AGENT)
+  }
+  return true
 }
 
 function evaluateRobotsPolicy(robotsText: string, targetUrl: URL, userAgent: string): boolean {
@@ -135,6 +138,20 @@ function parseHostList(rawList: string | undefined): Set<string> {
   )
 }
 
+function getRootOrigin(origin: string): string | null {
+  try {
+    const url = new URL(origin)
+    const labels = url.hostname.toLowerCase().split(".")
+    if (labels.length < 3) {
+      return null
+    }
+    const rootHost = labels.slice(-2).join(".")
+    return `${url.protocol}//${rootHost}`
+  } catch {
+    return null
+  }
+}
+
 async function getRobotsPolicy(origin: string): Promise<RobotsPolicyResult> {
   const now = Date.now()
   pruneExpiredRobotsPolicyEntries(now)
@@ -149,7 +166,23 @@ async function getRobotsPolicy(origin: string): Promise<RobotsPolicyResult> {
     return inFlight
   }
 
-  const request = fetchRobotsPolicy(origin, EXTERNAL_DOC_USER_AGENT)
+  const request = (async (): Promise<RobotsPolicyResult> => {
+    let policy = await fetchRobotsPolicy(origin, EXTERNAL_DOC_USER_AGENT)
+    if (policy.kind === "not-found") {
+      const rootOrigin = getRootOrigin(origin)
+      if (rootOrigin && rootOrigin !== origin) {
+        const rootPolicy = await fetchRobotsPolicy(rootOrigin, EXTERNAL_DOC_USER_AGENT)
+        if (rootPolicy.kind !== "not-found") {
+          policy = rootPolicy
+        } else {
+          policy = { kind: "allow-all" }
+        }
+      } else {
+        policy = { kind: "allow-all" }
+      }
+    }
+    return policy
+  })()
     .then((policy) => {
       robotsPolicyCache.set(origin, {
         expiresAt: Date.now() + ROBOTS_CACHE_TTL_MS,
