@@ -1,6 +1,7 @@
 import robotsParser from "robots-parser"
 
-export const EXTERNAL_DOC_USER_AGENT = "sosumi-ai/1.0 (+https://sosumi.ai/#bot)"
+import { EXTERNAL_DOC_USER_AGENT, fetchRobotsPolicy } from "./fetch"
+import type { ExternalPolicyEnv, RobotsPolicyResult } from "./types"
 
 const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1"])
 const EXTERNAL_PATH_PREFIX = "/external/"
@@ -9,11 +10,6 @@ const ROBOTS_CACHE_MAX_ENTRIES = 1000
 const ROBOTS_INFLIGHT_MAX_ENTRIES = 1000
 const robotsPolicyCache = new Map<string, { expiresAt: number; policy: RobotsPolicyResult }>()
 const robotsPolicyInFlight = new Map<string, Promise<RobotsPolicyResult>>()
-
-export interface ExternalPolicyEnv {
-  EXTERNAL_DOC_HOST_ALLOWLIST?: string
-  EXTERNAL_DOC_HOST_BLOCKLIST?: string
-}
 
 export class ExternalAccessError extends Error {
   status: number
@@ -139,11 +135,6 @@ function parseHostList(rawList: string | undefined): Set<string> {
   )
 }
 
-type RobotsPolicyResult =
-  | { kind: "allow-all" }
-  | { kind: "deny-all" }
-  | { kind: "rules"; robotsText: string }
-
 async function getRobotsPolicy(origin: string): Promise<RobotsPolicyResult> {
   const now = Date.now()
   pruneExpiredRobotsPolicyEntries(now)
@@ -158,7 +149,7 @@ async function getRobotsPolicy(origin: string): Promise<RobotsPolicyResult> {
     return inFlight
   }
 
-  const request = fetchRobotsPolicy(origin)
+  const request = fetchRobotsPolicy(origin, EXTERNAL_DOC_USER_AGENT)
     .then((policy) => {
       robotsPolicyCache.set(origin, {
         expiresAt: Date.now() + ROBOTS_CACHE_TTL_MS,
@@ -174,34 +165,6 @@ async function getRobotsPolicy(origin: string): Promise<RobotsPolicyResult> {
   enforceMaxMapEntries(robotsPolicyInFlight, ROBOTS_INFLIGHT_MAX_ENTRIES, origin)
   robotsPolicyInFlight.set(origin, request)
   return request
-}
-
-async function fetchRobotsPolicy(origin: string): Promise<RobotsPolicyResult> {
-  const robotsUrl = new URL("/robots.txt", origin)
-  const response = await fetch(robotsUrl.toString(), {
-    headers: {
-      "User-Agent": EXTERNAL_DOC_USER_AGENT,
-      Accept: "text/plain, text/*;q=0.9, */*;q=0.1",
-    },
-  })
-
-  // Missing robots.txt is treated as no policy restrictions.
-  if (response.status === 404 || response.status === 410) {
-    return { kind: "allow-all" }
-  }
-
-  // Explicit access denial when robots cannot be read due to auth restrictions.
-  if (response.status === 401 || response.status === 403) {
-    return { kind: "deny-all" }
-  }
-
-  // Fail open for transient server/network issues.
-  if (!response.ok) {
-    return { kind: "allow-all" }
-  }
-
-  const robotsText = await response.text()
-  return { kind: "rules", robotsText }
 }
 
 function isHostListed(hostname: string, list: Set<string>): boolean {

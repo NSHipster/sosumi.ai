@@ -1,9 +1,8 @@
 import type { AppleDocJSON } from "../types"
 import { renderFromJSON } from "../reference"
-import type { ExternalPolicyEnv } from "./policy"
+import type { ExternalPolicyEnv, RobotsPolicyResult } from "./types"
 import {
   assertExternalDocumentationAccess,
-  EXTERNAL_DOC_USER_AGENT,
   ExternalAccessError,
   validateExternalDocumentationUrl,
 } from "./policy"
@@ -80,6 +79,37 @@ export async function fetchExternalDocumentationMarkdown(
   })
 }
 
+export async function fetchRobotsPolicy(
+  origin: string,
+  userAgent: string,
+): Promise<RobotsPolicyResult> {
+  const robotsUrl = new URL("/robots.txt", origin)
+  const response = await fetch(robotsUrl.toString(), {
+    headers: {
+      "User-Agent": userAgent,
+      Accept: "text/plain, text/*;q=0.9, */*;q=0.1",
+    },
+  })
+
+  // Missing robots.txt is treated as no policy restrictions.
+  if (response.status === 404 || response.status === 410) {
+    return { kind: "allow-all" }
+  }
+
+  // Explicit access denial when robots cannot be read due to auth restrictions.
+  if (response.status === 401 || response.status === 403) {
+    return { kind: "deny-all" }
+  }
+
+  // Fail open for transient server/network issues.
+  if (!response.ok) {
+    return { kind: "allow-all" }
+  }
+
+  const robotsText = await response.text()
+  return { kind: "rules", robotsText }
+}
+
 function containsRestrictiveXRobotsTag(headerValue: string | null): boolean {
   if (!headerValue) {
     return false
@@ -100,3 +130,4 @@ function containsRestrictiveXRobotsTag(headerValue: string | null): boolean {
   }
   return false
 }
+export const EXTERNAL_DOC_USER_AGENT = "sosumi-ai/1.0 (+https://sosumi.ai/#bot)"
