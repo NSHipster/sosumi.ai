@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { fetchExternalDocCJSON } from "../src/lib/external"
+import { EXTERNAL_DOC_USER_AGENT } from "../src/lib/external/fetch"
 import {
-  decodeExternalTargetPath,
   assertExternalDocumentationAccess,
+  decodeExternalTargetPath,
   ExternalAccessError,
   validateExternalDocumentationUrl,
 } from "../src/lib/external/policy"
-import { EXTERNAL_DOC_USER_AGENT } from "../src/lib/external/fetch"
 import { renderFromJSON } from "../src/lib/reference"
 
 describe("External Swift-DocC support", () => {

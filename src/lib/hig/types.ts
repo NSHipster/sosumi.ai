@@ -2,7 +2,7 @@
  * Human Interface Guidelines (HIG) specific types
  */
 
-import type { ContentItem, TextFragment, PrimaryContentSection } from "../types"
+import type { ContentItem, PrimaryContentSection, TextFragment } from "../types"
 
 // ============================================================================
 // HIG TYPES

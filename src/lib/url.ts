@@ -1,6 +1,5 @@
 // Constants for Apple Developer documentation URLs
 const APPLE_DOC_BASE_URL = "https://developer.apple.com/documentation/"
-const _DOCUMENTATION_PREFIX = "documentation"
 
 /**
  * Normalizes documentation paths by removing leading slashes, whitespace, and documentation prefixes.

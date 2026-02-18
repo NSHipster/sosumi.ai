@@ -4,15 +4,14 @@ import { cache } from "hono/cache"
 import { cors } from "hono/cors"
 import { HTTPException } from "hono/http-exception"
 import { trimTrailingSlash } from "hono/trailing-slash"
-
-import { NotFoundError } from "./lib/fetch"
 import {
   decodeExternalTargetPath,
-  extractExternalDocumentationBasePath,
   ExternalAccessError,
+  extractExternalDocumentationBasePath,
   fetchExternalDocCJSON,
   validateExternalDocumentationUrl,
 } from "./lib/external"
+import { NotFoundError } from "./lib/fetch"
 import {
   fetchHIGPageData,
   fetchHIGTableOfContents,

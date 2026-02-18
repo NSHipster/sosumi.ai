@@ -1,11 +1,11 @@
-import type { AppleDocJSON } from "../types"
 import { renderFromJSON } from "../reference"
-import type { ExternalPolicyEnv, RobotsPolicyResult } from "./types"
+import type { AppleDocJSON } from "../types"
 import {
   assertExternalDocumentationAccess,
   ExternalAccessError,
   validateExternalDocumentationUrl,
 } from "./policy"
+import type { ExternalPolicyEnv, RobotsPolicyResult } from "./types"
 
 const RESTRICTIVE_X_ROBOTS_TAGS = ["none", "noindex", "noai", "noimageai"] as const
 

@@ -1,15 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { fetchExternalDocCJSON } from "../src/lib/external"
-import { fetchJSONData, renderFromJSON } from "../src/lib/reference"
-import arrayData from "./fixtures/reference/array.json"
 import {
   fetchHIGPageData,
   fetchHIGTableOfContents,
   renderHIGFromJSON,
   renderHIGTableOfContents,
 } from "../src/lib/hig"
-import higTocData from "./fixtures/hig/toc.json"
+import { fetchJSONData, renderFromJSON } from "../src/lib/reference"
 import higGettingStartedData from "./fixtures/hig/getting-started.json"
+import higTocData from "./fixtures/hig/toc.json"
+import arrayData from "./fixtures/reference/array.json"
 
 describe("Integration Tests with Mocked Apple API", () => {
   const originalFetch = global.fetch
