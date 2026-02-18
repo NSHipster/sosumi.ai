@@ -181,6 +181,10 @@
             margin: 0;
         }
 
+        code.no-wrap {
+            white-space: nowrap;
+        }
+
         #clients {
             margin-top: 1.5rem;
         }
@@ -609,13 +613,13 @@
             <header>
                 <h2>Bot & Crawling Policy</h2>
                 <p>
-                    Automated fetches with the user agent
-                    <code>sosumi-ai/1.0 (+https://sosumi.ai/#bot)</code>.
+                    Fetches are made with the user agent
+                    <code class="no-wrap">sosumi-ai/1.0 (+https://sosumi.ai/#bot)</code>.
                 </p>
                 <p>
-                    For external Swift-DocC hosts, sosumi.ai honors
-                    <code>robots.txt</code> rules and opt-out response directives such as
-                    <code>X-Robots-Tag: noai</code>.
+                    For external Swift-DocC hosts, sosumi honors
+                    <code class="no-wrap">robots.txt</code> rules and opt-out response directives such as
+                    <code class="no-wrap">X-Robots-Tag: noai</code>.
                 </p>
                 <p>
                     Questions or issues: <a href="mailto:info@sosumi.ai">info@sosumi.ai</a>
@@ -630,7 +634,7 @@
                 <h2>MCP Usage</h2>
                 <p>
                     Connect your <abbr title="Model Context Protocol">MCP</abbr> client to
-                    <code>https://sosumi.ai/mcp</code>.
+                    <code class="no-wrap">https://sosumi.ai/mcp</code>.
                 </p>
 
                 <figure id="clients">
