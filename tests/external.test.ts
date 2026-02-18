@@ -251,6 +251,93 @@ describe("External Swift-DocC support", () => {
     expect(global.fetch).toHaveBeenCalledTimes(1)
   })
 
+  it("should fall back to root domain robots.txt when subdomain robots.txt is 403 or 404", async () => {
+    // Real robots.txt from https://daily.co/robots.txt (subdomain reference-ios.daily.co returns 403, e.g. S3/CloudFront)
+    const dailyCoRobotsTxt = `# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://www.daily.co
+
+# Sitemaps
+Sitemap: https://www.daily.co/sitemap.xml
+Sitemap: https://www.daily.co/resources/sitemap.xml
+Sitemap: https://www.daily.co/partners/sitemap.xml
+Sitemap: https://www.daily.co/videosaurus/sitemap.xml
+Sitemap: https://www.daily.co/blog/sitemap.xml
+Sitemap: https://docs.daily.co/sitemap.xml
+`
+
+    global.fetch = vi.fn().mockImplementation((url: string | URL) => {
+      const u = typeof url === "string" ? url : url.toString()
+      if (u === "https://reference-ios.daily.co/robots.txt") {
+        return Promise.resolve(
+          new Response(null, {
+            status: 403,
+            headers: { "content-type": "application/xml" },
+          }),
+        )
+      }
+      if (u === "https://daily.co/robots.txt") {
+        return Promise.resolve(
+          new Response(dailyCoRobotsTxt, {
+            status: 200,
+            headers: { "Content-Type": "text/plain" },
+          }),
+        )
+      }
+      return Promise.reject(new Error(`Unexpected fetch: ${u}`))
+    })
+
+    await expect(
+      assertExternalDocumentationAccess(
+        new URL("https://reference-ios.daily.co/documentation/some/module"),
+        {},
+      ),
+    ).resolves.toBeUndefined()
+
+    expect(global.fetch).toHaveBeenNthCalledWith(
+      1,
+      "https://reference-ios.daily.co/robots.txt",
+      expect.objectContaining({
+        headers: expect.objectContaining({ "User-Agent": EXTERNAL_DOC_USER_AGENT }),
+      }),
+    )
+    expect(global.fetch).toHaveBeenNthCalledWith(
+      2,
+      "https://daily.co/robots.txt",
+      expect.objectContaining({
+        headers: expect.objectContaining({ "User-Agent": EXTERNAL_DOC_USER_AGENT }),
+      }),
+    )
+    expect(global.fetch).toHaveBeenCalledTimes(2)
+  })
+
+  it("should allow fetch when both subdomain and root domain robots.txt are 404", async () => {
+    global.fetch = vi.fn().mockImplementation((url: string | URL) => {
+      const u = typeof url === "string" ? url : url.toString()
+      if (u === "https://docs.example.org/robots.txt" || u === "https://example.org/robots.txt") {
+        return Promise.resolve(new Response(null, { status: 404 }))
+      }
+      return Promise.reject(new Error(`Unexpected fetch: ${u}`))
+    })
+
+    await expect(
+      assertExternalDocumentationAccess(
+        new URL("https://docs.example.org/documentation/some/module"),
+        {},
+      ),
+    ).resolves.toBeUndefined()
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://docs.example.org/robots.txt",
+      expect.any(Object),
+    )
+    expect(global.fetch).toHaveBeenCalledWith("https://example.org/robots.txt", expect.any(Object))
+    expect(global.fetch).toHaveBeenCalledTimes(2)
+  })
+
   it("should build and fetch external DocC JSON", async () => {
     global.fetch = vi
       .fn()
