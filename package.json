@@ -19,6 +19,7 @@
     "@hono/mcp": "^0.1.2",
     "@modelcontextprotocol/sdk": "^1.17.4",
     "hono": "^4.9.4",
+    "robots-parser": "^3.0.1",
     "zod": "^3"
   },
   "devDependencies": {

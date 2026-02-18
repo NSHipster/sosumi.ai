@@ -1,12 +1,14 @@
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { z } from "zod"
 
+import type { ExternalPolicyEnv } from "./external"
+import { fetchExternalDocumentationMarkdown } from "./external"
 import { fetchJSONData, renderFromJSON } from "./reference"
 import { searchAppleDeveloperDocs } from "./search"
 import { generateAppleDocUrl, normalizeDocumentationPath } from "./url"
 import { fetchHIGPageData, renderHIGFromJSON } from "./hig"
 
-export function createMcpServer() {
+export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
   const server = new McpServer({
     name: "sosumi.ai",
     version: "1.0.0",
@@ -260,6 +262,58 @@ export function createMcpServer() {
             {
               type: "text" as const,
               text: `Error fetching content for "${path}": ${errorMessage}`,
+            },
+          ],
+        }
+      }
+    },
+  )
+
+  // Register external documentation fetch tool
+  server.registerTool(
+    "fetchExternalDocumentation",
+    {
+      title: "Fetch External Documentation",
+      description:
+        "Fetch external Swift-DocC documentation by absolute https URL and return as markdown",
+      inputSchema: {
+        url: z
+          .string()
+          .describe(
+            "External Swift-DocC URL (e.g., 'https://apple.github.io/swift-argument-parser/documentation/argumentparser')",
+          ),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    async ({ url }) => {
+      try {
+        const markdown = await fetchExternalDocumentationMarkdown(url, externalPolicyEnv)
+
+        if (!markdown || markdown.trim().length < 100) {
+          throw new Error("Insufficient content in external documentation")
+        }
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: markdown,
+            },
+          ],
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error"
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Error fetching external content for "${url}": ${errorMessage}`,
             },
           ],
         }

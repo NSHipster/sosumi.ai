@@ -26,6 +26,28 @@ https://sosumi.ai/documentation/swift/array
 This works for all API reference docs, 
 as well as Apple's [Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/) (HIG).
 
+### External Swift-DocC sites
+
+Sosumi can also proxy public non-Apple Swift-DocC pages using:
+
+```
+https://sosumi.ai/external/https://<host>/documentation/<path>
+```
+
+Examples:
+
+```
+https://sosumi.ai/external/https://apple.github.io/swift-argument-parser/documentation/argumentparser
+https://sosumi.ai/external/https://swiftpackageindex.com/pointfreeco/swift-composable-architecture/1.23.1/documentation/composablearchitecture
+```
+
+Sosumi resolves the URL to the site's underlying DocC JSON endpoint
+and renders Markdown, preserving any base path from the original URL.
+External hosts can opt out via `robots.txt`
+by disallowing user-agent `sosumi-ai`
+(full UA: `sosumi-ai/1.0 (+https://sosumi.ai/#bot)`).
+See `/bot` for the crawler policy and contact details.
+
 ### MCP Integration
 
 Sosumi's MCP server supports Streamable HTTP and Server-Sent Events (SSE) transport. 
@@ -64,6 +86,10 @@ See [the website](https://sosumi.ai/#clients) for client-specific instructions.
   - Parameters: `path` (string) - Documentation path (e.g., '/documentation/swift', 'swiftui/view', 'design/human-interface-guidelines/foundations/color')
   - Returns content as Markdown
 
+- `fetchExternalDocumentation` - Fetches external Swift-DocC documentation by absolute HTTPS URL
+  - Parameters: `url` (string) - External URL (e.g., `https://apple.github.io/swift-argument-parser/documentation/argumentparser`)
+  - Returns content as Markdown
+
 ### Chrome Extension
 
 You can also use Sosumi from a community-contributed 
@@ -79,6 +105,13 @@ or deployed to a hosting provider.
 
 Sosumi.ai is currently hosted by 
 [Cloudflare Workers](https://workers.cloudflare.com).
+
+> [!NOTE]  
+> The application is built with Hono, 
+> making it compatible with various runtimes.
+>
+> See the [Hono docs](https://hono.dev/docs/getting-started/basic)
+> for more information about deploying to different platforms.
 
 ### Prerequisites
 
@@ -110,12 +143,17 @@ To configure MCP clients to use your development server,
 replace `sosumi.ai` with the local server address
 (`http://localhost:8787` by default).
 
-> [!NOTE]  
-> The application is built with Hono, 
-> making it compatible with various runtimes.
->
-> See the [Hono docs](https://hono.dev/docs/getting-started/basic)
-> for more information about deploying to different platforms.
+### External Host Restrictions
+
+You can restrict which external Swift-DocC hosts are reachable
+with two environment variables (both newline-delimited):
+
+- `EXTERNAL_DOC_HOST_ALLOWLIST` — only listed hosts are permitted
+- `EXTERNAL_DOC_HOST_BLOCKLIST` — listed hosts are always denied
+
+> [!IMPORTANT]
+> Hostname-based private-network checks cannot fully prevent DNS rebinding.
+> Set an explicit `EXTERNAL_DOC_HOST_ALLOWLIST` in production.
 
 ## Development
 
@@ -174,6 +212,9 @@ It converts a single Apple Developer page to Markdown only when requested by a u
 It does not crawl, spider, or bulk download;
 it does not attempt to bypass authentication or security;
 and it implements rate limiting to avoid imposing unreasonable load.
+
+For external Swift-DocC hosts, access can be denied by `robots.txt`
+and opt-out response directives such as `X-Robots-Tag: noai`.
 
 Content is fetched transiently and may be cached briefly to improve performance.
 No permanent archives are maintained.

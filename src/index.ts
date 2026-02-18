@@ -7,6 +7,13 @@ import { trimTrailingSlash } from "hono/trailing-slash"
 
 import { NotFoundError } from "./lib/fetch"
 import {
+  decodeExternalTargetPath,
+  extractExternalDocumentationBasePath,
+  ExternalAccessError,
+  fetchExternalDocCJSON,
+  validateExternalDocumentationUrl,
+} from "./lib/external"
+import {
   fetchHIGPageData,
   fetchHIGTableOfContents,
   renderHIGFromJSON,
@@ -19,9 +26,29 @@ import { generateAppleDocUrl, isValidAppleDocUrl, normalizeDocumentationPath } f
 interface Env {
   ASSETS: Fetcher
   NODE_ENV: string
+  EXTERNAL_DOC_HOST_ALLOWLIST?: string
+  EXTERNAL_DOC_HOST_BLOCKLIST?: string
 }
 
 const app = new Hono<{ Bindings: Env }>()
+const mcpServerCache = new Map<string, ReturnType<typeof createMcpServer>>()
+
+function getMcpServer(env: Env) {
+  const allowlist = env.EXTERNAL_DOC_HOST_ALLOWLIST ?? ""
+  const blocklist = env.EXTERNAL_DOC_HOST_BLOCKLIST ?? ""
+  const cacheKey = `${allowlist}\n---\n${blocklist}`
+  const cached = mcpServerCache.get(cacheKey)
+  if (cached) {
+    return cached
+  }
+
+  const server = createMcpServer({
+    EXTERNAL_DOC_HOST_ALLOWLIST: env.EXTERNAL_DOC_HOST_ALLOWLIST,
+    EXTERNAL_DOC_HOST_BLOCKLIST: env.EXTERNAL_DOC_HOST_BLOCKLIST,
+  })
+  mcpServerCache.set(cacheKey, server)
+  return server
+}
 
 app.use("*", async (c, next) => {
   await next()
@@ -56,12 +83,14 @@ app.use("*", async (c, next) => {
   await next()
 })
 
-const mcpServer = createMcpServer()
 app.all("/mcp", async (c) => {
+  const mcpServer = getMcpServer(c.env)
   const transport = new StreamableHTTPTransport()
   await mcpServer.connect(transport)
   return transport.handleRequest(c)
 })
+
+app.get("/bot", (c) => c.redirect("/#bot", 302))
 
 app.get("/documentation/*", async (c) => {
   const path = c.req.path
@@ -115,13 +144,54 @@ This service only works with Apple Developer documentation URLs:
     "Content-Location": appleUrl,
     "Cache-Control": "public, max-age=3600, s-maxage=86400",
     ETag: `"${Buffer.from(markdown).toString("base64").slice(0, 16)}"`,
-    "Last-Modified": new Date().toUTCString(),
   }
 
   if (c.req.header("Accept")?.includes("application/json")) {
     return c.json(
       {
         url: appleUrl,
+        content: markdown,
+      },
+      200,
+      { ...headers, "Content-Type": "application/json; charset=utf-8" },
+    )
+  }
+
+  return c.text(markdown, 200, {
+    ...headers,
+    "Content-Type": "text/markdown; charset=utf-8",
+  })
+})
+
+app.get("/external/*", async (c) => {
+  const path = c.req.path
+  const rawTarget = decodeExternalTargetPath(path)
+  const targetUrl = validateExternalDocumentationUrl(rawTarget)
+
+  const jsonData = await fetchExternalDocCJSON(targetUrl, c.env)
+  const externalBasePath = extractExternalDocumentationBasePath(targetUrl)
+  const markdown = await renderFromJSON(jsonData, targetUrl.toString(), {
+    externalOrigin: `${targetUrl.origin}${externalBasePath}`,
+  })
+
+  if (!markdown || markdown.trim().length < 100) {
+    throw new HTTPException(502, {
+      message:
+        "The external documentation page loaded but contained insufficient content. This may be a temporary issue with the page.",
+    })
+  }
+
+  const headers = {
+    "Content-Type": "text/markdown; charset=utf-8",
+    "Content-Location": targetUrl.toString(),
+    "Cache-Control": "public, max-age=3600, s-maxage=86400",
+    ETag: `"${Buffer.from(markdown).toString("base64").slice(0, 16)}"`,
+  }
+
+  if (c.req.header("Accept")?.includes("application/json")) {
+    return c.json(
+      {
+        url: targetUrl.toString(),
         content: markdown,
       },
       200,
@@ -154,7 +224,6 @@ app.get("/design/human-interface-guidelines", async (c) => {
     "Content-Location": sourceUrl,
     "Cache-Control": "public, max-age=3600, s-maxage=86400",
     ETag: `"${Buffer.from(markdown).toString("base64").slice(0, 16)}"`,
-    "Last-Modified": new Date().toUTCString(),
   }
 
   if (c.req.header("Accept")?.includes("application/json")) {
@@ -197,7 +266,6 @@ app.get("/design/human-interface-guidelines/:path{.+}", async (c) => {
     "Content-Location": sourceUrl,
     "Cache-Control": "public, max-age=3600, s-maxage=86400",
     ETag: `"${Buffer.from(markdown).toString("base64").slice(0, 16)}"`,
-    "Last-Modified": new Date().toUTCString(),
   }
 
   if (c.req.header("Accept")?.includes("application/json")) {
@@ -271,6 +339,36 @@ The requested Apple Developer documentation page does not exist.
 ---
 *[sosumi.ai](https://sosumi.ai) - Making Apple docs AI-readable*`,
       404,
+      { "Content-Type": "text/markdown; charset=utf-8" },
+    )
+  }
+
+  if (err instanceof ExternalAccessError) {
+    const accept = c.req.header("Accept")
+    if (accept?.includes("application/json")) {
+      return c.json(
+        {
+          error: "External documentation access denied",
+          message: err.message,
+        },
+        { status: err.status as 400 | 403 | 404 },
+      )
+    }
+
+    return c.text(
+      `# External Documentation Access Denied
+
+${err.message}
+
+## Opt-out controls supported
+
+- \`robots.txt\` disallow for \`sosumi-ai\` (or \`*\`)
+- \`X-Robots-Tag\` response directives such as \`noai\`, \`noimageai\`, \`noindex\`
+- Local operator host controls: \`EXTERNAL_DOC_HOST_ALLOWLIST\`, \`EXTERNAL_DOC_HOST_BLOCKLIST\`
+
+---
+*[sosumi.ai](https://sosumi.ai) - Making docs AI-readable*`,
+      err.status as 400 | 403 | 404,
       { "Content-Type": "text/markdown; charset=utf-8" },
     )
   }

@@ -290,9 +290,7 @@ describe("Render Function", () => {
                     [
                       {
                         type: "paragraph",
-                        inlineContent: [
-                          { type: "text", text: "The value for the import option." },
-                        ],
+                        inlineContent: [{ type: "text", text: "The value for the import option." }],
                       },
                     ],
                   ],

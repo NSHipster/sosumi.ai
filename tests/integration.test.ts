@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { fetchExternalDocCJSON } from "../src/lib/external"
 import { fetchJSONData, renderFromJSON } from "../src/lib/reference"
 import arrayData from "./fixtures/reference/array.json"
 import {
@@ -396,8 +397,47 @@ describe("Integration Tests with Mocked Apple API", () => {
 
     await fetchHIGTableOfContents()
 
-    const call = (global.fetch as any).mock.calls[0]
+    const call = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0]
     expect(call[1].headers["User-Agent"]).toBeDefined()
     expect(call[1].headers["User-Agent"]).toMatch(/Mozilla\/5\.0/)
+  })
+
+  it("should fetch and render external Swift-DocC JSON", async () => {
+    global.fetch = vi
+      .fn()
+      // robots.txt allows access
+      .mockResolvedValueOnce(
+        new Response("User-agent: *\nAllow: /", {
+          status: 200,
+          headers: { "Content-Type": "text/plain" },
+        }),
+      )
+      // external JSON response
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(arrayData), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+
+    const jsonData = await fetchExternalDocCJSON(
+      new URL("https://reference-ios.daily.co/documentation/daily"),
+    )
+    const text = await renderFromJSON(
+      jsonData,
+      "https://reference-ios.daily.co/documentation/daily",
+      {
+        externalOrigin: "https://reference-ios.daily.co",
+      },
+    )
+
+    expect(text).toContain("# Array")
+    expect(text).toContain(
+      "*Extracted by [sosumi.ai](https://sosumi.ai) - Making Apple docs AI-readable.*",
+    )
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://reference-ios.daily.co/data/documentation/daily.json",
+      expect.any(Object),
+    )
   })
 })
