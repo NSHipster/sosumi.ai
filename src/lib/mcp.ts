@@ -1,4 +1,4 @@
-import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js"
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { z } from "zod"
 
 import type { ExternalPolicyEnv } from "./external"
@@ -14,78 +14,6 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
     name: "sosumi.ai",
     version: "1.0.0",
   })
-
-  // Register doc://{path} resource template (supports both dev docs and HIG)
-  server.registerResource(
-    "appleDocumentation",
-    new ResourceTemplate("doc://{path}", { list: undefined }),
-    {
-      title: "Apple Documentation",
-      description: "Apple Developer documentation and Human Interface Guidelines as Markdown",
-    },
-    async (uri, { path }) => {
-      try {
-        // Percent decode the path first
-        const decodedPath = decodeURIComponent(path.toString())
-
-        // Check if this is a HIG path
-        if (decodedPath.includes("design/human-interface-guidelines")) {
-          // Handle HIG content
-          const higPath = decodedPath.replace(/^\/?(design\/human-interface-guidelines\/)/, "")
-          const sourceUrl = `https://developer.apple.com/design/human-interface-guidelines/${higPath}`
-
-          const jsonData = await fetchHIGPageData(higPath)
-          const markdown = await renderHIGFromJSON(jsonData, sourceUrl)
-
-          if (!markdown || markdown.trim().length < 100) {
-            throw new Error("Insufficient content in HIG page")
-          }
-
-          return {
-            contents: [
-              {
-                uri: uri.href,
-                text: markdown,
-                mimeType: "text/markdown",
-              },
-            ],
-          }
-        } else {
-          // Handle regular developer documentation
-          const normalizedPath = normalizeDocumentationPath(decodedPath)
-          const appleUrl = generateAppleDocUrl(normalizedPath)
-
-          const jsonData = await fetchJSONData(normalizedPath)
-          const markdown = await renderFromJSON(jsonData, appleUrl)
-
-          if (!markdown || markdown.trim().length < 100) {
-            throw new Error("Insufficient content in documentation")
-          }
-
-          return {
-            contents: [
-              {
-                uri: uri.href,
-                text: markdown,
-                mimeType: "text/markdown",
-              },
-            ],
-          }
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Unknown error"
-        return {
-          contents: [
-            {
-              uri: uri.href,
-              text: `Error fetching content: ${errorMessage}`,
-              mimeType: "text/plain",
-            },
-          ],
-        }
-      }
-    },
-  )
 
   // Register Apple search tool
   server.registerTool(

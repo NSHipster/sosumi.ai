@@ -109,12 +109,6 @@ you can run this command to proxy over stdio:
 }
 ```
 
-### Available Resources
-
-- `doc://{path}` - Apple Developer documentation and Human Interface Guidelines in Markdown format
-  - Example: `doc://swift/array` returns Swift Array documentation
-  - Example: `doc://design/human-interface-guidelines/foundations/color` returns HIG Color guidelines
-
 ### Available Tools
 
 - `searchAppleDocumentation` - Searches Apple Developer documentation

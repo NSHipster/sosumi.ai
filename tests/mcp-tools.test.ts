@@ -5,8 +5,6 @@ const fetchVideoTranscriptMarkdown = vi.fn()
 
 vi.mock("@modelcontextprotocol/sdk/server/mcp.js", () => {
   class McpServerMock {
-    registerResource() {}
-
     registerTool(
       name: string,
       _config: unknown,
@@ -16,11 +14,8 @@ vi.mock("@modelcontextprotocol/sdk/server/mcp.js", () => {
     }
   }
 
-  class ResourceTemplateMock {}
-
   return {
     McpServer: McpServerMock,
-    ResourceTemplate: ResourceTemplateMock,
   }
 })
 
