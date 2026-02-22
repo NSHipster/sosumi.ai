@@ -34,7 +34,7 @@ describe("MCP tools registration", () => {
     fetchVideoTranscriptMarkdown.mockReset()
   })
 
-  it("registers and runs fetchAppleVideoTranscript", async () => {
+  it("registers and runs fetchAppleVideoTranscript with path input", async () => {
     fetchVideoTranscriptMarkdown.mockResolvedValue(`# Transcript\n\n${"A".repeat(150)}`)
 
     const { createMcpServer } = await import("../src/lib/mcp")
@@ -44,7 +44,7 @@ describe("MCP tools registration", () => {
     expect(handler).toBeDefined()
 
     const result = (await handler?.({
-      url: "https://developer.apple.com/videos/play/wwdc2021/10133/",
+      path: "/videos/play/wwdc2021/10133",
     })) as { content: Array<{ text: string }> }
 
     expect(fetchVideoTranscriptMarkdown).toHaveBeenCalledWith(
@@ -55,19 +55,19 @@ describe("MCP tools registration", () => {
     expect(result.content[0].text).toContain("# Transcript")
   })
 
-  it("returns a readable error for invalid WWDC URL input", async () => {
+  it("returns a readable error for invalid WWDC path input", async () => {
     const { createMcpServer } = await import("../src/lib/mcp")
     createMcpServer()
 
     const handler = toolHandlers.get("fetchAppleVideoTranscript")
     const result = (await handler?.({
-      url: "https://developer.apple.com/videos/wwdc2021/",
+      path: "/videos/wwdc2021/",
     })) as { content: Array<{ text: string }> }
 
     expect(fetchVideoTranscriptMarkdown).not.toHaveBeenCalled()
     expect(result.content[0].text).toContain(
-      'Error fetching WWDC transcript for "https://developer.apple.com/videos/wwdc2021/"',
+      'Error fetching WWDC transcript for "/videos/wwdc2021/"',
     )
-    expect(result.content[0].text).toContain("Invalid WWDC video URL")
+    expect(result.content[0].text).toContain("Invalid WWDC video path")
   })
 })

@@ -101,7 +101,7 @@ See [the website](https://sosumi.ai/#clients) for client-specific instructions.
   - Returns content as Markdown
 
 - `fetchAppleVideoTranscript` - Fetches WWDC video transcripts
-  - Parameters: `url` (string) - WWDC video URL (e.g., `https://developer.apple.com/videos/play/wwdc2021/10133/`)
+  - Parameters: `path` (string) - WWDC video path (e.g., `/videos/play/wwdc2021/10133`)
   - Returns transcript content as Markdown
 
 ### Chrome Extension

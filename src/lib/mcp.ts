@@ -327,12 +327,12 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
     "fetchAppleVideoTranscript",
     {
       title: "Fetch Apple Video Transcript",
-      description: "Fetch transcript for an Apple Developer WWDC video URL and return as markdown",
+      description: "Fetch transcript for an Apple Developer WWDC video path and return as markdown",
       inputSchema: {
-        url: z
+        path: z
           .string()
           .describe(
-            "WWDC video URL (e.g., 'https://developer.apple.com/videos/play/wwdc2021/10133/')",
+            "WWDC video path (e.g., '/videos/play/wwdc2021/10133' or 'videos/play/wwdc2021/10133')",
           ),
       },
       annotations: {
@@ -342,13 +342,13 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
         openWorldHint: true,
       },
     },
-    async ({ url }) => {
+    async ({ path }) => {
       try {
-        const parsed = new URL(url)
-        const match = parsed.pathname.match(/^\/videos\/play\/(wwdc\d{4})\/(\d+)\/?$/i)
+        const normalizedPath = path.startsWith("/") ? path : `/${path}`
+        const match = normalizedPath.match(/^\/videos\/play\/(wwdc\d{4})\/(\d+)\/?$/i)
         if (!match) {
           throw new Error(
-            "Invalid WWDC video URL. Expected format: https://developer.apple.com/videos/play/wwdcYYYY/SESSION_ID/",
+            "Invalid WWDC video path. Expected format: /videos/play/wwdcYYYY/SESSION_ID",
           )
         }
 
@@ -375,7 +375,7 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
           content: [
             {
               type: "text" as const,
-              text: `Error fetching WWDC transcript for "${url}": ${errorMessage}`,
+              text: `Error fetching WWDC transcript for "${path}": ${errorMessage}`,
             },
           ],
         }
