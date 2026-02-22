@@ -569,7 +569,7 @@
                 <br />
             </p>
             <p>
-                This service translates Apple Developer documentation and Human Interface Guidelines into AI-friendly Markdown.
+                This service translates Apple Developer documentation, Human Interface Guidelines, WWDC sessions, and external Swift-DocC sites into AI-friendly Markdown.
             </p>
         </header>
 
@@ -598,6 +598,7 @@
                     <li><a href="/documentation/swift">Swift</a></li>
                     <li><a href="/documentation/swiftui">SwiftUI</a></li>
                     <li><a href="/design/human-interface-guidelines/">Human Interface Guidelines</a></li>
+                    <li><a href="/videos/play/wwdc2021/10133">WWDC21: Protect mutable state with Swift actors</a></li>
                     <li><a
                             href="/external/https://apple.github.io/swift-argument-parser/documentation/argumentparser/">Swift
                             Argument Parser (hosted on GitHub Pages)</a></li>
@@ -626,8 +627,7 @@
                 </p>
             </header>
         </section>
-
-
+        
 
         <section id="mcp">
             <header>
@@ -807,6 +807,15 @@
                             <dt><code>fetchExternalDocumentation</code></dt>
                             <dd><strong>Fetches external Swift-DocC documentation by absolute HTTPS URL</strong>
                                 <br>Parameters: <code>url</code> (string) - External URL (e.g., 'https://apple.github.io/swift-argument-parser/documentation/argumentparser')
+                                <br><em>Returns content as Markdown</em>
+                            </dd>
+                        </dl>
+                    </li>
+                    <li>
+                        <dl>
+                            <dt><code>fetchAppleVideoTranscript</code></dt>
+                            <dd><strong>Fetches WWDC video transcripts by Apple video URL</strong>
+                                <br>Parameters: <code>url</code> (string) - WWDC URL (e.g., 'https://developer.apple.com/videos/play/wwdc2021/10133/')
                                 <br><em>Returns content as Markdown</em>
                             </dd>
                         </dl>

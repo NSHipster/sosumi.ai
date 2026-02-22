@@ -26,27 +26,37 @@ https://sosumi.ai/documentation/swift/array
 This works for all API reference docs, 
 as well as Apple's [Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/) (HIG).
 
-### External Swift-DocC sites
+WWDC session transcripts are also supported by replacing the same host for video URLs:
+
+**Original:**
+```
+https://developer.apple.com/videos/play/wwdc2021/10133/
+```
+
+**AI-readable:**
+```
+https://sosumi.ai/videos/play/wwdc2021/10133
+```
 
 Sosumi can also proxy public non-Apple Swift-DocC pages using:
 
+**Original:**
 ```
-https://sosumi.ai/external/https://<host>/documentation/<path>
+https://apple.github.io/swift-argument-parser/documentation/argumentparser
 ```
 
-Examples:
-
+**AI-readable:**
 ```
 https://sosumi.ai/external/https://apple.github.io/swift-argument-parser/documentation/argumentparser
-https://sosumi.ai/external/https://swiftpackageindex.com/pointfreeco/swift-composable-architecture/1.23.1/documentation/composablearchitecture
 ```
 
-Sosumi resolves the URL to the site's underlying DocC JSON endpoint
-and renders Markdown, preserving any base path from the original URL.
-External hosts can opt out via `robots.txt`
-by disallowing user-agent `sosumi-ai`
-(full UA: `sosumi-ai/1.0 (+https://sosumi.ai/#bot)`).
-See `/bot` for the crawler policy and contact details.
+> [!NOTE]
+> Sosumi resolves the URL to the site's underlying DocC JSON endpoint
+> and renders Markdown, preserving any base path from the original URL.
+> External hosts can opt out via `robots.txt`
+> by disallowing user-agent `sosumi-ai`
+> (full UA: `sosumi-ai/1.0 (+https://sosumi.ai/#bot)`).
+> See `/bot` for the crawler policy and contact details.
 
 ### MCP Integration
 
@@ -89,6 +99,10 @@ See [the website](https://sosumi.ai/#clients) for client-specific instructions.
 - `fetchExternalDocumentation` - Fetches external Swift-DocC documentation by absolute HTTPS URL
   - Parameters: `url` (string) - External URL (e.g., `https://apple.github.io/swift-argument-parser/documentation/argumentparser`)
   - Returns content as Markdown
+
+- `fetchAppleVideoTranscript` - Fetches WWDC video transcripts
+  - Parameters: `url` (string) - WWDC video URL (e.g., `https://developer.apple.com/videos/play/wwdc2021/10133/`)
+  - Returns transcript content as Markdown
 
 ### Chrome Extension
 
