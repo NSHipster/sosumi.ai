@@ -169,7 +169,6 @@ function decodeHtmlEntities(input: string): string {
       case "quot":
         return '"'
       case "apos":
-      case "#39":
         return "'"
       case "nbsp":
         return " "
