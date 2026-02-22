@@ -322,17 +322,17 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
     },
   )
 
-  // Register WWDC transcript fetch tool
+  // Register Apple video transcript fetch tool
   server.registerTool(
     "fetchAppleVideoTranscript",
     {
       title: "Fetch Apple Video Transcript",
-      description: "Fetch transcript for an Apple Developer WWDC video path and return as markdown",
+      description: "Fetch transcript for an Apple Developer video path and return as markdown",
       inputSchema: {
         path: z
           .string()
           .describe(
-            "WWDC video path (e.g., '/videos/play/wwdc2021/10133' or 'videos/play/wwdc2021/10133')",
+            "Apple video path (e.g., '/videos/play/wwdc2021/10133' or '/videos/play/meet-with-apple/267')",
           ),
       },
       annotations: {
@@ -345,20 +345,20 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
     async ({ path }) => {
       try {
         const normalizedPath = path.startsWith("/") ? path : `/${path}`
-        const match = normalizedPath.match(/^\/videos\/play\/(wwdc\d{4})\/(\d+)\/?$/i)
+        const match = normalizedPath.match(/^\/videos\/play\/([a-z0-9-]+)\/(\d+)\/?$/i)
         if (!match) {
           throw new Error(
-            "Invalid WWDC video path. Expected format: /videos/play/wwdcYYYY/SESSION_ID",
+            "Invalid Apple video path. Expected format: /videos/play/COLLECTION/VIDEO_ID",
           )
         }
 
-        const event = match[1]
-        const sessionId = match[2]
-        const sourceUrl = `https://developer.apple.com/videos/play/${event}/${sessionId}/`
-        const markdown = await fetchVideoTranscriptMarkdown(sourceUrl, event, sessionId)
+        const collection = match[1]
+        const videoId = match[2]
+        const sourceUrl = `https://developer.apple.com/videos/play/${collection}/${videoId}/`
+        const markdown = await fetchVideoTranscriptMarkdown(sourceUrl, collection, videoId)
 
         if (!markdown || markdown.trim().length < 100) {
-          throw new Error("Insufficient content in WWDC transcript")
+          throw new Error("Insufficient content in video transcript")
         }
 
         return {
@@ -375,7 +375,7 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
           content: [
             {
               type: "text" as const,
-              text: `Error fetching WWDC transcript for "${path}": ${errorMessage}`,
+              text: `Error fetching Apple video transcript for "${path}": ${errorMessage}`,
             },
           ],
         }

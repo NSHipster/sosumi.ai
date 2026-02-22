@@ -96,13 +96,13 @@ See [the website](https://sosumi.ai/#clients) for client-specific instructions.
   - Parameters: `path` (string) - Documentation path (e.g., '/documentation/swift', 'swiftui/view', 'design/human-interface-guidelines/foundations/color')
   - Returns content as Markdown
 
+- `fetchAppleVideoTranscript` - Fetches video transcripts, including WWDC sessions
+  - Parameters: `path` (string) - video path (e.g., `/videos/play/wwdc2021/10133`)
+  - Returns transcript content as Markdown
+
 - `fetchExternalDocumentation` - Fetches external Swift-DocC documentation by absolute HTTPS URL
   - Parameters: `url` (string) - External URL (e.g., `https://apple.github.io/swift-argument-parser/documentation/argumentparser`)
   - Returns content as Markdown
-
-- `fetchAppleVideoTranscript` - Fetches WWDC video transcripts
-  - Parameters: `path` (string) - WWDC video path (e.g., `/videos/play/wwdc2021/10133`)
-  - Returns transcript content as Markdown
 
 ### Chrome Extension
 

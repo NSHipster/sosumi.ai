@@ -129,12 +129,12 @@ you can run this command to proxy over stdio:
   - Parameters: `path` (string) - Documentation path (e.g., '/documentation/swift', 'design/human-interface-guidelines/foundations/color')
   - Returns content as Markdown
 
-- `fetchExternalDocumentation` - Fetches external Swift-DocC documentation by absolute HTTPS URL
-  - Parameters: `url` (string) - External URL (e.g., `https://apple.github.io/swift-argument-parser/documentation/argumentparser`)
+- `fetchAppleVideoTranscript` - Fetches video transcripts, including WWDC sessions
+  - Parameters: `path` (string) - video path (e.g., `/videos/play/wwdc2021/10133`)
   - Returns content as Markdown
 
-- `fetchAppleVideoTranscript` - Fetches WWDC video transcripts
-  - Parameters: `path` (string) - WWDC video path (e.g., `/videos/play/wwdc2021/10133`)
+- `fetchExternalDocumentation` - Fetches external Swift-DocC documentation by absolute HTTPS URL
+  - Parameters: `url` (string) - External URL (e.g., `https://apple.github.io/swift-argument-parser/documentation/argumentparser`)
   - Returns content as Markdown
 
 ## Troubleshooting

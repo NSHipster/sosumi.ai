@@ -98,4 +98,39 @@ describe("WWDC video transcript support", () => {
       ),
     ).rejects.toThrow(TranscriptNotFoundError)
   })
+
+  it("renders transcript markdown for non-WWDC collections", async () => {
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response(
+        `
+        <html>
+          <head>
+            <title>SwiftUI foundations: Build great apps with SwiftUI - Meet with Apple - Videos - Apple Developer</title>
+          </head>
+          <body>
+            <section id="transcript-content">
+              <p>
+                <span class="sentence"><span data-start="1.0">Welcome to SwiftUI foundations.</span></span>
+              </p>
+            </section>
+          </body>
+        </html>
+        `,
+        {
+          status: 200,
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        },
+      ),
+    )
+
+    const sourceUrl = "https://developer.apple.com/videos/play/meet-with-apple/267/"
+    const markdown = await fetchVideoTranscriptMarkdown(sourceUrl, "meet-with-apple", "267")
+
+    expect(markdown).toContain(
+      "source: https://developer.apple.com/videos/play/meet-with-apple/267/",
+    )
+    expect(markdown).toContain("**Event:** meet-with-apple")
+    expect(markdown).toContain("**Session:** 267")
+    expect(markdown).toContain("- [00:01] Welcome to SwiftUI foundations.")
+  })
 })

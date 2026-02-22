@@ -55,7 +55,26 @@ describe("MCP tools registration", () => {
     expect(result.content[0].text).toContain("# Transcript")
   })
 
-  it("returns a readable error for invalid WWDC path input", async () => {
+  it("supports non-WWDC /videos/play collections", async () => {
+    fetchVideoTranscriptMarkdown.mockResolvedValue(`# Transcript\n\n${"A".repeat(150)}`)
+
+    const { createMcpServer } = await import("../src/lib/mcp")
+    createMcpServer()
+
+    const handler = toolHandlers.get("fetchAppleVideoTranscript")
+    const result = (await handler?.({
+      path: "/videos/play/meet-with-apple/267",
+    })) as { content: Array<{ text: string }> }
+
+    expect(fetchVideoTranscriptMarkdown).toHaveBeenCalledWith(
+      "https://developer.apple.com/videos/play/meet-with-apple/267/",
+      "meet-with-apple",
+      "267",
+    )
+    expect(result.content[0].text).toContain("# Transcript")
+  })
+
+  it("returns a readable error for invalid video path input", async () => {
     const { createMcpServer } = await import("../src/lib/mcp")
     createMcpServer()
 
@@ -66,8 +85,8 @@ describe("MCP tools registration", () => {
 
     expect(fetchVideoTranscriptMarkdown).not.toHaveBeenCalled()
     expect(result.content[0].text).toContain(
-      'Error fetching WWDC transcript for "/videos/wwdc2021/"',
+      'Error fetching Apple video transcript for "/videos/wwdc2021/"',
     )
-    expect(result.content[0].text).toContain("Invalid WWDC video path")
+    expect(result.content[0].text).toContain("Invalid Apple video path")
   })
 })

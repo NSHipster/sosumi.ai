@@ -282,22 +282,22 @@ app.get("/design/human-interface-guidelines/:path{.+}", async (c) => {
   return c.text(markdown, 200, headers)
 })
 
-app.get("/videos/play/:event/:id", async (c) => {
-  const event = c.req.param("event")
+app.get("/videos/play/:collection/:id", async (c) => {
+  const collection = c.req.param("collection")
   const id = c.req.param("id")
 
-  if (!/^wwdc\d{4}$/i.test(event) || !/^\d+$/.test(id)) {
+  if (!/^[a-z0-9-]+$/i.test(collection) || !/^\d+$/.test(id)) {
     throw new HTTPException(400, {
       message:
-        "Invalid WWDC video URL. Supported format: /videos/play/wwdcYYYY/SESSION_ID (for example, /videos/play/wwdc2021/10133).",
+        "Invalid video path. Supported format: /videos/play/COLLECTION/VIDEO_ID (for example, /videos/play/wwdc2021/10133).",
     })
   }
 
-  const sourceUrl = `https://developer.apple.com/videos/play/${event}/${id}/`
+  const sourceUrl = `https://developer.apple.com/videos/play/${collection}/${id}/`
 
   let markdown: string
   try {
-    markdown = await fetchVideoTranscriptMarkdown(sourceUrl, event, id)
+    markdown = await fetchVideoTranscriptMarkdown(sourceUrl, collection, id)
   } catch (error) {
     if (error instanceof TranscriptNotFoundError) {
       throw new HTTPException(404, {
@@ -310,7 +310,7 @@ app.get("/videos/play/:event/:id", async (c) => {
   if (!markdown || markdown.trim().length < 100) {
     throw new HTTPException(502, {
       message:
-        "The WWDC transcript loaded but contained insufficient content. This may be a temporary issue with the page.",
+        "The video transcript loaded but contained insufficient content. This may be a temporary issue with the page.",
     })
   }
 
