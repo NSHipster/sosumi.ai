@@ -7,6 +7,7 @@ import { fetchHIGPageData, renderHIGFromJSON } from "./hig"
 import { fetchJSONData, renderFromJSON } from "./reference"
 import { searchAppleDeveloperDocs } from "./search"
 import { generateAppleDocUrl, normalizeDocumentationPath } from "./url"
+import { fetchVideoTranscriptMarkdown } from "./video"
 
 export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
   const server = new McpServer({
@@ -314,6 +315,67 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
             {
               type: "text" as const,
               text: `Error fetching external content for "${url}": ${errorMessage}`,
+            },
+          ],
+        }
+      }
+    },
+  )
+
+  // Register WWDC transcript fetch tool
+  server.registerTool(
+    "fetchAppleVideoTranscript",
+    {
+      title: "Fetch Apple Video Transcript",
+      description: "Fetch transcript for an Apple Developer WWDC video URL and return as markdown",
+      inputSchema: {
+        url: z
+          .string()
+          .describe(
+            "WWDC video URL (e.g., 'https://developer.apple.com/videos/play/wwdc2021/10133/')",
+          ),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    async ({ url }) => {
+      try {
+        const parsed = new URL(url)
+        const match = parsed.pathname.match(/^\/videos\/play\/(wwdc\d{4})\/(\d+)\/?$/i)
+        if (!match) {
+          throw new Error(
+            "Invalid WWDC video URL. Expected format: https://developer.apple.com/videos/play/wwdcYYYY/SESSION_ID/",
+          )
+        }
+
+        const event = match[1]
+        const sessionId = match[2]
+        const sourceUrl = `https://developer.apple.com/videos/play/${event}/${sessionId}/`
+        const markdown = await fetchVideoTranscriptMarkdown(sourceUrl, event, sessionId)
+
+        if (!markdown || markdown.trim().length < 100) {
+          throw new Error("Insufficient content in WWDC transcript")
+        }
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: markdown,
+            },
+          ],
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error"
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Error fetching WWDC transcript for "${url}": ${errorMessage}`,
             },
           ],
         }
