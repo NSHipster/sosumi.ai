@@ -21,6 +21,7 @@ import {
 import { createMcpServer } from "./lib/mcp"
 import { fetchJSONData, renderFromJSON } from "./lib/reference"
 import { generateAppleDocUrl, isValidAppleDocUrl, normalizeDocumentationPath } from "./lib/url"
+import { fetchVideoTranscriptMarkdown, TranscriptNotFoundError } from "./lib/video"
 
 interface Env {
   ASSETS: Fetcher
@@ -257,6 +258,59 @@ app.get("/design/human-interface-guidelines/:path{.+}", async (c) => {
     throw new HTTPException(502, {
       message:
         "The HIG page loaded but contained insufficient content. This may be a temporary issue with the page.",
+    })
+  }
+
+  const headers = {
+    "Content-Type": "text/markdown; charset=utf-8",
+    "Content-Location": sourceUrl,
+    "Cache-Control": "public, max-age=3600, s-maxage=86400",
+    ETag: `"${Buffer.from(markdown).toString("base64").slice(0, 16)}"`,
+  }
+
+  if (c.req.header("Accept")?.includes("application/json")) {
+    return c.json(
+      {
+        url: sourceUrl,
+        content: markdown,
+      },
+      200,
+      { ...headers, "Content-Type": "application/json; charset=utf-8" },
+    )
+  }
+
+  return c.text(markdown, 200, headers)
+})
+
+app.get("/videos/play/:collection/:id", async (c) => {
+  const collection = c.req.param("collection")
+  const id = c.req.param("id")
+
+  if (!/^[a-z0-9-]+$/i.test(collection) || !/^\d+$/.test(id)) {
+    throw new HTTPException(400, {
+      message:
+        "Invalid video path. Supported format: /videos/play/COLLECTION/VIDEO_ID (for example, /videos/play/wwdc2021/10133).",
+    })
+  }
+
+  const sourceUrl = `https://developer.apple.com/videos/play/${collection}/${id}/`
+
+  let markdown: string
+  try {
+    markdown = await fetchVideoTranscriptMarkdown(sourceUrl, collection, id)
+  } catch (error) {
+    if (error instanceof TranscriptNotFoundError) {
+      throw new HTTPException(404, {
+        message: "Transcript not found. Some Apple Developer videos may not include a transcript.",
+      })
+    }
+    throw error
+  }
+
+  if (!markdown || markdown.trim().length < 100) {
+    throw new HTTPException(502, {
+      message:
+        "The video transcript loaded but contained insufficient content. This may be a temporary issue with the page.",
     })
   }
 

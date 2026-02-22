@@ -569,7 +569,7 @@
                 <br />
             </p>
             <p>
-                This service translates Apple Developer documentation and Human Interface Guidelines into AI-friendly Markdown.
+                This service translates Apple Developer documentation, Human Interface Guidelines, WWDC sessions, and external Swift-DocC sites into AI-friendly Markdown.
             </p>
         </header>
 
@@ -598,6 +598,7 @@
                     <li><a href="/documentation/swift">Swift</a></li>
                     <li><a href="/documentation/swiftui">SwiftUI</a></li>
                     <li><a href="/design/human-interface-guidelines/">Human Interface Guidelines</a></li>
+                    <li><a href="/videos/play/wwdc2021/10133">WWDC21: Protect mutable state with Swift actors</a></li>
                     <li><a
                             href="/external/https://apple.github.io/swift-argument-parser/documentation/argumentparser/">Swift
                             Argument Parser (hosted on GitHub Pages)</a></li>
@@ -626,7 +627,6 @@
                 </p>
             </header>
         </section>
-
 
 
         <section id="mcp">
@@ -798,6 +798,15 @@
                             <dt><code>fetchAppleDocumentation</code></dt>
                             <dd><strong>Fetches Apple Developer documentation and Human Interface Guidelines by path</strong>
                                 <br>Parameters: <code>path</code> (string) - Documentation path (e.g., '/documentation/swift', 'design/human-interface-guidelines/foundations/color')
+                                <br><em>Returns content as Markdown</em>
+                            </dd>
+                        </dl>
+                    </li>
+                    <li>
+                        <dl>
+                            <dt><code>fetchAppleVideoTranscript</code></dt>
+                            <dd><strong>Fetches video transcripts, including WWDC sessions, by video path</strong>
+                                <br>Parameters: <code>path</code> (string) - video path (e.g., '/videos/play/wwdc2021/10133', '/videos/play/meet-with-apple/208')
                                 <br><em>Returns content as Markdown</em>
                             </dd>
                         </dl>

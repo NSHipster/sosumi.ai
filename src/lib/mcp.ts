@@ -7,6 +7,7 @@ import { fetchHIGPageData, renderHIGFromJSON } from "./hig"
 import { fetchJSONData, renderFromJSON } from "./reference"
 import { searchAppleDeveloperDocs } from "./search"
 import { generateAppleDocUrl, normalizeDocumentationPath } from "./url"
+import { fetchVideoTranscriptMarkdown } from "./video"
 
 export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
   const server = new McpServer({
@@ -314,6 +315,67 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
             {
               type: "text" as const,
               text: `Error fetching external content for "${url}": ${errorMessage}`,
+            },
+          ],
+        }
+      }
+    },
+  )
+
+  // Register Apple video transcript fetch tool
+  server.registerTool(
+    "fetchAppleVideoTranscript",
+    {
+      title: "Fetch Apple Video Transcript",
+      description: "Fetch transcript for an Apple Developer video path and return as markdown",
+      inputSchema: {
+        path: z
+          .string()
+          .describe(
+            "Apple video path (e.g., '/videos/play/wwdc2021/10133' or '/videos/play/meet-with-apple/208')",
+          ),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    async ({ path }) => {
+      try {
+        const normalizedPath = path.startsWith("/") ? path : `/${path}`
+        const match = normalizedPath.match(/^\/videos\/play\/([a-z0-9-]+)\/(\d+)\/?$/i)
+        if (!match) {
+          throw new Error(
+            "Invalid Apple video path. Expected format: /videos/play/COLLECTION/VIDEO_ID",
+          )
+        }
+
+        const collection = match[1]
+        const videoId = match[2]
+        const sourceUrl = `https://developer.apple.com/videos/play/${collection}/${videoId}/`
+        const markdown = await fetchVideoTranscriptMarkdown(sourceUrl, collection, videoId)
+
+        if (!markdown || markdown.trim().length < 100) {
+          throw new Error("Insufficient content in video transcript")
+        }
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: markdown,
+            },
+          ],
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error"
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Error fetching Apple video transcript for "${path}": ${errorMessage}`,
             },
           ],
         }
