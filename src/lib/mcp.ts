@@ -332,7 +332,7 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
         path: z
           .string()
           .describe(
-            "Apple video path (e.g., '/videos/play/wwdc2021/10133' or '/videos/play/meet-with-apple/267')",
+            "Apple video path (e.g., '/videos/play/wwdc2021/10133' or '/videos/play/meet-with-apple/208')",
           ),
       },
       annotations: {

@@ -63,13 +63,13 @@ describe("MCP tools registration", () => {
 
     const handler = toolHandlers.get("fetchAppleVideoTranscript")
     const result = (await handler?.({
-      path: "/videos/play/meet-with-apple/267",
+      path: "/videos/play/meet-with-apple/208",
     })) as { content: Array<{ text: string }> }
 
     expect(fetchVideoTranscriptMarkdown).toHaveBeenCalledWith(
-      "https://developer.apple.com/videos/play/meet-with-apple/267/",
+      "https://developer.apple.com/videos/play/meet-with-apple/208/",
       "meet-with-apple",
-      "267",
+      "208",
     )
     expect(result.content[0].text).toContain("# Transcript")
   })

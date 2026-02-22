@@ -105,12 +105,12 @@ describe("WWDC video transcript support", () => {
         `
         <html>
           <head>
-            <title>SwiftUI foundations: Build great apps with SwiftUI - Meet with Apple - Videos - Apple Developer</title>
+            <title>Showcase: Learn how apps are integrating the new design and Liquid Glass - Meet with Apple - Videos - Apple Developer</title>
           </head>
           <body>
             <section id="transcript-content">
               <p>
-                <span class="sentence"><span data-start="1.0">Welcome to SwiftUI foundations.</span></span>
+                <span class="sentence"><span data-start="10.0">Good morning everyone.</span></span>
               </p>
             </section>
           </body>
@@ -123,14 +123,14 @@ describe("WWDC video transcript support", () => {
       ),
     )
 
-    const sourceUrl = "https://developer.apple.com/videos/play/meet-with-apple/267/"
-    const markdown = await fetchVideoTranscriptMarkdown(sourceUrl, "meet-with-apple", "267")
+    const sourceUrl = "https://developer.apple.com/videos/play/meet-with-apple/208/"
+    const markdown = await fetchVideoTranscriptMarkdown(sourceUrl, "meet-with-apple", "208")
 
     expect(markdown).toContain(
-      "source: https://developer.apple.com/videos/play/meet-with-apple/267/",
+      "source: https://developer.apple.com/videos/play/meet-with-apple/208/",
     )
-    expect(markdown).toContain("**Event:** meet-with-apple")
-    expect(markdown).toContain("**Session:** 267")
-    expect(markdown).toContain("- [00:01] Welcome to SwiftUI foundations.")
+    expect(markdown).toContain("**Collection:** meet-with-apple")
+    expect(markdown).toContain("**Video:** 208")
+    expect(markdown).toContain("- [00:10] Good morning everyone.")
   })
 })

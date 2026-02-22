@@ -11,11 +11,11 @@ interface TranscriptLine {
 
 export async function fetchVideoTranscriptMarkdown(
   sourceUrl: string,
-  event: string,
-  sessionId: string,
+  collection: string,
+  videoId: string,
 ): Promise<string> {
   const html = await fetchVideoTranscriptHtml(sourceUrl)
-  const title = extractVideoTitleFromHtml(html) ?? `WWDC Session ${sessionId}`
+  const title = extractVideoTitleFromHtml(html) ?? `Video ${videoId}`
   const transcriptLines = extractTranscriptLinesFromHtml(html)
 
   if (transcriptLines.length === 0) {
@@ -25,8 +25,8 @@ export async function fetchVideoTranscriptMarkdown(
   return renderVideoTranscriptMarkdown({
     title,
     sourceUrl,
-    event,
-    sessionId,
+    collection,
+    videoId,
     transcriptLines,
   })
 }
@@ -98,14 +98,14 @@ export function extractTranscriptLinesFromHtml(html: string): TranscriptLine[] {
 function renderVideoTranscriptMarkdown({
   title,
   sourceUrl,
-  event,
-  sessionId,
+  collection,
+  videoId,
   transcriptLines,
 }: {
   title: string
   sourceUrl: string
-  event: string
-  sessionId: string
+  collection: string
+  videoId: string
   transcriptLines: TranscriptLine[]
 }): string {
   const transcriptBody = transcriptLines
@@ -121,9 +121,9 @@ function renderVideoTranscriptMarkdown({
     "",
     `# ${title}`,
     "",
-    `**Event:** ${event}`,
+    `**Collection:** ${collection}`,
     "",
-    `**Session:** ${sessionId}`,
+    `**Video:** ${videoId}`,
     "",
     "## Transcript",
     "",
