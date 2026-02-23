@@ -349,8 +349,7 @@ describe("Render Function", () => {
 
       const result = await renderFromJSON(data as any, "https://test.com")
       expect(result).toContain("## Properties")
-      expect(result).toContain("### audioVariants")
-      expect(result).toContain("Type: [string] · Optional")
+      expect(result).toContain("### `audioVariants` *([string], optional)*")
       expect(result).toContain("**(Extended)** Indicates the specific audio variant for a song.")
       expect(result).toContain(
         "Possible Values: `dolby-atmos`, `dolby-audio`, `hi-res-lossless`, `lossless`, `lossy-stereo`",

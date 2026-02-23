@@ -274,14 +274,11 @@ function renderProperties(
   for (const property of properties) {
     if (!property.name) continue
 
-    markdown += `### ${property.name}\n\n`
-
     const typeText = renderPropertyType(property.type, references, externalOrigin)
-    const requiredText = property.required === true ? "Required" : "Optional"
-    const metadata = [typeText ? `Type: ${typeText}` : "", requiredText].filter(Boolean)
-    if (metadata.length > 0) {
-      markdown += `${metadata.join(" · ")}\n\n`
-    }
+    const requiredText = property.required === true ? "required" : "optional"
+    const metadata = [typeText, requiredText].filter(Boolean)
+    const headingSuffix = metadata.length > 0 ? ` *(${metadata.join(", ")})*` : ""
+    markdown += `### \`${property.name}\`${headingSuffix}\n\n`
 
     if (property.content && Array.isArray(property.content)) {
       markdown += `${renderContentArray(property.content, references, 0, externalOrigin)}`
