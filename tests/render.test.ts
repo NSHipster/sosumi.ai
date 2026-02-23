@@ -308,6 +308,56 @@ describe("Render Function", () => {
     })
   })
 
+  describe("Properties rendering", () => {
+    it("should render primaryContentSections with kind properties", async () => {
+      const data = {
+        metadata: { title: "Songs.Attributes" },
+        primaryContentSections: [
+          {
+            kind: "properties",
+            items: [
+              {
+                name: "audioVariants",
+                required: false,
+                type: [{ kind: "text", text: "[string]" }],
+                attributes: [
+                  {
+                    kind: "allowedValues",
+                    values: [
+                      "dolby-atmos",
+                      "dolby-audio",
+                      "hi-res-lossless",
+                      "lossless",
+                      "lossy-stereo",
+                    ],
+                  },
+                ],
+                content: [
+                  {
+                    type: "paragraph",
+                    inlineContent: [
+                      { type: "strong", inlineContent: [{ type: "text", text: "(Extended)" }] },
+                      { type: "text", text: " Indicates the specific audio variant for a song." },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).toContain("## Properties")
+      expect(result).toContain("### audioVariants")
+      expect(result).toContain("Type: [string] · Optional")
+      expect(result).toContain("**(Extended)** Indicates the specific audio variant for a song.")
+      expect(result).toContain(
+        "Possible Values: `dolby-atmos`, `dolby-audio`, `hi-res-lossless`, `lossless`, `lossy-stereo`",
+      )
+    })
+  })
+
   describe("Inline image rendering", () => {
     it("should render inline image with alt and URL from reference", async () => {
       const data = {
