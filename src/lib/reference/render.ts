@@ -2,7 +2,14 @@
  * Apple Developer Reference documentation rendering functionality
  */
 
-import type { AppleDocJSON, ContentItem, IndexContentItem, TopicSection, Variant } from "./types"
+import type {
+  AppleDocJSON,
+  ContentItem,
+  IndexContentItem,
+  PropertyItem,
+  TopicSection,
+  Variant,
+} from "./types"
 
 interface RenderOptions {
   externalOrigin?: string
@@ -72,6 +79,16 @@ export async function renderFromJSON(
     if (parametersSection?.parameters) {
       markdown += renderParameters(
         parametersSection.parameters,
+        jsonData.references,
+        options.externalOrigin,
+      )
+    }
+
+    // Add properties (used by object/dictionary pages in data docs)
+    const propertiesSection = jsonData.primaryContentSections.find((s) => s.kind === "properties")
+    if (propertiesSection?.items) {
+      markdown += renderProperties(
+        propertiesSection.items,
         jsonData.references,
         options.externalOrigin,
       )
@@ -240,6 +257,60 @@ function renderParameters(
   }
 
   return markdown
+}
+
+/**
+ * Render properties section for data dictionary pages.
+ */
+function renderProperties(
+  properties: PropertyItem[],
+  references?: Record<string, ContentItem>,
+  externalOrigin?: string,
+): string {
+  if (properties.length === 0) return ""
+
+  let markdown = "## Properties\n\n"
+
+  for (const property of properties) {
+    if (!property.name) continue
+
+    const typeText = renderPropertyType(property.type, references, externalOrigin)
+    const requiredText = property.required === true ? "required" : "optional"
+    const metadata = [typeText, requiredText].filter(Boolean)
+    const headingSuffix = metadata.length > 0 ? ` *(${metadata.join(", ")})*` : ""
+    markdown += `### \`${property.name}\`${headingSuffix}\n\n`
+
+    if (property.content && Array.isArray(property.content)) {
+      markdown += `${renderContentArray(property.content, references, 0, externalOrigin)}`
+    }
+
+    const allowedValues = property.attributes?.find((a) => a.kind === "allowedValues")?.values
+    if (allowedValues && allowedValues.length > 0) {
+      const possibleValues = allowedValues.map((value) => `\`${value}\``).join(", ")
+      markdown += `Possible Values: ${possibleValues}\n\n`
+    }
+  }
+
+  return markdown
+}
+
+function renderPropertyType(
+  type: Array<{ text?: string; kind?: string; identifier?: string }> | undefined,
+  references?: Record<string, ContentItem>,
+  externalOrigin?: string,
+): string {
+  if (!type || type.length === 0) return ""
+
+  return type
+    .map((part) => {
+      if (part.kind === "typeIdentifier" && part.identifier && part.text) {
+        const url = convertIdentifierToURL(part.identifier, references, externalOrigin)
+        return url ? `[${part.text}](${url})` : part.text
+      }
+      return part.text || ""
+    })
+    .join("")
+    .trim()
 }
 
 /**

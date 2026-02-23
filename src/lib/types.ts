@@ -116,6 +116,25 @@ export interface PrimaryContentSection {
   content?: ContentItem[]
   declarations?: Declaration[]
   parameters?: Parameter[]
+  items?: PropertyItem[]
+}
+
+/**
+ * Represents a property item used in data dictionary pages.
+ */
+export interface PropertyItem {
+  name: string
+  required?: boolean
+  content?: ContentItem[]
+  type?: Array<{
+    text?: string
+    kind?: string
+    identifier?: string
+  }>
+  attributes?: Array<{
+    kind?: string
+    values?: string[]
+  }>
 }
 
 // ============================================================================

@@ -21,6 +21,7 @@ export type {
   Parameter,
   Platform,
   PrimaryContentSection,
+  PropertyItem,
   SeeAlsoSection,
   SwiftInterfaceItem,
   SymbolVariant,
