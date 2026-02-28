@@ -31,6 +31,7 @@ lerna-debug.log*
 
 # misc
 .DS_Store
+out/
 
 .dev.vars*
 !.dev.vars.example

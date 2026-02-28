@@ -176,6 +176,16 @@ npm run test:ui       # Run tests with UI
 npm run test:run      # Run tests once
 ```
 
+### Full HIG Export
+
+If you want one local Markdown file containing all Human Interface Guidelines pages:
+
+```bash
+npm run export:hig:full
+```
+
+Output: `out/human-interface-guidelines-full.md`
+
 ### Code Quality
 
 This project uses [Biome](https://biomejs.dev/) 
