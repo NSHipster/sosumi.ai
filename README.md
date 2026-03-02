@@ -148,7 +148,6 @@ sosumi fetch https://developer.apple.com/documentation/swift/array --json
 sosumi search "SwiftData" --json
 ```
 
-
 ### Chrome Extension
 
 You can also use Sosumi from a community-contributed 
@@ -262,6 +261,18 @@ be sure to re-run:
 ```bash
 npm run cf-typegen
 ```
+
+### Publishing
+
+Publishing is handled by two GitHub Actions workflows:
+
+- Release creation: `.github/workflows/release.yml`
+  - Trigger: pushed tags matching `v*` or manual dispatch with `tag`
+  - Command: `gh release create "$TAG_NAME" --generate-notes`
+- npm publish: `.github/workflows/publish.yml`
+  - Trigger: GitHub Release published (`release.published`)
+  - Auth: npm trusted publishing via OIDC (`id-token: write`)
+  - Command: `npm publish --provenance --access public`
 
 ## License
 
