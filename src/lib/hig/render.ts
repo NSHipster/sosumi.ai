@@ -336,6 +336,15 @@ function renderHIGInlineContent(
         return `**${
           item.inlineContent ? renderHIGInlineContent(item.inlineContent, references) : ""
         }**`
+      } else if (item.type === "image" && item.identifier) {
+        const reference = references[item.identifier]
+        if (reference && isHIGImageReference(reference)) {
+          const imageUrl = reference.variants?.[0]?.url
+          if (imageUrl) {
+            return `![${reference.alt ?? ""}](${imageUrl})`
+          }
+        }
+        return ""
       }
       return item.text || ""
     })
