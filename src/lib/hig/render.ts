@@ -264,6 +264,8 @@ function renderContentItem(
     markdown += renderHIGAside(item, references)
   } else if (item.type === "row") {
     markdown += renderHIGRow(item, references)
+  } else if (item.type === "video") {
+    markdown += renderHIGVideo(item, references)
   }
 
   return markdown
@@ -343,6 +345,42 @@ function renderHIGRow(
     }
   }
   return markdown
+}
+
+/**
+ * Render a HIG video block as a markdown link.
+ */
+function renderHIGVideo(
+  item: ContentItem,
+  references: Record<string, HIGReference | HIGImageReference | HIGExternalReference>,
+): string {
+  const video = item as ContentItem & {
+    identifier?: string
+    metadata?: {
+      abstract?: TextFragment[]
+    }
+  }
+  if (!video.identifier) return ""
+
+  const reference = references[video.identifier] as
+    | {
+        type?: string
+        alt?: string
+        variants?: Array<{ url?: string }>
+      }
+    | undefined
+
+  const videoUrl = reference?.variants?.[0]?.url
+  if (!videoUrl) return ""
+
+  const abstractText = (video.metadata?.abstract ?? [])
+    .filter((fragment) => fragment.type === "text")
+    .map((fragment) => fragment.text)
+    .join("")
+    .trim()
+  const label = abstractText || reference?.alt || "Video"
+
+  return `[${label}](${videoUrl})\n\n`
 }
 
 /**
