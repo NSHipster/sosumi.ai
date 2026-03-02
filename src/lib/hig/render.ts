@@ -258,9 +258,129 @@ function renderContentItem(
       markdown += `${index + 1}. ${itemText.replace(/\n\n$/, "")}\n`
     })
     markdown += "\n"
+  } else if (item.type === "table") {
+    markdown += renderHIGTable(item, references)
+  } else if (item.type === "aside") {
+    markdown += renderHIGAside(item, references)
+  } else if (item.type === "row") {
+    markdown += renderHIGRow(item, references)
+  } else if (item.type === "video") {
+    markdown += renderHIGVideo(item, references)
   }
 
   return markdown
+}
+
+/**
+ * Render a HIG table to markdown.
+ * HIG tables use header: "row" and rows[rowIndex][cellIndex] = ContentItem[].
+ */
+function renderHIGTable(
+  item: ContentItem,
+  references: Record<string, HIGReference | HIGImageReference | HIGExternalReference>,
+): string {
+  const table = item as ContentItem & {
+    header?: string
+    rows?: ContentItem[][][]
+  }
+  const rows = table.rows ?? []
+  if (rows.length === 0) return ""
+
+  const escapeCell = (s: string) => s.replace(/\|/g, "\\|").replace(/\n/g, " ").trim()
+  const renderCell = (cell: ContentItem | ContentItem[]) => {
+    const items = Array.isArray(cell) ? cell : [cell]
+    const text = renderHIGContent(items, references)
+    return escapeCell(text)
+  }
+
+  const firstRowIsHeader = table.header === "row"
+  let markdown = ""
+
+  rows.forEach((row, rowIndex) => {
+    const cells = row.map((cell) => renderCell(cell))
+    if (cells.length === 0) return
+    markdown += `| ${cells.join(" | ")} |\n`
+    if (firstRowIsHeader && rowIndex === 0) {
+      markdown += `| ${cells.map(() => "---").join(" | ")} |\n`
+    }
+  })
+
+  return markdown ? `${markdown}\n` : ""
+}
+
+/**
+ * Render a HIG aside/callout block to markdown.
+ */
+function renderHIGAside(
+  item: ContentItem,
+  references: Record<string, HIGReference | HIGImageReference | HIGExternalReference>,
+): string {
+  const aside = item as ContentItem & { style?: string; name?: string }
+  const rawType = (aside.style || aside.name || "note").toLowerCase()
+  const calloutType = mapHIGAsideStyleToCallout(rawType)
+  const asideContent = item.content ? renderHIGContent(item.content, references) : ""
+  const cleanContent = asideContent.trim().replace(/\n/g, "\n> ")
+  if (!cleanContent) return ""
+  return `> [!${calloutType}]\n> ${cleanContent}\n\n`
+}
+
+/**
+ * Render a HIG row block by rendering each column content in order.
+ */
+function renderHIGRow(
+  item: ContentItem,
+  references: Record<string, HIGReference | HIGImageReference | HIGExternalReference>,
+): string {
+  const row = item as ContentItem & {
+    columns?: Array<{
+      content?: ContentItem[]
+    }>
+  }
+  if (!row.columns || row.columns.length === 0) return ""
+
+  let markdown = ""
+  for (const column of row.columns) {
+    if (column.content && column.content.length > 0) {
+      markdown += renderHIGContent(column.content, references)
+    }
+  }
+  return markdown
+}
+
+/**
+ * Render a HIG video block as a markdown link.
+ */
+function renderHIGVideo(
+  item: ContentItem,
+  references: Record<string, HIGReference | HIGImageReference | HIGExternalReference>,
+): string {
+  const video = item as ContentItem & {
+    identifier?: string
+    metadata?: {
+      abstract?: TextFragment[]
+    }
+  }
+  if (!video.identifier) return ""
+
+  const reference = references[video.identifier] as
+    | {
+        type?: string
+        alt?: string
+        variants?: Array<{ url?: string }>
+      }
+    | undefined
+
+  const videoUrl = reference?.variants?.[0]?.url
+  if (!videoUrl) return ""
+
+  const abstractText = (video.metadata?.abstract ?? [])
+    .filter((fragment) => fragment.type === "text")
+    .map((fragment) => fragment.text)
+    .join("")
+    .trim()
+  const label = abstractText || reference?.alt || "Video"
+
+  return `[${label}](${videoUrl})\n\n`
 }
 
 /**
@@ -297,6 +417,15 @@ function renderHIGInlineContent(
         return `**${
           item.inlineContent ? renderHIGInlineContent(item.inlineContent, references) : ""
         }**`
+      } else if (item.type === "image" && item.identifier) {
+        const reference = references[item.identifier]
+        if (reference && isHIGImageReference(reference)) {
+          const imageUrl = reference.variants?.[0]?.url
+          if (imageUrl) {
+            return `![${reference.alt ?? ""}](${imageUrl})`
+          }
+        }
+        return ""
       }
       return item.text || ""
     })
@@ -340,6 +469,23 @@ function renderHIGTopicSections(
   }
 
   return markdown
+}
+
+function mapHIGAsideStyleToCallout(style: string): string {
+  switch (style.toLowerCase()) {
+    case "warning":
+      return "WARNING"
+    case "important":
+      return "IMPORTANT"
+    case "caution":
+      return "CAUTION"
+    case "tip":
+      return "TIP"
+    case "deprecated":
+      return "WARNING"
+    default:
+      return "NOTE"
+  }
 }
 
 /**
