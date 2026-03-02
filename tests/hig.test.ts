@@ -416,6 +416,176 @@ describe("HIG Module", () => {
       expect(result).toContain("- First item")
       expect(result).toContain("- Second item")
     })
+
+    it("should render HIG tables and inline images", async () => {
+      const testData = {
+        ...higGettingStartedData,
+        primaryContentSections: [
+          {
+            kind: "content" as const,
+            content: [
+              {
+                type: "table",
+                header: "row",
+                rows: [
+                  [
+                    [{ type: "paragraph", inlineContent: [{ type: "text", text: "Date" }] }],
+                    [{ type: "paragraph", inlineContent: [{ type: "text", text: "Changes" }] }],
+                  ],
+                  [
+                    [
+                      {
+                        type: "paragraph",
+                        inlineContent: [{ type: "text", text: "Dec 16, 2025" }],
+                      },
+                    ],
+                    [
+                      {
+                        type: "paragraph",
+                        inlineContent: [
+                          { type: "text", text: "Updated guidance for Liquid Glass." },
+                        ],
+                      },
+                    ],
+                  ],
+                ],
+              },
+              {
+                type: "paragraph",
+                inlineContent: [{ type: "image", identifier: "colors-unified-red-dark.png" }],
+              },
+            ],
+          },
+        ],
+        references: {
+          ...(higGettingStartedData.references ?? {}),
+          "colors-unified-red-dark.png": {
+            alt: "Unified red in dark mode.",
+            identifier: "colors-unified-red-dark.png",
+            type: "image",
+            variants: [
+              {
+                traits: ["2x", "dark"],
+                url: "https://docs-assets.developer.apple.com/published/colors-unified-red-dark.png",
+              },
+            ],
+          },
+        },
+      } as HIGPageJSON
+
+      const result = await renderHIGFromJSON(
+        testData,
+        "https://developer.apple.com/design/human-interface-guidelines/foundations/color",
+      )
+
+      expect(result).toContain("| Date | Changes |")
+      expect(result).toContain("| --- | --- |")
+      expect(result).toContain("| Dec 16, 2025 | Updated guidance for Liquid Glass. |")
+      expect(result).toContain(
+        "![Unified red in dark mode.](https://docs-assets.developer.apple.com/published/colors-unified-red-dark.png)",
+      )
+    })
+
+    it("should render HIG asides and row columns", async () => {
+      const testData = {
+        ...higGettingStartedData,
+        primaryContentSections: [
+          {
+            kind: "content" as const,
+            content: [
+              {
+                type: "aside",
+                name: "Important",
+                content: [
+                  {
+                    type: "paragraph",
+                    inlineContent: [
+                      { type: "text", text: "Pay special attention to user safety." },
+                    ],
+                  },
+                ],
+              },
+              {
+                type: "row",
+                columns: [
+                  {
+                    size: 1,
+                    content: [
+                      {
+                        type: "paragraph",
+                        inlineContent: [{ type: "text", text: "Left column content" }],
+                      },
+                    ],
+                  },
+                  {
+                    size: 1,
+                    content: [
+                      {
+                        type: "paragraph",
+                        inlineContent: [{ type: "text", text: "Right column content" }],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      } as HIGPageJSON
+
+      const result = await renderHIGFromJSON(
+        testData,
+        "https://developer.apple.com/design/human-interface-guidelines/designing-for-visionos",
+      )
+
+      expect(result).toContain("> [!IMPORTANT]")
+      expect(result).toContain("> Pay special attention to user safety.")
+      expect(result).toContain("Left column content")
+      expect(result).toContain("Right column content")
+    })
+
+    it("should render HIG videos as links using references", async () => {
+      const testData = {
+        ...higGettingStartedData,
+        primaryContentSections: [
+          {
+            kind: "content" as const,
+            content: [
+              {
+                type: "video",
+                identifier: "app-icons-animation.mp4",
+                metadata: {
+                  abstract: [{ type: "text", text: "iOS app icon" }],
+                },
+              },
+            ],
+          },
+        ],
+        references: {
+          ...(higGettingStartedData.references ?? {}),
+          "app-icons-animation.mp4": {
+            type: "video",
+            identifier: "app-icons-animation.mp4",
+            alt: "An animation of an iOS app icon.",
+            variants: [
+              {
+                traits: ["1x", "light"],
+                url: "https://docs-assets.developer.apple.com/published/app-icons-animation.mp4",
+              },
+            ],
+          },
+        },
+      } as HIGPageJSON
+
+      const result = await renderHIGFromJSON(
+        testData,
+        "https://developer.apple.com/design/human-interface-guidelines/app-icons",
+      )
+
+      expect(result).toContain(
+        "[iOS app icon](https://docs-assets.developer.apple.com/published/app-icons-animation.mp4)",
+      )
+    })
   })
 
   describe("Edge Cases", () => {
