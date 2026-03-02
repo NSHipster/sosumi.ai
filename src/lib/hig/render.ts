@@ -258,9 +258,48 @@ function renderContentItem(
       markdown += `${index + 1}. ${itemText.replace(/\n\n$/, "")}\n`
     })
     markdown += "\n"
+  } else if (item.type === "table") {
+    markdown += renderHIGTable(item, references)
   }
 
   return markdown
+}
+
+/**
+ * Render a HIG table to markdown.
+ * HIG tables use header: "row" and rows[rowIndex][cellIndex] = ContentItem[].
+ */
+function renderHIGTable(
+  item: ContentItem,
+  references: Record<string, HIGReference | HIGImageReference | HIGExternalReference>,
+): string {
+  const table = item as ContentItem & {
+    header?: string
+    rows?: ContentItem[][][]
+  }
+  const rows = table.rows ?? []
+  if (rows.length === 0) return ""
+
+  const escapeCell = (s: string) => s.replace(/\|/g, "\\|").replace(/\n/g, " ").trim()
+  const renderCell = (cell: ContentItem | ContentItem[]) => {
+    const items = Array.isArray(cell) ? cell : [cell]
+    const text = renderHIGContent(items, references)
+    return escapeCell(text)
+  }
+
+  const firstRowIsHeader = table.header === "row"
+  let markdown = ""
+
+  rows.forEach((row, rowIndex) => {
+    const cells = row.map((cell) => renderCell(cell))
+    if (cells.length === 0) return
+    markdown += `| ${cells.join(" | ")} |\n`
+    if (firstRowIsHeader && rowIndex === 0) {
+      markdown += `| ${cells.map(() => "---").join(" | ")} |\n`
+    }
+  })
+
+  return markdown ? `${markdown}\n` : ""
 }
 
 /**
