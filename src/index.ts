@@ -20,6 +20,7 @@ import {
 } from "./lib/hig"
 import { createMcpServer } from "./lib/mcp"
 import { fetchJSONData, renderFromJSON } from "./lib/reference"
+import { searchAppleDeveloperDocs } from "./lib/search"
 import { generateAppleDocUrl, isValidAppleDocUrl, normalizeDocumentationPath } from "./lib/url"
 import { fetchVideoTranscriptMarkdown, TranscriptNotFoundError } from "./lib/video"
 
@@ -91,6 +92,44 @@ app.all("/mcp", async (c) => {
 })
 
 app.get("/bot", (c) => c.redirect("/#bot", 302))
+
+app.get("/search", async (c) => {
+  const query = c.req.query("q")?.trim() ?? ""
+  if (!query) {
+    throw new HTTPException(400, {
+      message: "Missing search query. Provide ?q=...",
+    })
+  }
+
+  const searchResponse = await searchAppleDeveloperDocs(query)
+  if (c.req.header("Accept")?.includes("application/json")) {
+    return c.json(searchResponse, 200, {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "public, max-age=300, s-maxage=600",
+    })
+  }
+
+  if (searchResponse.results.length === 0) {
+    return c.text(`No results found for "${query}"`, 200, {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "public, max-age=300, s-maxage=600",
+    })
+  }
+
+  const summary =
+    `Found ${searchResponse.results.length} result(s) for "${query}":\n\n` +
+    searchResponse.results
+      .map(
+        (result, index) =>
+          `${index + 1}. ${result.title}\n   ${result.url}\n   ${result.description || "No description"}`,
+      )
+      .join("\n\n")
+
+  return c.text(summary, 200, {
+    "Content-Type": "text/plain; charset=utf-8",
+    "Cache-Control": "public, max-age=300, s-maxage=600",
+  })
+})
 
 app.get("/documentation/*", async (c) => {
   const path = c.req.path

@@ -98,6 +98,57 @@ See [the website](https://sosumi.ai/#clients) for client-specific instructions.
   - Parameters: `url` (string) - External URL (e.g., `https://apple.github.io/swift-argument-parser/documentation/argumentparser`)
   - Returns content as Markdown
 
+### CLI
+
+Sosumi also provides a CLI that complements MCP:
+
+```bash
+npx @nshipster/sosumi fetch https://developer.apple.com/documentation/swift/array
+```
+
+If you use it regularly, install once:
+
+```bash
+npm i -g @nshipster/sosumi
+```
+
+Then use `sosumi` directly:
+
+```bash
+sosumi fetch https://developer.apple.com/documentation/swift/array
+```
+
+You can fetch all content types covered by MCP tools:
+
+```bash
+# Apple documentation / HIG / videos
+sosumi fetch /documentation/swift/array
+sosumi fetch /design/human-interface-guidelines/color
+sosumi fetch /videos/play/wwdc2021/10133
+
+# External Swift-DocC pages
+sosumi fetch https://apple.github.io/swift-argument-parser/documentation/argumentparser
+
+# Apple documentation search
+sosumi search "SwiftData"
+```
+
+Run a local server from the published package:
+
+```bash
+sosumi serve
+sosumi serve --port 8787
+```
+
+By default, output is plain text / Markdown.
+Use JSON output for scripts:
+
+```bash
+sosumi fetch https://developer.apple.com/documentation/swift/array --json
+sosumi search "SwiftData" --json
+```
+
+
 ### Chrome Extension
 
 You can also use Sosumi from a community-contributed 
@@ -168,13 +219,22 @@ with two environment variables (both newline-delimited):
 ### Testing
 
 This project uses [vitest](https://vitest.dev)
-for  unit and integration testing.
+for unit and integration testing.
 
 ```bash
 npm run test          # Run tests
 npm run test:ui       # Run tests with UI
 npm run test:run      # Run tests once
 ```
+
+> [!TIP]
+> When running the CLI through npm scripts during local development, 
+> use `-s` (`--silent`)
+> to suppress npm's script preamble so output pipes cleanly:
+>
+> ```bash
+> npm run -s cli -- fetch https://developer.apple.com/documentation/swift/array | bat -l md
+> ```
 
 ### Code Quality
 
