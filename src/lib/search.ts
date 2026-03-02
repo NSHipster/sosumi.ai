@@ -1,3 +1,5 @@
+import { getRandomUserAgent } from "./fetch"
+
 export interface SearchResult {
   title: string
   url: string
@@ -134,21 +136,20 @@ class SearchResultParser {
 
 export async function searchAppleDeveloperDocs(query: string): Promise<SearchResponse> {
   const searchUrl = `https://developer.apple.com/search/?q=${encodeURIComponent(query)}`
+  const response = await fetch(searchUrl, {
+    headers: {
+      "User-Agent": getRandomUserAgent(),
+    },
+  })
 
-  try {
-    const response = await fetch(searchUrl, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-      },
-    })
+  if (!response.ok) {
+    throw new Error(`Search request failed: ${response.status}`)
+  }
 
-    if (!response.ok) {
-      throw new Error(`Search request failed: ${response.status}`)
-    }
-
+  const html = await response.text()
+  let results: SearchResult[] = []
+  if (typeof HTMLRewriter !== "undefined") {
     const parser = new SearchResultParser()
-
     const rewriter = new HTMLRewriter()
       .on("li.search-result", parser)
       .on("li.search-result a.click-analytics-result", parser)
@@ -157,25 +158,64 @@ export async function searchAppleDeveloperDocs(query: string): Promise<SearchRes
       .on("li.search-result li.result-tag", parser)
       .on("li.search-result li.result-tag span", parser)
 
-    const transformedResponse = rewriter.transform(response)
-
-    // We need to consume the response to trigger the parsing
-    await transformedResponse.text()
-
-    // Call end to finalize any remaining results
+    // We need to consume the transformed response to trigger parsing callbacks.
+    await rewriter.transform(new Response(html)).text()
     parser.end()
-
-    const results = parser.getResults()
-
-    return {
-      query,
-      results,
-    }
-  } catch (error) {
-    console.error("Error searching Apple Developer docs:", error)
-    return {
-      query,
-      results: [],
-    }
+    results = parser.getResults()
+  } else {
+    results = await parseSearchResultsWithCheerio(html)
   }
+
+  return {
+    query,
+    results,
+  }
+}
+
+async function parseSearchResultsWithCheerio(html: string): Promise<SearchResult[]> {
+  const { load } = await import("cheerio")
+  const $ = load(html)
+  const results: SearchResult[] = []
+
+  $("li.search-result").each((_, element) => {
+    const item = $(element)
+    const link = item.find("a.click-analytics-result").first()
+    const rawHref = link.attr("href")
+    const title = link.text().trim()
+
+    if (!rawHref || !title) {
+      return
+    }
+
+    const description = item.find("p.result-description").first().text().trim()
+    const breadcrumbs = item
+      .find("li.breadcrumb-list-item")
+      .toArray()
+      .map((breadcrumb) => $(breadcrumb).text().trim())
+      .filter(Boolean)
+
+    const tags = item
+      .find("li.result-tag span, li.result-tag.language")
+      .toArray()
+      .map((tag) => $(tag).text().trim())
+      .filter(Boolean)
+
+    const className = item.attr("class") ?? ""
+    const type = className.includes("documentation")
+      ? "documentation"
+      : className.includes("general")
+        ? "general"
+        : "other"
+
+    results.push({
+      title,
+      url: rawHref.startsWith("/") ? `https://developer.apple.com${rawHref}` : rawHref,
+      description,
+      breadcrumbs,
+      tags,
+      type,
+    })
+  })
+
+  return results
 }

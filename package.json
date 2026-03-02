@@ -1,11 +1,29 @@
 {
-  "name": "sosumi.ai",
-  "private": true,
+  "name": "@nshipster/sosumi",
+  "version": "1.0.0",
   "license": "MIT",
   "type": "module",
+  "engines": {
+    "node": ">=20.18.1"
+  },
+  "files": [
+    "bin",
+    "src",
+    "public",
+    "wrangler.jsonc",
+    "README.md",
+    "LICENSE.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "sosumi": "./bin/sosumi.mjs"
+  },
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy --minify",
+    "cli": "node ./bin/sosumi.mjs",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "test": "vitest",
     "test:ui": "vitest --ui",
@@ -18,8 +36,10 @@
   "dependencies": {
     "@hono/mcp": "^0.1.2",
     "@modelcontextprotocol/sdk": "^1.17.4",
+    "cheerio": "^1.2.0",
     "hono": "^4.9.4",
     "robots-parser": "^3.0.1",
+    "tsx": "^4.21.0",
     "zod": "^3"
   },
   "devDependencies": {
