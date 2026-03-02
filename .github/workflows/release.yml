@@ -1,4 +1,4 @@
-name: Create GitHub Release
+name: Release
 on:
   push:
     tags:
@@ -11,15 +11,29 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm run check:ci
+      - run: npm run test:run
       - name: Create release from tag
         env:
           GH_TOKEN: ${{ github.token }}
           TAG_NAME: ${{ inputs.tag || github.ref_name }}
-        run: gh release create "$TAG_NAME" --generate-notes
+        run: |
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Release $TAG_NAME already exists"
+          else
+            gh release create "$TAG_NAME" --generate-notes
+          fi
+      - run: npm publish --provenance --access public

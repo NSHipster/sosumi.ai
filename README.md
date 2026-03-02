@@ -264,15 +264,12 @@ npm run cf-typegen
 
 ### Publishing
 
-Publishing is handled by two GitHub Actions workflows:
+Publishing is handled by `.github/workflows/release.yml`.
 
-- Release creation: `.github/workflows/release.yml`
-  - Trigger: pushed tags matching `v*` or manual dispatch with `tag`
-  - Command: `gh release create "$TAG_NAME" --generate-notes`
-- npm publish: `.github/workflows/publish.yml`
-  - Trigger: GitHub Release published (`release.published`)
-  - Auth: npm trusted publishing via OIDC (`id-token: write`)
-  - Command: `npm publish --provenance --access public`
+- Trigger: pushed tags matching `v*` or manual dispatch with `tag`
+- Release step: `gh release create "$TAG_NAME" --generate-notes`
+- Publish auth: npm trusted publishing via OIDC (`id-token: write`)
+- Publish command: `npm publish --provenance --access public`
 
 ## License
 
