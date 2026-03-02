@@ -48,7 +48,7 @@ describe("Integration Tests with Mocked Apple API", () => {
       "https://developer.apple.com/tutorials/data/documentation/swift/array.json",
       expect.objectContaining({
         headers: expect.objectContaining({
-          "User-Agent": expect.stringMatching(/Safari/),
+          "User-Agent": expect.stringMatching(/AppleWebKit/),
           Accept: "application/json",
           "Cache-Control": "no-cache",
         }),
