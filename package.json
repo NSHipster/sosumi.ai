@@ -45,7 +45,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.2.2",
     "@cloudflare/puppeteer": "^1.0.4",
-    "@cloudflare/vitest-pool-workers": "^0.8.68",
+    "@cloudflare/vitest-pool-workers": "^0.12.18",
     "@vitest/ui": "^3.2.4",
     "vitest": "^3.2.4",
     "wrangler": "^4.32.0"
