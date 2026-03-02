@@ -1,14 +1,18 @@
 {
   "name": "@nshipster/sosumi",
+  "version": "1.0.0",
   "license": "MIT",
   "type": "module",
+  "engines": {
+    "node": ">=20.18.1"
+  },
   "files": [
     "bin",
     "src",
     "public",
     "wrangler.jsonc",
     "README.md",
-    "LICENSE"
+    "LICENSE.md"
   ],
   "publishConfig": {
     "access": "public"

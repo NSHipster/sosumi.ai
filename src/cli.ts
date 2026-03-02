@@ -75,12 +75,9 @@ async function runFetch(input: string, json: boolean) {
   }
 
   if (endpoint.startsWith("/videos/play/")) {
-    const match = endpoint.match(/^\/videos\/play\/([a-z0-9-]+)\/(\d+)$/i)
-    if (!match) {
-      throw new Error("Invalid video path. Expected /videos/play/COLLECTION/VIDEO_ID")
-    }
-    const collection = match[1]
-    const videoId = match[2]
+    const segments = endpoint.split("/")
+    const collection = segments[3] as string
+    const videoId = segments[4] as string
     const sourceUrl = `https://developer.apple.com/videos/play/${collection}/${videoId}/`
     const markdown = await fetchVideoTranscriptMarkdown(sourceUrl, collection, videoId)
     if (json) {
@@ -146,20 +143,27 @@ async function resolveHigPathForFetch(higPath: string): Promise<string> {
 }
 
 async function runSearch(query: string, json: boolean) {
-  const searchResponse = await searchAppleDeveloperDocs(query)
+  const trimmedQuery = query.trim()
+  if (!trimmedQuery) {
+    console.error("Search query cannot be empty")
+    process.exitCode = 1
+    return
+  }
+
+  const searchResponse = await searchAppleDeveloperDocs(trimmedQuery)
   if (json) {
     printJsonOutput(searchResponse)
     return
   }
 
   if (searchResponse.results.length === 0) {
-    console.error(`No results found for "${query}"`)
+    console.error(`No results found for "${trimmedQuery}"`)
     process.exitCode = 2
     return
   }
 
   const resultText =
-    `Found ${searchResponse.results.length} result(s) for "${query}":\n\n` +
+    `Found ${searchResponse.results.length} result(s) for "${trimmedQuery}":\n\n` +
     searchResponse.results
       .map(
         (result, index) =>

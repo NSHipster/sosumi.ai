@@ -1,4 +1,3 @@
-import { load } from "cheerio"
 import { getRandomUserAgent } from "./fetch"
 
 export interface SearchResult {
@@ -137,52 +136,44 @@ class SearchResultParser {
 
 export async function searchAppleDeveloperDocs(query: string): Promise<SearchResponse> {
   const searchUrl = `https://developer.apple.com/search/?q=${encodeURIComponent(query)}`
+  const response = await fetch(searchUrl, {
+    headers: {
+      "User-Agent": getRandomUserAgent(),
+    },
+  })
 
-  try {
-    const response = await fetch(searchUrl, {
-      headers: {
-        "User-Agent": getRandomUserAgent(),
-      },
-    })
+  if (!response.ok) {
+    throw new Error(`Search request failed: ${response.status}`)
+  }
 
-    if (!response.ok) {
-      throw new Error(`Search request failed: ${response.status}`)
-    }
+  const html = await response.text()
+  let results: SearchResult[] = []
+  if (typeof HTMLRewriter !== "undefined") {
+    const parser = new SearchResultParser()
+    const rewriter = new HTMLRewriter()
+      .on("li.search-result", parser)
+      .on("li.search-result a.click-analytics-result", parser)
+      .on("li.search-result p.result-description", parser)
+      .on("li.search-result li.breadcrumb-list-item", parser)
+      .on("li.search-result li.result-tag", parser)
+      .on("li.search-result li.result-tag span", parser)
 
-    const html = await response.text()
-    let results: SearchResult[] = []
-    if (typeof HTMLRewriter !== "undefined") {
-      const parser = new SearchResultParser()
-      const rewriter = new HTMLRewriter()
-        .on("li.search-result", parser)
-        .on("li.search-result a.click-analytics-result", parser)
-        .on("li.search-result p.result-description", parser)
-        .on("li.search-result li.breadcrumb-list-item", parser)
-        .on("li.search-result li.result-tag", parser)
-        .on("li.search-result li.result-tag span", parser)
+    // We need to consume the transformed response to trigger parsing callbacks.
+    await rewriter.transform(new Response(html)).text()
+    parser.end()
+    results = parser.getResults()
+  } else {
+    results = await parseSearchResultsWithCheerio(html)
+  }
 
-      // We need to consume the transformed response to trigger parsing callbacks.
-      await rewriter.transform(new Response(html)).text()
-      parser.end()
-      results = parser.getResults()
-    } else {
-      results = parseSearchResultsWithCheerio(html)
-    }
-
-    return {
-      query,
-      results,
-    }
-  } catch (error) {
-    console.error("Error searching Apple Developer docs:", error)
-    return {
-      query,
-      results: [],
-    }
+  return {
+    query,
+    results,
   }
 }
 
-function parseSearchResultsWithCheerio(html: string): SearchResult[] {
+async function parseSearchResultsWithCheerio(html: string): Promise<SearchResult[]> {
+  const { load } = await import("cheerio")
   const $ = load(html)
   const results: SearchResult[] = []
 
