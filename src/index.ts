@@ -32,24 +32,6 @@ interface Env {
 }
 
 const app = new Hono<{ Bindings: Env }>()
-const mcpServerCache = new Map<string, ReturnType<typeof createMcpServer>>()
-
-function getMcpServer(env: Env) {
-  const allowlist = env.EXTERNAL_DOC_HOST_ALLOWLIST ?? ""
-  const blocklist = env.EXTERNAL_DOC_HOST_BLOCKLIST ?? ""
-  const cacheKey = `${allowlist}\n---\n${blocklist}`
-  const cached = mcpServerCache.get(cacheKey)
-  if (cached) {
-    return cached
-  }
-
-  const server = createMcpServer({
-    EXTERNAL_DOC_HOST_ALLOWLIST: env.EXTERNAL_DOC_HOST_ALLOWLIST,
-    EXTERNAL_DOC_HOST_BLOCKLIST: env.EXTERNAL_DOC_HOST_BLOCKLIST,
-  })
-  mcpServerCache.set(cacheKey, server)
-  return server
-}
 
 app.use("*", async (c, next) => {
   await next()
@@ -85,7 +67,10 @@ app.use("*", async (c, next) => {
 })
 
 app.all("/mcp", async (c) => {
-  const mcpServer = getMcpServer(c.env)
+  const mcpServer = createMcpServer({
+    EXTERNAL_DOC_HOST_ALLOWLIST: c.env.EXTERNAL_DOC_HOST_ALLOWLIST,
+    EXTERNAL_DOC_HOST_BLOCKLIST: c.env.EXTERNAL_DOC_HOST_BLOCKLIST,
+  })
   const transport = new StreamableHTTPTransport()
   await mcpServer.connect(transport)
   return transport.handleRequest(c)
