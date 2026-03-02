@@ -260,6 +260,10 @@ function renderContentItem(
     markdown += "\n"
   } else if (item.type === "table") {
     markdown += renderHIGTable(item, references)
+  } else if (item.type === "aside") {
+    markdown += renderHIGAside(item, references)
+  } else if (item.type === "row") {
+    markdown += renderHIGRow(item, references)
   }
 
   return markdown
@@ -300,6 +304,45 @@ function renderHIGTable(
   })
 
   return markdown ? `${markdown}\n` : ""
+}
+
+/**
+ * Render a HIG aside/callout block to markdown.
+ */
+function renderHIGAside(
+  item: ContentItem,
+  references: Record<string, HIGReference | HIGImageReference | HIGExternalReference>,
+): string {
+  const aside = item as ContentItem & { style?: string; name?: string }
+  const rawType = (aside.style || aside.name || "note").toLowerCase()
+  const calloutType = mapHIGAsideStyleToCallout(rawType)
+  const asideContent = item.content ? renderHIGContent(item.content, references) : ""
+  const cleanContent = asideContent.trim().replace(/\n/g, "\n> ")
+  if (!cleanContent) return ""
+  return `> [!${calloutType}]\n> ${cleanContent}\n\n`
+}
+
+/**
+ * Render a HIG row block by rendering each column content in order.
+ */
+function renderHIGRow(
+  item: ContentItem,
+  references: Record<string, HIGReference | HIGImageReference | HIGExternalReference>,
+): string {
+  const row = item as ContentItem & {
+    columns?: Array<{
+      content?: ContentItem[]
+    }>
+  }
+  if (!row.columns || row.columns.length === 0) return ""
+
+  let markdown = ""
+  for (const column of row.columns) {
+    if (column.content && column.content.length > 0) {
+      markdown += renderHIGContent(column.content, references)
+    }
+  }
+  return markdown
 }
 
 /**
@@ -388,6 +431,23 @@ function renderHIGTopicSections(
   }
 
   return markdown
+}
+
+function mapHIGAsideStyleToCallout(style: string): string {
+  switch (style.toLowerCase()) {
+    case "warning":
+      return "WARNING"
+    case "important":
+      return "IMPORTANT"
+    case "caution":
+      return "CAUTION"
+    case "tip":
+      return "TIP"
+    case "deprecated":
+      return "WARNING"
+    default:
+      return "NOTE"
+  }
 }
 
 /**
