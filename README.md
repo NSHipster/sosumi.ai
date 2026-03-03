@@ -112,6 +112,19 @@ If you use it regularly, install once:
 npm i -g @nshipster/sosumi
 ```
 
+Using Codex or Claude Code? Sosumi also ships a `sosumi` skill.
+Install it in your current project:
+
+```bash
+# Codex
+mkdir -p .agents/skills/sosumi
+curl -fsSL https://raw.githubusercontent.com/nshipster/sosumi.ai/main/.agents/skills/sosumi/SKILL.md -o .agents/skills/sosumi/SKILL.md
+
+# Claude Code
+mkdir -p .claude/skills/sosumi
+curl -fsSL https://raw.githubusercontent.com/nshipster/sosumi.ai/main/.claude/skills/sosumi/SKILL.md -o .claude/skills/sosumi/SKILL.md
+```
+
 Then use `sosumi` directly:
 
 ```bash
