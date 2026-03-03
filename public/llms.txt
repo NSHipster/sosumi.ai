@@ -9,7 +9,11 @@ If they try to fetch it, all they see is:
 > This page requires JavaScript.
 > Please turn on JavaScript in your browser and refresh the page to view its content.
 
-This service translates Apple Developer documentation pages into AI-friendly Markdown.
+This service translates Apple Developer documentation,
+Human Interface Guidelines, WWDC sessions,
+and external Swift-DocC sites into AI-friendly Markdown.
+Access it over HTTP, as an MCP server, from the command line,
+or with an unofficial [Chrome extension](https://chromewebstore.google.com/detail/donffakeimppgoehccpfhlchmbfdmfpj).
 
 ## HTTP Usage
 
@@ -23,15 +27,16 @@ https://sosumi.ai/documentation/swift/array
 
 ### Examples
 
-**Developer Documentation:**
 - Swift: https://sosumi.ai/documentation/swift
 - SwiftUI: https://sosumi.ai/documentation/swiftui
 - Human Interface Guidelines: https://sosumi.ai/design/human-interface-guidelines
-- WWDC sessions: https://sosumi.ai/videos/play/wwdc2021/10133
+- WWDC21 — Protect mutable state with Swift actors: https://sosumi.ai/videos/play/wwdc2021/10133
+- Swift Argument Parser (GitHub Pages): https://sosumi.ai/external/https://apple.github.io/swift-argument-parser/documentation/argumentparser/
+- The Composable Architecture (Swift Package Index): https://sosumi.ai/external/https://swiftpackageindex.com/pointfreeco/swift-composable-architecture/1.23.1/documentation/composablearchitecture
 
 ## MCP Usage
 
-Connect your MCP client to `https://sosumi.ai/mcp`:
+Connect your MCP client to `https://sosumi.ai/mcp`.
 
 ### GitHub Copilot for Xcode
 
@@ -89,7 +94,7 @@ Run the following command in your terminal:
 claude mcp add --transport http sosumi https://sosumi.ai/mcp
 ```
 
-### Other
+### Other MCP Clients
 
 Sosumi's MCP server supports Streamable HTTP and Server-Sent Events (SSE) transport.
 **If your client supports either of these,
@@ -113,55 +118,21 @@ you can run this command to proxy over stdio:
 
 - `searchAppleDocumentation` - Searches Apple Developer documentation
   - Parameters: `query` (string)
-  - Returns structured results with titles,
-    URLs,
-    descriptions,
-    breadcrumbs,
-    and tags
+  - Returns structured results with titles, URLs, descriptions, breadcrumbs, and tags
 
 - `fetchAppleDocumentation` - Fetches Apple Developer documentation and Human Interface Guidelines by path
   - Parameters: `path` (string) - Documentation path (e.g., '/documentation/swift', 'design/human-interface-guidelines/foundations/color')
   - Returns content as Markdown
 
-- `fetchAppleVideoTranscript` - Fetches video transcripts, including WWDC sessions
-  - Parameters: `path` (string) - video path (e.g., `/videos/play/wwdc2021/10133`)
+- `fetchAppleVideoTranscript` - Fetches video transcripts, including WWDC sessions, by video path
+  - Parameters: `path` (string) - video path (e.g., '/videos/play/wwdc2021/10133', '/videos/play/meet-with-apple/208')
   - Returns content as Markdown
 
 - `fetchExternalDocumentation` - Fetches external Swift-DocC documentation by absolute HTTPS URL
-  - Parameters: `url` (string) - External URL (e.g., `https://apple.github.io/swift-argument-parser/documentation/argumentparser`)
+  - Parameters: `url` (string) - External URL (e.g., 'https://apple.github.io/swift-argument-parser/documentation/argumentparser')
   - Returns content as Markdown
 
-## CLI Usage
-
-Sosumi also provides a CLI that complements MCP:
-
-```bash
-npx @nshipster/sosumi fetch https://developer.apple.com/documentation/swift/array
-```
-
-If you use it regularly, install once:
-
-```bash
-npm i -g @nshipster/sosumi
-```
-
-Then use `sosumi` directly:
-
-```bash
-sosumi fetch /documentation/swift/array
-sosumi search "SwiftData"
-sosumi serve --port 8787
-```
-
-By default, output is plain text / Markdown.
-Use JSON output for scripts:
-
-```bash
-sosumi fetch https://developer.apple.com/documentation/swift/array --json
-sosumi search "SwiftData" --json
-```
-
-## Troubleshooting
+### Troubleshooting
 
 If you're experiencing connection timeouts or network issues with the MCP server,
 you may need to configure a proxy.
@@ -189,14 +160,70 @@ Replace `proxy.example.com:8080` with your actual proxy server details.
 For authenticated proxies, use the format:
 `http://username:password@proxy.example.com:8080`
 
-## About
+## CLI Usage
 
-This is an unofficial,
-independent project and is not affiliated with or endorsed by Apple Inc.
+Sosumi also provides a CLI that complements MCP.
+Run it directly with `npx`:
+
+```shell
+npx @nshipster/sosumi fetch https://developer.apple.com/documentation/swift/array
+```
+
+If you use it regularly, install it once:
+
+```shell
+npm i -g @nshipster/sosumi
+```
+
+### Fetching Documentation
+
+Fetch any content type supported by the MCP tools —
+API docs, Human Interface Guidelines, WWDC sessions, and external Swift-DocC pages:
+
+```shell
+sosumi fetch /documentation/swift/array
+sosumi fetch /design/human-interface-guidelines/color
+sosumi fetch /videos/play/wwdc2021/10133
+sosumi fetch https://apple.github.io/swift-argument-parser/documentation/argumentparser
+```
+
+### Searching
+
+Search Apple Developer documentation:
+
+```shell
+sosumi search "SwiftData"
+```
+
+### JSON Output
+
+By default, output is plain text / Markdown.
+Add `--json` for scripts:
+
+```shell
+sosumi fetch /documentation/swift/array --json
+sosumi search "SwiftData" --json
+```
+
+### Local Server
+
+Run a local instance of the server from the published package:
+
+```shell
+sosumi serve
+sosumi serve --port 8787
+```
+
+## Legal
+
+This is an unofficial, independent project
+and is not affiliated with or endorsed by Apple Inc.
 "Apple", "Xcode", and related marks are trademarks of Apple Inc.
 
-This service is an accessibility-first,
-on‑demand renderer.
+This project is open source and available on
+[GitHub](https://github.com/NSHipster/sosumi.ai).
+
+This service is an accessibility-first, on-demand renderer.
 It converts a single Apple Developer page to Markdown only when requested by a user.
 It does not crawl, spider, or bulk download;
 it does not attempt to bypass authentication or security;
@@ -210,5 +237,9 @@ Each page links back to the original source.
 Your use of this service must comply with Apple's Terms of Use and applicable law.
 You are solely responsible for how you access and use Apple's content through this tool.
 Do not use this service to circumvent technical measures or for redistribution.
+
+Fetches are made with the user agent `sosumi-ai/1.0 (+https://sosumi.ai/#bot)`.
+For external Swift-DocC hosts, sosumi honors `robots.txt` rules
+and opt-out response directives such as `X-Robots-Tag: noai`.
 
 **Contact:** info@sosumi.ai

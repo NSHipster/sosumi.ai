@@ -342,6 +342,20 @@
             overflow-wrap: break-word;
         }
 
+        pre {
+            background: var(--surface-inset);
+            padding: 1.25rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+            word-break: normal;
+            overflow-wrap: normal;
+        }
+
         main header {
             margin-bottom: 2rem;
         }
@@ -571,6 +585,9 @@
             <p>
                 This service translates Apple Developer documentation, Human Interface Guidelines, WWDC sessions, and external Swift-DocC sites into AI-friendly Markdown.
             </p>
+            <p>
+                Access it in your <a href="#http">browser</a>, over <a href="#mcp">MCP</a>, from the <a href="#cli">command line</a>, or with an unofficial <a href="https://chromewebstore.google.com/detail/donffakeimppgoehccpfhlchmbfdmfpj" rel="noopener noreferrer">Chrome extension</a>.
+            </p>
         </header>
 
         <section id="http">
@@ -607,25 +624,6 @@
                             Composable Architecture (hosted on Swift Package Index)</a></li>
                 </ul>
             </section>
-        </section>
-
-
-        <section id="bot">
-            <header>
-                <h2>Bot & Crawling Policy</h2>
-                <p>
-                    Fetches are made with the user agent
-                    <code class="no-wrap">sosumi-ai/1.0 (+https://sosumi.ai/#bot)</code>.
-                </p>
-                <p>
-                    For external Swift-DocC hosts, sosumi honors
-                    <code class="no-wrap">robots.txt</code> rules and opt-out response directives such as
-                    <code class="no-wrap">X-Robots-Tag: noai</code>.
-                </p>
-                <p>
-                    Questions or issues: <a href="mailto:info@sosumi.ai">info@sosumi.ai</a>
-                </p>
-            </header>
         </section>
 
 
@@ -807,43 +805,19 @@
                     </li>
                 </ul>
             </div>
-        </section>
 
-
-        <section id="cli">
-            <header>
-                <h2>CLI Usage</h2>
+            <div class="troubleshooting">
+                <h3>Troubleshooting</h3>
                 <p>
-                    Sosumi also provides a CLI that complements MCP.
-                    Run it directly with <code>npx</code>:
+                    If you're experiencing connection timeouts or network issues with the MCP server,
+                    you may need to configure a proxy.
+                    This is particularly common in corporate environments
+                    or regions with restricted internet access.
                 </p>
-                <pre><code>npx @nshipster/sosumi fetch https://developer.apple.com/documentation/swift/array</code></pre>
-                <p>If you use it regularly, install it once:</p>
-                <pre><code>npm i -g @nshipster/sosumi</code></pre>
-                <p>Then use <code>sosumi</code> directly:</p>
-                <pre><code>sosumi fetch /documentation/swift/array
-sosumi search "SwiftData"
-sosumi serve --port 8787</code></pre>
                 <p>
-                    By default, output is plain text / Markdown.
-                    Add <code>--json</code> for scripts.
+                    Configure your MCP client to use a proxy by adding environment variables:
                 </p>
-            </header>
-        </section>
-
-
-        <div class="troubleshooting">
-            <h3>Troubleshooting</h3>
-            <p>
-                If you're experiencing connection timeouts or network issues with the MCP server,
-                you may need to configure a proxy.
-                This is particularly common in corporate environments
-                or regions with restricted internet access.
-            </p>
-            <p>
-                Configure your MCP client to use a proxy by adding environment variables:
-            </p>
-            <pre><code class="mcp-config"><span class="dimmed"><span class="punctuation">{</span></span>
+                <pre><code class="mcp-config"><span class="dimmed"><span class="punctuation">{</span></span>
 <span class="dimmed">  <span class="key">"mcpServers"</span><span class="punctuation">:</span> <span class="punctuation">{</span></span>
 <span class="sosumi-entry">    <span class="key">"sosumi"</span><span class="punctuation">:</span> <span class="punctuation">{</span>
       <span class="key">"command"</span><span class="punctuation">:</span> <span class="string">"npx"</span><span class="punctuation">,</span>
@@ -858,12 +832,53 @@ sosumi serve --port 8787</code></pre>
       <span class="punctuation">}</span>
     <span class="punctuation">}</span></span><span class="dimmed">  <span class="punctuation">}</span></span>
 <span class="dimmed"><span class="punctuation">}</span></span></code></pre>
+                <p>
+                    Replace <code>proxy.example.com:8080</code> with your actual proxy server details.
+                    For authenticated proxies, use the format:
+                    <code>http://username:password@proxy.example.com:8080</code>
+                </p>
+            </div>
+        </section>
+
+
+        <section id="cli">
+            <header>
+                <h2>CLI Usage</h2>
+                <p>
+                    Sosumi also provides a CLI that complements MCP.
+                    Run it directly with <code>npx</code>:
+                </p>
+                <pre><code>npx @nshipster/sosumi fetch https://developer.apple.com/documentation/swift/array</code></pre>
+                <p>If you use it regularly, install it once:</p>
+                <pre><code>npm i -g @nshipster/sosumi</code></pre>
+            </header>
+
+            <h3>Fetching Documentation</h3>
             <p>
-                Replace <code>proxy.example.com:8080</code> with your actual proxy server details.
-                For authenticated proxies, use the format:
-                <code>http://username:password@proxy.example.com:8080</code>
+                Fetch any content type supported by the MCP tools —
+                API docs, Human Interface Guidelines, WWDC sessions, and external Swift-DocC pages:
             </p>
-        </div>
+            <pre><code>sosumi fetch /documentation/swift/array
+sosumi fetch /design/human-interface-guidelines/color
+sosumi fetch /videos/play/wwdc2021/10133
+sosumi fetch https://apple.github.io/swift-argument-parser/documentation/argumentparser</code></pre>
+
+            <h3>Searching</h3>
+            <p>Search Apple Developer documentation:</p>
+            <pre><code>sosumi search "SwiftData"</code></pre>
+
+            <h3>JSON Output</h3>
+            <p>
+                By default, output is plain text / Markdown.
+                Add <code>--json</code> for scripts:
+            </p>
+            <pre><code>sosumi fetch /documentation/swift/array --json
+sosumi search "SwiftData" --json</code></pre>
+
+            <h3>Local Server</h3>
+            <p>Run a local instance of the server from the published package:</p>
+            <pre><code>sosumi serve
+sosumi serve --port 8787</code></pre>
         </section>
     </main>
 
@@ -897,6 +912,13 @@ sosumi serve --port 8787</code></pre>
                 Your use of this service must comply with Apple's Terms of Use and applicable law.
                 You are solely responsible for how you access and use Apple's content through this tool.
                 Do not use this service to circumvent technical measures or for redistribution.
+            </p>
+            <p id="bot">
+                Fetches are made with the user agent
+                <code class="no-wrap">sosumi-ai/1.0 (+https://sosumi.ai/#bot)</code>.
+                For external Swift-DocC hosts, sosumi honors
+                <code class="no-wrap">robots.txt</code> rules and opt-out response directives such as
+                <code class="no-wrap">X-Robots-Tag: noai</code>.
             </p>
             <p>
                 <strong>Contact:</strong> <a href="mailto:info@sosumi.ai">info@sosumi.ai</a>
