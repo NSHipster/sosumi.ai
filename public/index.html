@@ -342,6 +342,27 @@
             overflow-wrap: break-word;
         }
 
+        pre {
+            max-width: 100%;
+            overflow-x: auto;
+        }
+
+        pre code {
+            display: block;
+            white-space: pre;
+            word-break: normal;
+            overflow-wrap: normal;
+        }
+
+        #skill pre {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        #skill pre::-webkit-scrollbar {
+            display: none;
+        }
+
         main header {
             margin-bottom: 2rem;
         }
@@ -809,8 +830,24 @@
             </div>
         </section>
 
+        <section id="skill">
+            <header>
+                <h2>Skill Usage</h2>
+                <p>
+                    Sosumi also ships a <code>sosumi</code> skill.
+                </p>
+                <p>Install:</p>
+                <pre><code># Codex, OpenCode, Amp, Copilot, Cursor and others
+mkdir -p .agents/skills/sosumi
+curl -fsSL https://raw.githubusercontent.com/nshipster/sosumi.ai/main/.agents/skills/sosumi/SKILL.md -o .agents/skills/sosumi/SKILL.md
 
-        <div class="troubleshooting">
+# Claude Code
+mkdir -p .claude/skills/sosumi
+curl -fsSL https://raw.githubusercontent.com/nshipster/sosumi.ai/main/.claude/skills/sosumi/SKILL.md -o .claude/skills/sosumi/SKILL.md</code></pre>
+            </header>
+        </section>
+
+        <section class="troubleshooting">
             <h3>Troubleshooting</h3>
             <p>
                 If you're experiencing connection timeouts or network issues with the MCP server,
@@ -841,7 +878,6 @@
                 For authenticated proxies, use the format:
                 <code>http://username:password@proxy.example.com:8080</code>
             </p>
-        </div>
         </section>
     </main>
 

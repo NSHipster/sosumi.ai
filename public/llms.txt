@@ -131,6 +131,21 @@ you can run this command to proxy over stdio:
   - Parameters: `url` (string) - External URL (e.g., `https://apple.github.io/swift-argument-parser/documentation/argumentparser`)
   - Returns content as Markdown
 
+## Skill
+
+Sosumi also ships a `sosumi` skill.
+Install:
+
+```bash
+# Codex, OpenCode, Amp, Copilot, Cursor and others
+mkdir -p .agents/skills/sosumi
+curl -fsSL https://raw.githubusercontent.com/nshipster/sosumi.ai/main/.agents/skills/sosumi/SKILL.md -o .agents/skills/sosumi/SKILL.md
+
+# Claude Code
+mkdir -p .claude/skills/sosumi
+curl -fsSL https://raw.githubusercontent.com/nshipster/sosumi.ai/main/.claude/skills/sosumi/SKILL.md -o .claude/skills/sosumi/SKILL.md
+```
+
 ## Troubleshooting
 
 If you're experiencing connection timeouts or network issues with the MCP server,
