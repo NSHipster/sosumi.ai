@@ -131,6 +131,36 @@ you can run this command to proxy over stdio:
   - Parameters: `url` (string) - External URL (e.g., `https://apple.github.io/swift-argument-parser/documentation/argumentparser`)
   - Returns content as Markdown
 
+## CLI Usage
+
+Sosumi also provides a CLI that complements MCP:
+
+```bash
+npx @nshipster/sosumi fetch https://developer.apple.com/documentation/swift/array
+```
+
+If you use it regularly, install once:
+
+```bash
+npm i -g @nshipster/sosumi
+```
+
+Then use `sosumi` directly:
+
+```bash
+sosumi fetch /documentation/swift/array
+sosumi search "SwiftData"
+sosumi serve --port 8787
+```
+
+By default, output is plain text / Markdown.
+Use JSON output for scripts:
+
+```bash
+sosumi fetch https://developer.apple.com/documentation/swift/array --json
+sosumi search "SwiftData" --json
+```
+
 ## Troubleshooting
 
 If you're experiencing connection timeouts or network issues with the MCP server,
