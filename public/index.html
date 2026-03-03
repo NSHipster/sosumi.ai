@@ -302,17 +302,69 @@
             font-style: italic;
         }
 
+        #cli .runtime-tabs {
+            background: var(--surface-inset);
+            border-radius: 0.5rem;
+            overflow: hidden;
+            margin-top: 1.5rem;
+        }
+
+        #cli .runtime-tabs .tab-buttons {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+        }
+
+        #cli .runtime-tabs .tab-button {
+            flex: 1;
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-family: var(--font-sans);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 2px solid transparent;
+        }
+
+        #cli .runtime-tabs .tab-button:hover {
+            color: var(--text);
+            background: var(--surface-inset-deep);
+        }
+
+        #cli .runtime-tabs .tab-button.active {
+            color: var(--text);
+            border-bottom-color: var(--accent);
+            background: var(--surface);
+        }
+
+        #cli .runtime-tabs .tab-pane {
+            display: none;
+            padding: 1.5rem;
+        }
+
+        #cli .runtime-tabs .tab-pane.active {
+            display: block;
+        }
+
+        #cli .runtime-tabs .tab-pane p {
+            margin: 0.75rem 0;
+        }
+
         @media (max-width: 768px) {
-            #clients .tab-buttons {
+            #clients .tab-buttons,
+            #cli .runtime-tabs .tab-buttons {
                 flex-direction: column;
             }
 
-            #clients .tab-button {
+            #clients .tab-button,
+            #cli .runtime-tabs .tab-button {
                 border-bottom: 1px solid var(--border);
                 border-right: none;
             }
 
-            #clients .tab-button.active {
+            #clients .tab-button.active,
+            #cli .runtime-tabs .tab-button.active {
                 border-bottom-color: var(--border);
                 border-right: 2px solid var(--accent);
             }
@@ -528,20 +580,17 @@
                 });
             });
 
-            // Client tabs (Cursor, VSCode, etc.)
-            const clientTabButtons = document.querySelectorAll('.client-tabs .tab-button');
-            const clientTabPanes = document.querySelectorAll('.client-tabs .tab-pane');
-            clientTabButtons.forEach(button => {
-                button.addEventListener('click', function () {
-                    const targetTab = this.getAttribute('data-tab');
-
-                    // Remove active class from all client buttons and panes
-                    clientTabButtons.forEach(btn => btn.classList.remove('active'));
-                    clientTabPanes.forEach(pane => pane.classList.remove('active'));
-
-                    // Add active class to clicked button and corresponding pane
-                    this.classList.add('active');
-                    document.getElementById(targetTab + '-tab').classList.add('active');
+            document.querySelectorAll('.client-tabs, .runtime-tabs').forEach(tabGroup => {
+                const buttons = tabGroup.querySelectorAll('.tab-button');
+                const panes = tabGroup.querySelectorAll('.tab-pane');
+                buttons.forEach(button => {
+                    button.addEventListener('click', function () {
+                        const targetTab = this.getAttribute('data-tab');
+                        buttons.forEach(btn => btn.classList.remove('active'));
+                        panes.forEach(pane => pane.classList.remove('active'));
+                        this.classList.add('active');
+                        document.getElementById(targetTab + '-tab').classList.add('active');
+                    });
                 });
             });
         });
@@ -846,12 +895,39 @@
                 <h2>CLI Usage</h2>
                 <p>
                     Sosumi also provides a CLI that complements MCP.
-                    Run it directly with <code>npx</code>:
                 </p>
-                <pre><code>npx @nshipster/sosumi fetch https://developer.apple.com/documentation/swift/array</code></pre>
-                <p>If you use it regularly, install it once:</p>
-                <pre><code>npm i -g @nshipster/sosumi</code></pre>
             </header>
+
+            <div class="runtime-tabs">
+                <div class="tab-buttons">
+                    <button class="tab-button active" data-tab="rt-node">Node.js</button>
+                    <button class="tab-button" data-tab="rt-bun">Bun</button>
+                    <button class="tab-button" data-tab="rt-deno">Deno</button>
+                </div>
+
+                <div class="tab-pane active" id="rt-node-tab">
+                    <p>Run directly with <a href="https://docs.npmjs.com/cli/commands/npx" rel="noopener noreferrer"><code>npx</code></a>
+                        (included with <a href="https://nodejs.org/" rel="noopener noreferrer">Node.js</a>):</p>
+                    <pre><code>npx @nshipster/sosumi fetch https://developer.apple.com/documentation/swift/array</code></pre>
+                    <p>If you use it regularly, install it once:</p>
+                    <pre><code>npm i -g @nshipster/sosumi</code></pre>
+                </div>
+
+                <div class="tab-pane" id="rt-bun-tab">
+                    <p>Run directly with <a href="https://bun.sh/docs/cli/bunx" rel="noopener noreferrer"><code>bunx</code></a>
+                        (included with <a href="https://bun.sh/" rel="noopener noreferrer">Bun</a>):</p>
+                    <pre><code>bunx @nshipster/sosumi fetch https://developer.apple.com/documentation/swift/array</code></pre>
+                    <p>If you use it regularly, install it once:</p>
+                    <pre><code>bun i -g @nshipster/sosumi</code></pre>
+                </div>
+
+                <div class="tab-pane" id="rt-deno-tab">
+                    <p>Run directly with <a href="https://docs.deno.com/runtime/reference/cli/run/" rel="noopener noreferrer"><code>deno run</code></a>:</p>
+                    <pre><code>deno run -A npm:@nshipster/sosumi fetch https://developer.apple.com/documentation/swift/array</code></pre>
+                    <p>If you use it regularly, install it once:</p>
+                    <pre><code>deno install -g -A npm:@nshipster/sosumi</code></pre>
+                </div>
+            </div>
 
             <h3>Fetching Documentation</h3>
             <p>

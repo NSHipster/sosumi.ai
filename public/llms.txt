@@ -163,7 +163,11 @@ For authenticated proxies, use the format:
 ## CLI Usage
 
 Sosumi also provides a CLI that complements MCP.
-Run it directly with `npx`:
+
+### Node.js
+
+Run directly with [`npx`](https://docs.npmjs.com/cli/commands/npx)
+(included with [Node.js](https://nodejs.org/)):
 
 ```shell
 npx @nshipster/sosumi fetch https://developer.apple.com/documentation/swift/array
@@ -173,6 +177,35 @@ If you use it regularly, install it once:
 
 ```shell
 npm i -g @nshipster/sosumi
+```
+
+### Bun
+
+Run directly with [`bunx`](https://bun.sh/docs/cli/bunx)
+(included with [Bun](https://bun.sh/)):
+
+```shell
+bunx @nshipster/sosumi fetch https://developer.apple.com/documentation/swift/array
+```
+
+If you use it regularly, install it once:
+
+```shell
+bun i -g @nshipster/sosumi
+```
+
+### Deno
+
+Run directly with [`deno run`](https://docs.deno.com/runtime/reference/cli/run/):
+
+```shell
+deno run -A npm:@nshipster/sosumi fetch https://developer.apple.com/documentation/swift/array
+```
+
+If you use it regularly, install it once:
+
+```shell
+deno install -g -A npm:@nshipster/sosumi
 ```
 
 ### Fetching Documentation
