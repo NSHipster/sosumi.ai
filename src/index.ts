@@ -1,5 +1,6 @@
 import { StreamableHTTPTransport } from "@hono/mcp"
 import { Hono } from "hono"
+import { accepts } from "hono/accepts"
 import { cache } from "hono/cache"
 import { cors } from "hono/cors"
 import { HTTPException } from "hono/http-exception"
@@ -77,7 +78,13 @@ app.all("/mcp", async (c) => {
 })
 
 app.get("/", async (c) => {
-  if (c.req.header("Accept")?.includes("text/markdown")) {
+  const accepted = accepts(c, {
+    header: "Accept",
+    supports: ["text/markdown", "text/html"],
+    default: "text/html",
+  })
+
+  if (accepted === "text/markdown") {
     const llmsUrl = new URL("/llms.txt", c.req.url)
     const llmsResponse = await c.env.ASSETS.fetch(new Request(llmsUrl.toString()))
 
