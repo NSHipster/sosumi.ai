@@ -1,5 +1,6 @@
 import { StreamableHTTPTransport } from "@hono/mcp"
 import { Hono } from "hono"
+import { accepts } from "hono/accepts"
 import { cache } from "hono/cache"
 import { cors } from "hono/cors"
 import { HTTPException } from "hono/http-exception"
@@ -74,6 +75,33 @@ app.all("/mcp", async (c) => {
   const transport = new StreamableHTTPTransport()
   await mcpServer.connect(transport)
   return transport.handleRequest(c)
+})
+
+app.get("/", async (c) => {
+  const accepted = accepts(c, {
+    header: "Accept",
+    supports: ["text/markdown", "text/html"],
+    default: "text/html",
+  })
+
+  if (accepted === "text/markdown") {
+    const llmsUrl = new URL("/llms.txt", c.req.url)
+    const llmsResponse = await c.env.ASSETS.fetch(new Request(llmsUrl.toString()))
+
+    if (!llmsResponse.ok) {
+      throw new HTTPException(500, {
+        message: "Failed to load llms.txt",
+      })
+    }
+
+    const markdown = await llmsResponse.text()
+    return c.text(markdown, 200, {
+      "Content-Type": "text/markdown; charset=utf-8",
+      "Cache-Control": "public, max-age=300, s-maxage=600",
+    })
+  }
+
+  return c.env.ASSETS.fetch(c.req.raw)
 })
 
 app.get("/bot", (c) => c.redirect("/#bot", 302))
