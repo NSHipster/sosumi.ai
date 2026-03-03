@@ -223,18 +223,24 @@
         }
 
         #clients .interface-tabs,
-        #clients .client-tabs {
+        #clients .mcp-tabs,
+        #cli .cli-tabs,
+        #skill .skill-tabs {
             background: var(--surface-inset);
             border-radius: 0.5rem;
             overflow: hidden;
         }
 
-        #clients .tab-buttons {
+        #clients .mcp-tabs .tab-buttons,
+        #cli .cli-tabs .tab-buttons,
+        #skill .skill-tabs .tab-buttons {
             display: flex;
             border-bottom: 1px solid var(--border);
         }
 
-        #clients .tab-button {
+        #clients .mcp-tabs .tab-button,
+        #cli .cli-tabs .tab-button,
+        #skill .skill-tabs .tab-button {
             flex: 1;
             padding: 1rem 1.5rem;
             background: transparent;
@@ -247,124 +253,93 @@
             border-bottom: 2px solid transparent;
         }
 
-        #clients .tab-button:hover {
+        #clients .mcp-tabs .tab-button:hover,
+        #cli .cli-tabs .tab-button:hover,
+        #skill .skill-tabs .tab-button:hover {
             color: var(--text);
             background: var(--surface-inset-deep);
         }
 
-        #clients .tab-button.active {
+        #clients .mcp-tabs .tab-button.active,
+        #cli .cli-tabs .tab-button.active,
+        #skill .skill-tabs .tab-button.active {
             color: var(--text);
             border-bottom-color: var(--accent);
             background: var(--surface);
         }
 
-        #clients .tab-content {
+        #clients .mcp-tabs .tab-content,
+        #skill .skill-tabs .tab-content {
             position: relative;
         }
 
-        #clients .tab-pane {
+        #clients .mcp-tabs .tab-pane,
+        #cli .cli-tabs .tab-pane,
+        #skill .skill-tabs .tab-pane {
             display: none;
             padding: 1.5rem;
         }
 
-        #clients .tab-pane.active {
+        #clients .mcp-tabs .tab-pane.active,
+        #cli .cli-tabs .tab-pane.active,
+        #skill .skill-tabs .tab-pane.active {
             display: block;
         }
 
-        #clients .tab-pane h3 {
+        #clients .mcp-tabs .tab-pane h3 {
             margin-top: 0;
             margin-bottom: 1rem;
             color: var(--text);
         }
 
-        #clients .tab-pane h4 {
+        #clients .mcp-tabs .tab-pane h4 {
             margin-top: 1.5rem;
             margin-bottom: 0.75rem;
             color: var(--text-secondary);
             font-size: 1rem;
         }
 
-        #clients .tab-pane ol {
+        #clients .mcp-tabs .tab-pane ol {
             margin: 0.75rem 0;
             padding-left: 1.5rem;
         }
 
-        #clients .tab-pane li {
+        #clients .mcp-tabs .tab-pane li {
             margin-bottom: 0.5rem;
         }
 
-        #clients .tab-pane p {
+        #clients .mcp-tabs .tab-pane p,
+        #cli .cli-tabs .tab-pane p,
+        #skill .skill-tabs .tab-pane p {
             margin: 0.75rem 0;
         }
 
-        #clients .tab-pane em {
+        #clients .mcp-tabs .tab-pane em {
             color: var(--text-secondary);
             font-style: italic;
         }
 
-        #cli .runtime-tabs {
-            background: var(--surface-inset);
-            border-radius: 0.5rem;
-            overflow: hidden;
+        #cli .cli-tabs {
             margin-top: 1.5rem;
         }
 
-        #cli .runtime-tabs .tab-buttons {
-            display: flex;
-            border-bottom: 1px solid var(--border);
-        }
-
-        #cli .runtime-tabs .tab-button {
-            flex: 1;
-            padding: 0.75rem 1.5rem;
-            background: transparent;
-            border: none;
-            color: var(--text-secondary);
-            font-family: var(--font-sans);
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border-bottom: 2px solid transparent;
-        }
-
-        #cli .runtime-tabs .tab-button:hover {
-            color: var(--text);
-            background: var(--surface-inset-deep);
-        }
-
-        #cli .runtime-tabs .tab-button.active {
-            color: var(--text);
-            border-bottom-color: var(--accent);
-            background: var(--surface);
-        }
-
-        #cli .runtime-tabs .tab-pane {
-            display: none;
-            padding: 1.5rem;
-        }
-
-        #cli .runtime-tabs .tab-pane.active {
-            display: block;
-        }
-
-        #cli .runtime-tabs .tab-pane p {
-            margin: 0.75rem 0;
-        }
-
         @media (max-width: 768px) {
-            #clients .tab-buttons,
-            #cli .runtime-tabs .tab-buttons {
+            #clients .mcp-tabs .tab-buttons,
+            #cli .cli-tabs .tab-buttons,
+            #skill .skill-tabs .tab-buttons {
                 flex-direction: column;
             }
 
-            #clients .tab-button,
-            #cli .runtime-tabs .tab-button {
+            #clients .mcp-tabs .tab-button,
+            #cli .cli-tabs .tab-button,
+            #skill .skill-tabs .tab-button {
                 border-bottom: 1px solid var(--border);
                 border-right: none;
             }
 
-            #clients .tab-button.active,
-            #cli .runtime-tabs .tab-button.active {
+            #clients .mcp-tabs .tab-button.active,
+            #cli .cli-tabs .tab-button.active,
+            #skill .skill-tabs .tab-button.active {
                 border-bottom-color: var(--border);
                 border-right: 2px solid var(--accent);
             }
@@ -484,6 +459,11 @@
             color: var(--code-punctuation-color);
         }
 
+        pre code .comment {
+            color: var(--text-tertiary);
+            font-style: italic;
+        }
+
         pre code .sosumi-entry {
             background-color: var(--surface-inset-deep);
             display: block;
@@ -580,7 +560,7 @@
                 });
             });
 
-            document.querySelectorAll('.client-tabs, .runtime-tabs').forEach(tabGroup => {
+            document.querySelectorAll('.mcp-tabs, .cli-tabs, .skill-tabs').forEach(tabGroup => {
                 const buttons = tabGroup.querySelectorAll('.tab-button');
                 const panes = tabGroup.querySelectorAll('.tab-pane');
                 buttons.forEach(button => {
@@ -635,7 +615,7 @@
                 This service translates Apple Developer documentation, Human Interface Guidelines, WWDC sessions, and external Swift-DocC sites into AI-friendly Markdown.
             </p>
             <p>
-                Access it in your <a href="#http">browser</a>, over <a href="#mcp">MCP</a>, from the <a href="#cli">command line</a>, or with an unofficial <a href="https://chromewebstore.google.com/detail/donffakeimppgoehccpfhlchmbfdmfpj" rel="noopener noreferrer">Chrome extension</a>.
+                Access it in your <a href="#http">browser</a>, over <a href="#mcp">MCP</a>, from the <a href="#cli">command line</a>, as an <a href="#skill">AI skill</a>, or with an unofficial <a href="https://chromewebstore.google.com/detail/donffakeimppgoehccpfhlchmbfdmfpj" rel="noopener noreferrer">Chrome extension</a>.
             </p>
         </header>
 
@@ -685,7 +665,7 @@
                 </p>
 
                 <figure id="clients">
-                    <div class="client-tabs">
+                    <div class="mcp-tabs">
                         <div class="tab-buttons">
                             <button class="tab-button active" data-tab="copilot-xcode">GitHub Copilot for Xcode</button>
                             <button class="tab-button" data-tab="cursor">Cursor</button>
@@ -898,7 +878,7 @@
                 </p>
             </header>
 
-            <div class="runtime-tabs">
+            <div class="cli-tabs">
                 <div class="tab-buttons">
                     <button class="tab-button active" data-tab="rt-node">Node.js</button>
                     <button class="tab-button" data-tab="rt-bun">Bun</button>
@@ -955,6 +935,60 @@ sosumi search "SwiftData" --json</code></pre>
             <p>Run a local instance of the server from the published package:</p>
             <pre><code>sosumi serve
 sosumi serve --port 8787</code></pre>
+        </section>
+
+        <section id="skill">
+            <header>
+                <h2>AI Agent Skill</h2>
+                <p>
+                    Teach your coding assistant to use Sosumi consistently with:
+                    <code class="no-wrap"><a href="https://sosumi.ai/SKILL.md">https://sosumi.ai/SKILL.md</a></code>
+                </p>
+            </header>
+
+            <div class="skill-tabs">
+                <div class="tab-buttons">
+                    <button class="tab-button active" data-tab="skill-claude-code">Claude Code</button>
+                    <button class="tab-button" data-tab="skill-codex">Codex</button>
+                    <button class="tab-button" data-tab="skill-cursor">Cursor</button>
+                    <button class="tab-button" data-tab="skill-agents">Other</button>
+                </div>
+
+                <div class="tab-content">
+                    <div class="tab-pane active" id="skill-claude-code-tab">
+                        <p>Install as a reusable skill (personal or project-level):</p>
+                        <pre><code><span class="comment"># Personal skill (all your projects)</span>
+mkdir -p ~/.claude/skills/sosumi
+curl -o ~/.claude/skills/sosumi/SKILL.md https://sosumi.ai/SKILL.md
+
+<span class="comment"># Project skill (just this project)</span>
+mkdir -p .claude/skills/sosumi
+curl -o .claude/skills/sosumi/SKILL.md https://sosumi.ai/SKILL.md</code></pre>
+                    </div>
+
+                    <div class="tab-pane" id="skill-codex-tab">
+                        <p>Install globally:</p>
+                        <pre><code><span class="comment"># Global instructions (all your projects)</span>
+curl -o ~/.codex/AGENTS.md https://sosumi.ai/SKILL.md</code></pre>
+                    </div>
+
+                    <div class="tab-pane" id="skill-cursor-tab">
+                        <p>Install as a Cursor skill (global or project-level):</p>
+                        <pre><code><span class="comment"># Personal skill (all your projects)</span>
+mkdir -p ~/.cursor/skills/sosumi
+curl -o ~/.cursor/skills/sosumi/SKILL.md https://sosumi.ai/SKILL.md
+
+<span class="comment"># Project skill (just this project)</span>
+mkdir -p .cursor/skills/sosumi
+curl -o .cursor/skills/sosumi/SKILL.md https://sosumi.ai/SKILL.md</code></pre>
+                    </div>
+
+                    <div class="tab-pane" id="skill-agents-tab">
+                        <p>For AGENTS-compatible tools, you can add project instructions:</p>
+                        <pre><code>curl -o AGENTS.md https://sosumi.ai/SKILL.md</code></pre>
+                    </div>
+                </div>
+            </div>
         </section>
     </main>
 

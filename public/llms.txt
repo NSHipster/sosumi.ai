@@ -12,7 +12,7 @@ If they try to fetch it, all they see is:
 This service translates Apple Developer documentation,
 Human Interface Guidelines, WWDC sessions,
 and external Swift-DocC sites into AI-friendly Markdown.
-Access it over HTTP, as an MCP server, from the command line,
+Access it in your browser, over MCP, from the command line, as an AI skill, 
 or with an unofficial [Chrome extension](https://chromewebstore.google.com/detail/donffakeimppgoehccpfhlchmbfdmfpj).
 
 ## HTTP Usage
@@ -246,6 +246,58 @@ Run a local instance of the server from the published package:
 sosumi serve
 sosumi serve --port 8787
 ```
+
+## AI Agent Skill
+
+Teach your coding assistant to use Sosumi consistently with:
+`https://sosumi.ai/SKILL.md`
+
+### Claude Code
+
+Install as a reusable skill (personal or project-level):
+
+```bash
+# Personal skill (all your projects)
+mkdir -p ~/.claude/skills/sosumi
+curl -o ~/.claude/skills/sosumi/SKILL.md https://sosumi.ai/SKILL.md
+
+# Project skill (just this project)
+mkdir -p .claude/skills/sosumi
+curl -o .claude/skills/sosumi/SKILL.md https://sosumi.ai/SKILL.md
+```
+
+### Codex
+
+Install globally:
+
+```bash
+# Global instructions (all your projects)
+curl -o ~/.codex/AGENTS.md https://sosumi.ai/SKILL.md
+```
+
+### Cursor
+
+Install as a Cursor skill (global or project-level):
+
+```bash
+# Personal skill (all your projects)
+mkdir -p ~/.cursor/skills/sosumi
+curl -o ~/.cursor/skills/sosumi/SKILL.md https://sosumi.ai/SKILL.md
+
+# Project skill (just this project)
+mkdir -p .cursor/skills/sosumi
+curl -o .cursor/skills/sosumi/SKILL.md https://sosumi.ai/SKILL.md
+```
+
+### Other
+
+For AGENTS-compatible tools, you can add project instructions:
+
+```bash
+curl -o AGENTS.md https://sosumi.ai/SKILL.md
+```
+
+Use this together with Sosumi MCP at `https://sosumi.ai/mcp`.
 
 ## Legal
 

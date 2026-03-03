@@ -148,6 +148,12 @@ sosumi fetch https://developer.apple.com/documentation/swift/array --json
 sosumi search "SwiftData" --json
 ```
 
+### AI Agent Skill
+
+Want your AI coding assistant to use Sosumi consistently?
+Use the hosted skill file:
+[`https://sosumi.ai/SKILL.md`](https://sosumi.ai/SKILL.md)
+
 ### Chrome Extension
 
 You can also use Sosumi from a community-contributed 
