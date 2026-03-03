@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sosumi"
+  short_description: "Fetch Apple docs with the published Sosumi CLI outside this repo."
+  default_prompt: "Use npx @nshipster/sosumi commands to search and fetch docs for this task."
