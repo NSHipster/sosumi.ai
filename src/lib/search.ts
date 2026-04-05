@@ -14,208 +14,182 @@ export interface SearchResponse {
   results: SearchResult[]
 }
 
-class SearchResultParser {
-  private results: SearchResult[] = []
-  private currentResult: Partial<SearchResult> = {}
-  private currentBreadcrumbs: string[] = []
-  private currentTags: string[] = []
-  private isInResultTitle = false
-  private isInResultDescription = false
-  private isInBreadcrumb = false
-  private isInTag = false
+const APPLE_SEARCH_SERVICE_URL = "https://developer.apple.com/search/services/search.php"
+const DEFAULT_TARGET_RESULT_LOCALE = "en_US"
 
-  getResults(): SearchResult[] {
-    return this.results
-  }
-
-  private resetCurrentResult() {
-    this.currentResult = {}
-    this.currentBreadcrumbs = []
-    this.currentTags = []
-    this.isInResultTitle = false
-    this.isInResultDescription = false
-    this.isInBreadcrumb = false
-    this.isInTag = false
-  }
-
-  private finalizeCurrentResult() {
-    if (this.currentResult.title && this.currentResult.url) {
-      this.results.push({
-        title: this.currentResult.title,
-        url: this.currentResult.url,
-        description: this.currentResult.description || "",
-        breadcrumbs: [...this.currentBreadcrumbs],
-        tags: [...this.currentTags],
-        type: this.currentResult.type || "unknown",
-      })
-    }
-    this.resetCurrentResult()
-  }
-
-  element(element: Element) {
-    // Start of a search result
-    if (element.tagName === "li" && element.getAttribute("class")?.includes("search-result")) {
-      this.finalizeCurrentResult() // Finalize previous result if any
-
-      // Extract result type from class
-      const className = element.getAttribute("class") || ""
-      if (className.includes("documentation")) {
-        this.currentResult.type = "documentation"
-      } else if (className.includes("general")) {
-        this.currentResult.type = "general"
-      } else {
-        this.currentResult.type = "other"
-      }
-    }
-
-    // Result title link
-    if (
-      element.tagName === "a" &&
-      element.getAttribute("class")?.includes("click-analytics-result")
-    ) {
-      const href = element.getAttribute("href")
-      if (href) {
-        this.currentResult.url = href.startsWith("/") ? `https://developer.apple.com${href}` : href
-      }
-      this.isInResultTitle = true
-    }
-
-    // Result description
-    if (element.tagName === "p" && element.getAttribute("class")?.includes("result-description")) {
-      this.isInResultDescription = true
-    }
-
-    // Breadcrumb items
-    if (
-      element.tagName === "li" &&
-      element.getAttribute("class")?.includes("breadcrumb-list-item")
-    ) {
-      this.isInBreadcrumb = true
-    }
-
-    // Tag spans
-    if (
-      element.tagName === "span" &&
-      element.parentElement?.getAttribute("class")?.includes("result-tag")
-    ) {
-      this.isInTag = true
-    }
-
-    // Tag list items (for languages like "Swift", "Objective-C")
-    if (
-      element.tagName === "li" &&
-      element.getAttribute("class")?.includes("result-tag language")
-    ) {
-      this.isInTag = true
-    }
-  }
-
-  text(text: Text) {
-    const content = text.text.trim()
-    if (!content) return
-
-    if (this.isInResultTitle && this.currentResult.url) {
-      this.currentResult.title = content
-      this.isInResultTitle = false
-    } else if (this.isInResultDescription) {
-      this.currentResult.description = content
-      this.isInResultDescription = false
-    } else if (this.isInBreadcrumb) {
-      this.currentBreadcrumbs.push(content)
-      this.isInBreadcrumb = false
-    } else if (this.isInTag) {
-      this.currentTags.push(content)
-      this.isInTag = false
-    }
-  }
-
-  end() {
-    this.finalizeCurrentResult() // Finalize the last result
-  }
-}
+type JsonRecord = Record<string, unknown>
 
 export async function searchAppleDeveloperDocs(query: string): Promise<SearchResponse> {
-  const searchUrl = `https://developer.apple.com/search/?q=${encodeURIComponent(query)}`
-  const response = await fetch(searchUrl, {
+  const results = await searchAppleDeveloperDocsViaService(query)
+  return { query, results }
+}
+
+async function searchAppleDeveloperDocsViaService(query: string): Promise<SearchResult[]> {
+  const response = await fetch(APPLE_SEARCH_SERVICE_URL, {
+    method: "POST",
     headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
       "User-Agent": getRandomUserAgent(),
     },
+    body: JSON.stringify({
+      q: query,
+      targetResultLocale: resolveTargetResultLocale(),
+    }),
   })
 
   if (!response.ok) {
     throw new Error(`Search request failed: ${response.status}`)
   }
 
-  const html = await response.text()
-  let results: SearchResult[] = []
-  if (typeof HTMLRewriter !== "undefined") {
-    const parser = new SearchResultParser()
-    const rewriter = new HTMLRewriter()
-      .on("li.search-result", parser)
-      .on("li.search-result a.click-analytics-result", parser)
-      .on("li.search-result p.result-description", parser)
-      .on("li.search-result li.breadcrumb-list-item", parser)
-      .on("li.search-result li.result-tag", parser)
-      .on("li.search-result li.result-tag span", parser)
+  const payload = new TextDecoder().decode(await response.arrayBuffer())
+  const events = payload
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .flatMap((line) => {
+      try {
+        return [JSON.parse(line) as JsonRecord]
+      } catch {
+        return []
+      }
+    })
 
-    // We need to consume the transformed response to trigger parsing callbacks.
-    await rewriter.transform(new Response(html)).text()
-    parser.end()
-    results = parser.getResults()
-  } else {
-    results = await parseSearchResultsWithCheerio(html)
+  const resultsEvent = events.find((event) => event.type === "results")
+  if (!resultsEvent) {
+    throw new Error("Search response did not include a results event")
   }
 
-  return {
-    query,
-    results,
-  }
+  return extractSearchResults(resultsEvent.data)
 }
 
-async function parseSearchResultsWithCheerio(html: string): Promise<SearchResult[]> {
-  const { load } = await import("cheerio")
-  const $ = load(html)
-  const results: SearchResult[] = []
+function extractSearchResults(data: unknown): SearchResult[] {
+  if (!Array.isArray(data)) {
+    return []
+  }
 
-  $("li.search-result").each((_, element) => {
-    const item = $(element)
-    const link = item.find("a.click-analytics-result").first()
-    const rawHref = link.attr("href")
-    const title = link.text().trim()
+  return data.flatMap((item) => {
+    const result = normalizeSearchResult(item)
+    return result ? [result] : []
+  })
+}
 
-    if (!rawHref || !title) {
-      return
+function normalizeSearchResult(item: unknown): SearchResult | null {
+  if (!isJsonRecord(item)) {
+    return null
+  }
+
+  const documentation = extractMetadataRecord(item.documentation)
+  if (documentation) {
+    const title = stringValue(documentation.title)
+    const url = stringValue(documentation.permalink)
+    if (!title || !url) {
+      return null
     }
 
-    const description = item.find("p.result-description").first().text().trim()
-    const breadcrumbs = item
-      .find("li.breadcrumb-list-item")
-      .toArray()
-      .map((breadcrumb) => $(breadcrumb).text().trim())
-      .filter(Boolean)
-
-    const tags = item
-      .find("li.result-tag span, li.result-tag.language")
-      .toArray()
-      .map((tag) => $(tag).text().trim())
-      .filter(Boolean)
-
-    const className = item.attr("class") ?? ""
-    const type = className.includes("documentation")
-      ? "documentation"
-      : className.includes("general")
-        ? "general"
-        : "other"
-
-    results.push({
+    return {
       title,
-      url: rawHref.startsWith("/") ? `https://developer.apple.com${rawHref}` : rawHref,
-      description,
-      breadcrumbs,
-      tags,
-      type,
-    })
-  })
+      url,
+      description: stringValue(documentation.description) ?? "",
+      breadcrumbs: splitHierarchy(stringValue(documentation.hierarchy)),
+      tags: compactStrings([stringValue(documentation.kind)]),
+      type: "documentation",
+    }
+  }
 
-  return results
+  const developer = extractMetadataRecord(item.developer)
+  if (developer) {
+    const title = firstString(developer.titles)
+    const url = firstString(developer.permalinks)
+    if (!title || !url) {
+      return null
+    }
+
+    return {
+      title,
+      url,
+      description: firstString(developer.descriptions) ?? "",
+      breadcrumbs: compactStrings([firstString(developer.projectNames)]),
+      tags: compactStrings([
+        firstString(developer.itemTypes),
+        firstString(developer.deliveryLanguageCodes),
+      ]),
+      type: (firstString(developer.itemTypes) ?? "developer").toLowerCase(),
+    }
+  }
+
+  const devsite = extractMetadataRecord(item.devsite)
+  if (devsite) {
+    const title = stringValue(devsite.title)
+    const url = stringValue(devsite.sourceURL)
+    if (!title || !url) {
+      return null
+    }
+
+    return {
+      title,
+      url,
+      description: stringValue(devsite.description) ?? "",
+      breadcrumbs: [],
+      tags: [],
+      type: "general",
+    }
+  }
+
+  return null
+}
+
+function extractMetadataRecord(container: unknown): JsonRecord | null {
+  if (!isJsonRecord(container)) {
+    return null
+  }
+
+  const metadata = container.metadata
+  return isJsonRecord(metadata) ? metadata : null
+}
+
+function isJsonRecord(value: unknown): value is JsonRecord {
+  return typeof value === "object" && value !== null
+}
+
+function stringValue(value: unknown): string | null {
+  return typeof value === "string" && value.length > 0 ? value : null
+}
+
+function firstString(value: unknown): string | null {
+  if (!Array.isArray(value)) {
+    return null
+  }
+
+  const first = value.find((item) => typeof item === "string" && item.length > 0)
+  return typeof first === "string" ? first : null
+}
+
+function splitHierarchy(hierarchy: string | null): string[] {
+  if (!hierarchy) {
+    return []
+  }
+
+  return hierarchy
+    .split(" > ")
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+}
+
+function compactStrings(values: Array<string | null>): string[] {
+  return values.filter((value): value is string => Boolean(value))
+}
+
+function resolveTargetResultLocale(): string {
+  const locale = Intl.DateTimeFormat().resolvedOptions().locale
+  if (!locale) {
+    return DEFAULT_TARGET_RESULT_LOCALE
+  }
+
+  const parts = locale.split(/[-_]/).filter(Boolean)
+  if (parts.length < 2) {
+    return DEFAULT_TARGET_RESULT_LOCALE
+  }
+
+  return `${parts[0]}_${parts[parts.length - 1]}`
 }
