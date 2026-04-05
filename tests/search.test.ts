@@ -9,11 +9,13 @@ describe("searchAppleDeveloperDocs", () => {
   })
 
   afterEach(() => {
+    vi.restoreAllMocks()
     global.fetch = originalFetch
   })
 
   it("parses Apple Developer streamed search results", async () => {
     const payload = [
+      "null",
       JSON.stringify({
         type: "results",
         data: [
@@ -114,6 +116,36 @@ describe("searchAppleDeveloperDocs", () => {
           type: "general",
         },
       ],
+    })
+  })
+
+  it("uses language and region subtags when the resolved locale contains Unicode extensions", async () => {
+    vi.spyOn(Intl, "DateTimeFormat").mockImplementation(
+      () =>
+        ({
+          resolvedOptions: () => ({ locale: "en-US-u-hc-h23" }),
+        }) as Intl.DateTimeFormat,
+    )
+
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response(
+        [
+          JSON.stringify({ type: "results", data: [] }),
+          JSON.stringify({ type: "done", ok: true, query: "SchemaMigrationPlan" }),
+        ].join("\n"),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/x-ndjson" },
+        },
+      ),
+    )
+
+    await searchAppleDeveloperDocs("SchemaMigrationPlan")
+
+    const [, requestInit] = vi.mocked(global.fetch).mock.calls[0] ?? []
+    expect(JSON.parse(String(requestInit?.body))).toEqual({
+      q: "SchemaMigrationPlan",
+      targetResultLocale: "en_US",
     })
   })
 

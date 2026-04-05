@@ -42,25 +42,65 @@ async function searchAppleDeveloperDocsViaService(query: string): Promise<Search
     throw new Error(`Search request failed: ${response.status}`)
   }
 
-  const payload = new TextDecoder().decode(await response.arrayBuffer())
-  const events = payload
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .flatMap((line) => {
-      try {
-        return [JSON.parse(line) as JsonRecord]
-      } catch {
-        return []
-      }
-    })
+  const events = await parseSearchEvents(response)
 
-  const resultsEvent = events.find((event) => event.type === "results")
+  const resultsEvent = events.find((event) => stringValue(event.type) === "results")
   if (!resultsEvent) {
     throw new Error("Search response did not include a results event")
   }
 
   return extractSearchResults(resultsEvent.data)
+}
+
+async function parseSearchEvents(response: Response): Promise<JsonRecord[]> {
+  if (!response.body) {
+    throw new Error("Search response did not include a readable body")
+  }
+
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  const events: JsonRecord[] = []
+  let buffer = ""
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) {
+      break
+    }
+
+    buffer += decoder.decode(value, { stream: true })
+
+    const lines = buffer.split("\n")
+    buffer = lines.pop() ?? ""
+    for (const rawLine of lines) {
+      const event = parseEventLine(rawLine)
+      if (event) {
+        events.push(event)
+      }
+    }
+  }
+
+  buffer += decoder.decode()
+  const finalEvent = parseEventLine(buffer)
+  if (finalEvent) {
+    events.push(finalEvent)
+  }
+
+  return events
+}
+
+function parseEventLine(rawLine: string): JsonRecord | null {
+  const line = rawLine.trim()
+  if (!line) {
+    return null
+  }
+
+  try {
+    const parsed = JSON.parse(line)
+    return isJsonRecord(parsed) ? parsed : null
+  } catch {
+    return null
+  }
 }
 
 function extractSearchResults(data: unknown): SearchResult[] {
@@ -186,10 +226,14 @@ function resolveTargetResultLocale(): string {
     return DEFAULT_TARGET_RESULT_LOCALE
   }
 
-  const parts = locale.split(/[-_]/).filter(Boolean)
-  if (parts.length < 2) {
+  try {
+    const normalized = new Intl.Locale(locale)
+    if (!normalized.language || !normalized.region) {
+      return DEFAULT_TARGET_RESULT_LOCALE
+    }
+
+    return `${normalized.language}_${normalized.region}`
+  } catch {
     return DEFAULT_TARGET_RESULT_LOCALE
   }
-
-  return `${parts[0]}_${parts[parts.length - 1]}`
 }
