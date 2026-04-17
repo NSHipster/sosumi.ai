@@ -113,10 +113,12 @@ export interface SeeAlsoSection {
  */
 export interface PrimaryContentSection {
   kind: string
+  title?: string
   content?: ContentItem[]
   declarations?: Declaration[]
   parameters?: Parameter[]
   items?: PropertyItem[]
+  values?: PossibleValueItem[]
 }
 
 /**
@@ -135,6 +137,14 @@ export interface PropertyItem {
     kind?: string
     values?: string[]
   }>
+}
+
+/**
+ * Represents a possible value item used in enum/string type pages.
+ */
+export interface PossibleValueItem {
+  name: string
+  content?: ContentItem[]
 }
 
 // ============================================================================
