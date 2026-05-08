@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const toolHandlers = new Map<string, (input: unknown) => Promise<unknown>>()
 const fetchVideoTranscriptMarkdown = vi.fn()
+const searchAppleDeveloperDocs = vi.fn()
 
 vi.mock("@modelcontextprotocol/sdk/server/mcp.js", () => {
   class McpServerMock {
@@ -23,10 +24,15 @@ vi.mock("../src/lib/video", () => ({
   fetchVideoTranscriptMarkdown,
 }))
 
+vi.mock("../src/lib/search", () => ({
+  searchAppleDeveloperDocs,
+}))
+
 describe("MCP tools registration", () => {
   beforeEach(() => {
     toolHandlers.clear()
     fetchVideoTranscriptMarkdown.mockReset()
+    searchAppleDeveloperDocs.mockReset()
   })
 
   it("registers and runs fetchAppleVideoTranscript with path input", async () => {
@@ -83,5 +89,40 @@ describe("MCP tools registration", () => {
       'Error fetching Apple video transcript for "/videos/wwdc2021/"',
     )
     expect(result.content[0].text).toContain("Invalid Apple video path")
+  })
+
+  it("registers and runs searchAppleDocumentation with structured results", async () => {
+    searchAppleDeveloperDocs.mockResolvedValue({
+      query: "SchemaMigrationPlan",
+      results: [
+        {
+          title: "SchemaMigrationPlan",
+          url: "https://developer.apple.com/documentation/swiftdata/schemamigrationplan",
+          description:
+            "An interface for describing the evolution of a schema and how to migrate between specific versions.",
+          breadcrumbs: ["SwiftData", "SchemaMigrationPlan"],
+          tags: ["symbol"],
+          type: "documentation",
+        },
+      ],
+    })
+
+    const { createMcpServer } = await import("../src/lib/mcp")
+    createMcpServer()
+
+    const handler = toolHandlers.get("searchAppleDocumentation")
+    expect(handler).toBeDefined()
+
+    const result = (await handler?.({
+      query: "SchemaMigrationPlan",
+    })) as {
+      content: Array<{ text: string }>
+      structuredContent: { query: string; results: Array<{ title: string }> }
+    }
+
+    expect(searchAppleDeveloperDocs).toHaveBeenCalledWith("SchemaMigrationPlan")
+    expect(result.content[0].text).toContain("Found 1 result(s)")
+    expect(result.structuredContent.query).toBe("SchemaMigrationPlan")
+    expect(result.structuredContent.results[0]?.title).toBe("SchemaMigrationPlan")
   })
 })
