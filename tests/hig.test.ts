@@ -226,7 +226,6 @@ describe("HIG Module", () => {
       expect(result).toContain(
         "- [Typography](/design/human-interface-guidelines/foundations/typography)",
       )
-      // Ensure proper spacing between level 3 headings (blank line before ### Foundations)
       expect(result).toMatch(/\n\n### Foundations/)
     })
 
