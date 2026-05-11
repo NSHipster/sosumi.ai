@@ -6,6 +6,7 @@ import type {
   AppleDocJSON,
   ContentItem,
   IndexContentItem,
+  PossibleValueItem,
   PropertyItem,
   TopicSection,
   Variant,
@@ -89,6 +90,18 @@ export async function renderFromJSON(
     if (propertiesSection?.items) {
       markdown += renderProperties(
         propertiesSection.items,
+        jsonData.references,
+        options.externalOrigin,
+      )
+    }
+
+    // Add possible values (used by enum/string type pages)
+    const possibleValuesSection = jsonData.primaryContentSections.find(
+      (s) => s.kind === "possibleValues",
+    )
+    if (possibleValuesSection?.values) {
+      markdown += renderPossibleValues(
+        possibleValuesSection.values,
         jsonData.references,
         options.externalOrigin,
       )
@@ -288,6 +301,34 @@ function renderProperties(
     if (allowedValues && allowedValues.length > 0) {
       const possibleValues = allowedValues.map((value) => `\`${value}\``).join(", ")
       markdown += `Possible Values: ${possibleValues}\n\n`
+    }
+  }
+
+  return markdown
+}
+
+/**
+ * Render possible values section for enum/string type pages.
+ */
+function renderPossibleValues(
+  values: PossibleValueItem[],
+  references?: Record<string, ContentItem>,
+  externalOrigin?: string,
+): string {
+  if (values.length === 0) return ""
+
+  let markdown = "## Possible Values\n\n"
+
+  for (const value of values) {
+    if (!value.name) continue
+
+    markdown += `### \`${value.name}\`\n\n`
+
+    if (value.content && Array.isArray(value.content)) {
+      const text = renderContentArray(value.content, references, 0, externalOrigin).trim()
+      if (text) {
+        markdown += `${text}\n\n`
+      }
     }
   }
 

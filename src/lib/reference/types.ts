@@ -20,6 +20,7 @@ export type {
   LanguageVariant,
   Parameter,
   Platform,
+  PossibleValueItem,
   PrimaryContentSection,
   PropertyItem,
   SeeAlsoSection,

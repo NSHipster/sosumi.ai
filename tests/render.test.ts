@@ -357,6 +357,59 @@ describe("Render Function", () => {
     })
   })
 
+  describe("Possible values primary section", () => {
+    it("should render kind possibleValues as ## Possible Values with headings and inline links", async () => {
+      const data = {
+        metadata: { title: "AppVersionState" },
+        primaryContentSections: [
+          {
+            kind: "possibleValues",
+            values: [
+              {
+                name: "READY_FOR_SALE",
+                content: [
+                  {
+                    type: "paragraph",
+                    inlineContent: [
+                      { type: "text", text: "The version is " },
+                      {
+                        type: "reference",
+                        identifier:
+                          "doc://com.apple.appstoreconnectapi/documentation/AppStoreConnectAPI/AppVersionState/ready-for-sale",
+                        title: "ready for sale",
+                      },
+                      { type: "text", text: "." },
+                    ],
+                  },
+                ],
+              },
+              {
+                name: "PENDING",
+                content: [
+                  {
+                    type: "paragraph",
+                    inlineContent: [{ type: "codeVoice", code: "pending" }],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com")
+
+      expect(result).toContain("## Possible Values")
+      expect(result).toContain("### `READY_FOR_SALE`")
+      expect(result).toContain("### `PENDING`")
+      expect(result).toContain("The version is ")
+      expect(result).toContain(
+        "[ready for sale](/documentation/AppStoreConnectAPI/AppVersionState/ready-for-sale)",
+      )
+      expect(result).toContain("`pending`")
+    })
+  })
+
   describe("Inline image rendering", () => {
     it("should render inline image with alt and URL from reference", async () => {
       const data = {
