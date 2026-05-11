@@ -969,7 +969,8 @@ curl -o .claude/skills/sosumi/SKILL.md https://sosumi.ai/SKILL.md</code></pre>
                     <div class="tab-pane" id="skill-codex-tab">
                         <p>Install globally:</p>
                         <pre><code><span class="comment"># Global instructions (all your projects)</span>
-curl -o ~/.codex/AGENTS.md https://sosumi.ai/SKILL.md</code></pre>
+mkdir -p ~/.agents/skills/sosumi
+curl -o ~/.agents/skills/sosumi/SKILL.md https://sosumi.ai/SKILL.md</code></pre>
                     </div>
 
                     <div class="tab-pane" id="skill-cursor-tab">
@@ -984,8 +985,9 @@ curl -o .cursor/skills/sosumi/SKILL.md https://sosumi.ai/SKILL.md</code></pre>
                     </div>
 
                     <div class="tab-pane" id="skill-agents-tab">
-                        <p>For AGENTS-compatible tools, you can add project instructions:</p>
-                        <pre><code>curl -o AGENTS.md https://sosumi.ai/SKILL.md</code></pre>
+                        <p>For AGENTS-compatible tools, install as a reusable skill:</p>
+                        <pre><code>mkdir -p ~/.agents/skills/sosumi
+curl -o ~/.agents/skills/sosumi/SKILL.md https://sosumi.ai/SKILL.md</code></pre>
                     </div>
                 </div>
             </div>
