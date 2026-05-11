@@ -211,7 +211,7 @@ function compactStrings(values: Array<string | null>): string[] {
 }
 
 // Apple's MSC backend uses BCP-47 language tags ("en", "ja-JP", "zh-CN", etc.)
-// instead of POSIX locale codes ("en_US"). 
+// instead of POSIX locale codes ("en_US").
 // Mirror the mapping from
 // https://developer.apple.com/search/scripts/helpers.js
 function resolveTargetResultLocale(): string {
