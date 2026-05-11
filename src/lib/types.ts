@@ -113,10 +113,20 @@ export interface SeeAlsoSection {
  */
 export interface PrimaryContentSection {
   kind: string
+  title?: string
   content?: ContentItem[]
   declarations?: Declaration[]
   parameters?: Parameter[]
   items?: PropertyItem[]
+  values?: PossibleValueItem[]
+}
+
+/**
+ * A single enumerated or documented value in a `possibleValues` primary section.
+ */
+export interface PossibleValueItem {
+  name?: string
+  content?: ContentItem[]
 }
 
 /**

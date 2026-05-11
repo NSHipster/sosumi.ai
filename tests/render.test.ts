@@ -357,6 +357,95 @@ describe("Render Function", () => {
     })
   })
 
+  describe("Possible Values primary section", () => {
+    it("renders possibleValues section heading, value names, and inline content with links", async () => {
+      const refId = "doc://com.apple.appstoreconnectapi/documentation/AppStoreConnectAPI/Foo"
+      const data = {
+        metadata: { title: "ExampleState" },
+        primaryContentSections: [
+          {
+            kind: "possibleValues",
+            title: "Possible Values",
+            values: [
+              {
+                name: "ACCEPTED",
+                content: [
+                  {
+                    type: "paragraph",
+                    inlineContent: [{ type: "text", text: "The version was accepted." }],
+                  },
+                ],
+              },
+              {
+                name: "PENDING",
+                content: [
+                  {
+                    type: "paragraph",
+                    inlineContent: [
+                      {
+                        type: "reference",
+                        identifier: refId,
+                        title: "Related Topic",
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+        references: {
+          [refId]: {
+            url: "/documentation/appstoreconnectapi/foo",
+            title: "Related Topic",
+          },
+        },
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).toContain("## Possible Values")
+      expect(result).toContain("### `ACCEPTED`")
+      expect(result).toContain("The version was accepted.")
+      expect(result).toContain("### `PENDING`")
+      expect(result).toContain("[Related Topic](/documentation/appstoreconnectapi/foo)")
+    })
+
+    it("uses externalOrigin for reference links in possible values content", async () => {
+      const refId = "doc://com.apple.appstoreconnectapi/documentation/AppStoreConnectAPI/Foo"
+      const data = {
+        metadata: { title: "ExampleState" },
+        primaryContentSections: [
+          {
+            kind: "possibleValues",
+            values: [
+              {
+                name: "LINKED",
+                content: [
+                  {
+                    type: "paragraph",
+                    inlineContent: [
+                      { type: "reference", identifier: refId, title: "Doc" },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+        references: {
+          [refId]: { url: "/documentation/appstoreconnectapi/foo" },
+        },
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com", {
+        externalOrigin: "developer.apple.com",
+      })
+      expect(result).toContain(
+        "[Doc](/external/developer.apple.com/documentation/appstoreconnectapi/foo)",
+      )
+    })
+  })
+
   describe("Inline image rendering", () => {
     it("should render inline image with alt and URL from reference", async () => {
       const data = {

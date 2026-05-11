@@ -6,6 +6,7 @@ import type {
   AppleDocJSON,
   ContentItem,
   IndexContentItem,
+  PossibleValueItem,
   PropertyItem,
   TopicSection,
   Variant,
@@ -72,6 +73,18 @@ export async function renderFromJSON(
     )
     if (declarationSection?.declarations) {
       markdown += renderDeclarations(declarationSection.declarations)
+    }
+
+    const possibleValuesSection = jsonData.primaryContentSections.find(
+      (s) => s.kind === "possibleValues",
+    )
+    if (possibleValuesSection?.values && possibleValuesSection.values.length > 0) {
+      markdown += renderPossibleValues(
+        possibleValuesSection.values,
+        possibleValuesSection.title,
+        jsonData.references,
+        options.externalOrigin,
+      )
     }
 
     // Add parameters
@@ -262,6 +275,27 @@ function renderParameters(
 /**
  * Render properties section for data dictionary pages.
  */
+function renderPossibleValues(
+  values: PossibleValueItem[],
+  sectionTitle: string | undefined,
+  references?: Record<string, ContentItem>,
+  externalOrigin?: string,
+): string {
+  const heading = (sectionTitle?.trim() || "Possible Values").replace(/^#+\s*/, "")
+  let markdown = `## ${heading}\n\n`
+
+  for (const entry of values) {
+    if (entry.name) {
+      markdown += `### \`${entry.name}\`\n\n`
+    }
+    if (entry.content?.length) {
+      markdown += renderContentArray(entry.content, references, 0, externalOrigin)
+    }
+  }
+
+  return markdown
+}
+
 function renderProperties(
   properties: PropertyItem[],
   references?: Record<string, ContentItem>,
