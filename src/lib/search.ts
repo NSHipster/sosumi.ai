@@ -15,13 +15,13 @@ export interface SearchResponse {
 }
 
 // Apple's current search backend, discovered from
-// https://developer.apple.com/search/scripts/search.js (May 2026).
+// https://developer.apple.com/search/scripts/search.js (May 2026)
 //
 // Historical context:
-//   - The legacy /search/ HTML scraper broke when Apple switched to a JS-rendered SPA.
+//   - The legacy /search/ HTML scraper broke when Apple switched to a JS-rendered SPA
 //   - PR #54 upstream (NSHipster/sosumi.ai) targeted /search/services/search.php with
-//     NDJSON-style streamed events; that endpoint is now also gone (404).
-//   - The current backend is a plain JSON POST API on Apple's MSC infrastructure.
+//     NDJSON-style streamed events; that endpoint is now also gone (404)
+//   - The current backend is a plain JSON POST API on Apple's MSC infrastructure
 const APPLE_SEARCH_SERVICE_URL = "https://devintserv.msc.sbz.apple.com/api/v1/search"
 const DEFAULT_TARGET_RESULT_LOCALE = "en"
 const TARGET_RESULT_LOCALE_BY_BASE_NAME = new Map([
@@ -210,9 +210,10 @@ function compactStrings(values: Array<string | null>): string[] {
   return values.filter((value): value is string => Boolean(value))
 }
 
-// Apple's MSC backend uses BCP-47 language tags ("en", "ja-JP", "zh-CN", etc.),
-// not POSIX locale codes ("en_US"). Mirror the mapping from
-// https://developer.apple.com/search/scripts/helpers.js.
+// Apple's MSC backend uses BCP-47 language tags ("en", "ja-JP", "zh-CN", etc.)
+// instead of POSIX locale codes ("en_US"). 
+// Mirror the mapping from
+// https://developer.apple.com/search/scripts/helpers.js
 function resolveTargetResultLocale(): string {
   const locale = Intl.DateTimeFormat().resolvedOptions().locale
   if (!locale) {
