@@ -226,6 +226,7 @@ describe("HIG Module", () => {
       expect(result).toContain(
         "- [Typography](/design/human-interface-guidelines/foundations/typography)",
       )
+      expect(result).toMatch(/\n\n### Foundations/)
     })
 
     it("should render HIG page with proper front matter", async () => {

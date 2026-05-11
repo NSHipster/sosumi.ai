@@ -496,7 +496,10 @@ function renderHIGTocItems(items: HIGTocItem[], headingLevel: number): string {
 
   for (const item of items) {
     if (item.type === "module" || item.type === "symbol") {
-      // Main sections get headings
+      // Ensure blank line before heading when preceding content was a list
+      if (markdown && !markdown.endsWith("\n\n")) {
+        markdown += "\n"
+      }
       const hashes = "#".repeat(Math.min(headingLevel, 6))
       markdown += `${hashes} ${item.title}\n\n`
 
