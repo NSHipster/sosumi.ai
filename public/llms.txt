@@ -272,7 +272,8 @@ Install globally:
 
 ```bash
 # Global instructions (all your projects)
-curl -o ~/.codex/AGENTS.md https://sosumi.ai/SKILL.md
+mkdir -p ~/.agents/skills/sosumi
+curl -o ~/.agents/skills/sosumi/SKILL.md https://sosumi.ai/SKILL.md
 ```
 
 ### Cursor
@@ -291,10 +292,11 @@ curl -o .cursor/skills/sosumi/SKILL.md https://sosumi.ai/SKILL.md
 
 ### Other
 
-For AGENTS-compatible tools, you can add project instructions:
+For AGENTS-compatible tools, install as a reusable skill:
 
 ```bash
-curl -o AGENTS.md https://sosumi.ai/SKILL.md
+mkdir -p ~/.agents/skills/sosumi
+curl -o ~/.agents/skills/sosumi/SKILL.md https://sosumi.ai/SKILL.md
 ```
 
 Use this together with Sosumi MCP at `https://sosumi.ai/mcp`.
