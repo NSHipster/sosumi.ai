@@ -23,6 +23,14 @@ Use Sosumi when the request involves any of the following:
 2. If you do not know the exact page path, search first, then fetch the best match.
 3. Prefer specific symbol pages instead of broad top-level pages when answering implementation questions.
 
+### Optional CLI Preflight
+
+If the Sosumi CLI is available, quickly verify local access before deeper debugging:
+
+- `sosumi --version` confirms the CLI is installed and on `PATH`.
+- `sosumi --help` shows top-level usage.
+- `sosumi <command> --help` is the manual for command-specific behavior.
+
 ## HTTP Usage
 
 Replace `developer.apple.com` with `sosumi.ai`:
