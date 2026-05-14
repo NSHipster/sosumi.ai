@@ -2,38 +2,42 @@
 
 Making Apple docs AI-readable.
 
-[sosumi.ai](https://sosumi.ai) 
-provides Apple Developer documentation in an AI-readable format 
+[sosumi.ai](https://sosumi.ai)
+provides Apple Developer documentation in an AI-readable format
 by converting JavaScript-rendered pages into Markdown.
 
 ## Usage
 
 ### HTTP API
 
-Replace `developer.apple.com` with `sosumi.ai` 
+Replace `developer.apple.com` with `sosumi.ai`
 in any Apple Developer documentation URL:
 
 **Original:**
+
 ```
 https://developer.apple.com/documentation/swift/array
 ```
 
 **AI-readable:**
+
 ```
 https://sosumi.ai/documentation/swift/array
 ```
 
-This works for all API reference docs, 
+This works for all API reference docs,
 as well as Apple's [Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/) (HIG).
 
 WWDC session transcripts are also supported by replacing the same host for video URLs:
 
 **Original:**
+
 ```
 https://developer.apple.com/videos/play/wwdc2021/10133/
 ```
 
 **AI-readable:**
+
 ```
 https://sosumi.ai/videos/play/wwdc2021/10133
 ```
@@ -41,11 +45,13 @@ https://sosumi.ai/videos/play/wwdc2021/10133
 Sosumi can also proxy public non-Apple Swift-DocC pages using:
 
 **Original:**
+
 ```
 https://apple.github.io/swift-argument-parser/documentation/argumentparser
 ```
 
 **AI-readable:**
+
 ```
 https://sosumi.ai/external/https://apple.github.io/swift-argument-parser/documentation/argumentparser
 ```
@@ -60,8 +66,8 @@ https://sosumi.ai/external/https://apple.github.io/swift-argument-parser/documen
 
 ### MCP Integration
 
-Sosumi's MCP server supports Streamable HTTP and Server-Sent Events (SSE) transport. 
-If your client supports either of these, 
+Sosumi's MCP server supports Streamable HTTP and Server-Sent Events (SSE) transport.
+If your client supports either of these,
 configure it to connect directly to `https://sosumi.ai/mcp`.
 
 Otherwise,
@@ -154,11 +160,17 @@ Want your AI coding assistant to use Sosumi consistently?
 Use the hosted skill file:
 [`https://sosumi.ai/SKILL.md`](https://sosumi.ai/SKILL.md)
 
+Spec-compliant clients can also install it with:
+
+```bash
+npx skills add https://sosumi.ai
+```
+
 ### Chrome Extension
 
-You can also use Sosumi from a community-contributed 
+You can also use Sosumi from a community-contributed
 [Chrome extension](https://chromewebstore.google.com/detail/donffakeimppgoehccpfhlchmbfdmfpj?utm_source=item-share-cb),
-which adds a "Copy sosumi Link" button 
+which adds a "Copy sosumi Link" button
 to Apple Developer documentation pages.
 [Source code](https://github.com/FromAtom/Link-Generator-for-sosumi.ai) is available on GitHub.
 
@@ -167,11 +179,11 @@ to Apple Developer documentation pages.
 This project is designed to be easily run on your own machine
 or deployed to a hosting provider.
 
-Sosumi.ai is currently hosted by 
+Sosumi.ai is currently hosted by
 [Cloudflare Workers](https://workers.cloudflare.com).
 
 > [!NOTE]  
-> The application is built with Hono, 
+> The application is built with Hono,
 > making it compatible with various runtimes.
 >
 > See the [Hono docs](https://hono.dev/docs/getting-started/basic)
@@ -185,17 +197,20 @@ Sosumi.ai is currently hosted by
 ### Quick Start
 
 1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/nshipster/sosumi.ai.git
    cd sosumi.ai
    ```
 
 2. **Install dependencies:**
+
    ```bash
    npm install
    ```
 
 3. **Start development server:**
+
    ```bash
    npm run dev
    ```
@@ -203,7 +218,7 @@ Sosumi.ai is currently hosted by
 Once the application is up and running, press the <kbd>b</kbd>
 to open the URL in your browser.
 
-To configure MCP clients to use your development server, 
+To configure MCP clients to use your development server,
 replace `sosumi.ai` with the local server address
 (`http://localhost:8787` by default).
 
@@ -233,7 +248,7 @@ npm run test:run      # Run tests once
 ```
 
 > [!TIP]
-> When running the CLI through npm scripts during local development, 
+> When running the CLI through npm scripts during local development,
 > use `-s` (`--silent`)
 > to suppress npm's script preamble so output pipes cleanly:
 >
@@ -243,7 +258,7 @@ npm run test:run      # Run tests once
 
 ### Code Quality
 
-This project uses [Biome](https://biomejs.dev/) 
+This project uses [Biome](https://biomejs.dev/)
 for code formatting, linting, and import organization.
 
 - `npm run format` - Format all code files
@@ -261,7 +276,7 @@ For the best development experience, install the Biome extension for your editor
 
 ### Cloudflare Workers
 
-Whenever you update your `wrangler.toml` or change your Worker bindings, 
+Whenever you update your `wrangler.toml` or change your Worker bindings,
 be sure to re-run:
 
 ```bash
