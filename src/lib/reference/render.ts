@@ -438,6 +438,16 @@ function renderContentArray(
       markdown += `> [!${calloutType}]\n> ${cleanContent}\n\n`
     } else if (item.type === "table") {
       markdown += renderTable(item, references, depth, externalOrigin)
+    } else if (item.type === "tabNavigator" && item.tabs?.length) {
+      for (const tab of item.tabs) {
+        const label = tab.title?.trim()
+        if (label) {
+          markdown += `**${label}**\n\n`
+        }
+        if (tab.content?.length) {
+          markdown += renderContentArray(tab.content, references, depth + 1, externalOrigin)
+        }
+      }
     }
   }
 
