@@ -325,7 +325,9 @@ describe("Render Function", () => {
                       {
                         type: "codeListing",
                         syntax: "swift",
-                        code: ['let activity = NSBackgroundActivityScheduler(identifier: "com.example.app")'],
+                        code: [
+                          'let activity = NSBackgroundActivityScheduler(identifier: "com.example.app")',
+                        ],
                       },
                     ],
                   },
