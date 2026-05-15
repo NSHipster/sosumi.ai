@@ -309,56 +309,91 @@ describe("Render Function", () => {
   })
 
   describe("Tab navigator rendering", () => {
-    it("should render Swift and Objective-C code from tab navigator", async () => {
-      const data = {
-        metadata: { title: "NSBackgroundActivityScheduler" },
-        primaryContentSections: [
-          {
-            kind: "content",
-            content: [
-              {
-                type: "tabNavigator",
-                tabs: [
-                  {
-                    title: "Swift",
-                    content: [
-                      {
-                        type: "codeListing",
-                        syntax: "swift",
-                        code: [
-                          'let activity = NSBackgroundActivityScheduler(identifier: "com.example.app")',
-                        ],
-                      },
-                    ],
-                  },
-                  {
-                    title: "Objective-C",
-                    content: [
-                      {
-                        type: "codeListing",
-                        syntax: "objc",
-                        code: [
-                          'NSBackgroundActivityScheduler *activity = [[NSBackgroundActivityScheduler alloc] initWithIdentifier:@"com.example.app"];',
-                        ],
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      }
+    const tabNavigatorData = {
+      metadata: { title: "NSBackgroundActivityScheduler" },
+      primaryContentSections: [
+        {
+          kind: "content",
+          content: [
+            {
+              type: "tabNavigator",
+              tabs: [
+                {
+                  title: "Swift",
+                  content: [
+                    {
+                      type: "codeListing",
+                      syntax: "swift",
+                      code: [
+                        'let activity = NSBackgroundActivityScheduler(identifier: "com.example.app")',
+                      ],
+                    },
+                  ],
+                },
+                {
+                  title: "Objective-C",
+                  content: [
+                    {
+                      type: "codeListing",
+                      syntax: "objc",
+                      code: [
+                        'NSBackgroundActivityScheduler *activity = [[NSBackgroundActivityScheduler alloc] initWithIdentifier:@"com.example.app"];',
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }
 
-      const result = await renderFromJSON(data as any, "https://test.com")
-      expect(result).toContain("**Swift**")
+    it("should render only Swift code by default (no language specified)", async () => {
+      const result = await renderFromJSON(tabNavigatorData as any, "https://test.com")
+      expect(result).not.toContain("**Swift**")
       expect(result).toContain("```swift")
       expect(result).toContain(
         'let activity = NSBackgroundActivityScheduler(identifier: "com.example.app")',
       )
-      expect(result).toContain("**Objective-C**")
+      expect(result).not.toContain("**Objective-C**")
+      expect(result).not.toContain("```objc")
+      expect(result).not.toContain("NSBackgroundActivityScheduler *activity")
+    })
+
+    it("should render only Swift code when language=swift", async () => {
+      const result = await renderFromJSON(tabNavigatorData as any, "https://test.com", {
+        language: "swift",
+      })
+      expect(result).not.toContain("**Swift**")
+      expect(result).toContain("```swift")
+      expect(result).not.toContain("**Objective-C**")
+      expect(result).not.toContain("```objc")
+      expect(result).not.toContain("NSBackgroundActivityScheduler *activity")
+    })
+
+    it("should render only Objective-C code when language=objc", async () => {
+      const result = await renderFromJSON(tabNavigatorData as any, "https://test.com", {
+        language: "objc",
+      })
+      expect(result).not.toContain("**Swift**")
+      expect(result).not.toContain("```swift")
+      expect(result).not.toContain(
+        'let activity = NSBackgroundActivityScheduler(identifier: "com.example.app")',
+      )
+      expect(result).not.toContain("**Objective-C**")
       expect(result).toContain("```objc")
       expect(result).toContain("NSBackgroundActivityScheduler *activity")
+    })
+
+    it("should render all tabs with labels when language is unrecognized", async () => {
+      const result = await renderFromJSON(tabNavigatorData as any, "https://test.com", {
+        language: "kotlin",
+      })
+      expect(result).toContain("**Swift**")
+      expect(result).toContain("```swift")
+      expect(result).toContain("**Objective-C**")
+      expect(result).toContain("```objc")
     })
   })
 

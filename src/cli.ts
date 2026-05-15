@@ -39,11 +39,15 @@ async function runFetch(input: string, json: boolean) {
   const endpoint = resolveFetchEndpoint(input)
 
   if (endpoint.startsWith("/documentation/")) {
-    const documentationPath = endpoint.replace(/^\/documentation\//, "")
+    const [endpointPath, queryString] = endpoint.split("?")
+    const language = queryString
+      ? (new URLSearchParams(queryString).get("language") ?? undefined)
+      : undefined
+    const documentationPath = endpointPath.replace(/^\/documentation\//, "")
     const normalizedPath = normalizeDocumentationPath(documentationPath)
     const appleUrl = generateAppleDocUrl(normalizedPath)
-    const jsonData = await fetchJSONData(normalizedPath)
-    const markdown = await renderFromJSON(jsonData, appleUrl)
+    const jsonData = await fetchJSONData(normalizedPath, language)
+    const markdown = await renderFromJSON(jsonData, appleUrl, { language })
     if (json) {
       printJsonOutput({ url: appleUrl, content: markdown })
     } else {

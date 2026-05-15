@@ -222,6 +222,24 @@ export interface SymbolVariant extends BaseVariant {
  */
 export type Variant = LanguageVariant | ImageVariant | SymbolVariant
 
+/**
+ * A JSON Patch operation (RFC 6902 subset used by DocC variant overrides).
+ */
+export interface JsonPatchOperation {
+  op: "add" | "remove" | "replace"
+  path: string
+  value?: unknown
+}
+
+/**
+ * A DocC variant override — a set of RFC 6902 patches applied to the base
+ * document to produce a language-specific (or otherwise scoped) variant.
+ */
+export interface VariantOverride {
+  traits: Array<{ interfaceLanguage?: string }>
+  patch: JsonPatchOperation[]
+}
+
 // ============================================================================
 // INTERFACE & INDEX TYPES
 // ============================================================================
@@ -307,6 +325,7 @@ export interface AppleDocJSON {
 
   // Variants and relationships
   variants?: Variant[]
+  variantOverrides?: VariantOverride[]
   relationshipsSections?: ContentItem[]
 
   // References

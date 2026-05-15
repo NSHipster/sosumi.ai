@@ -115,6 +115,20 @@ describe("Integration Tests with Mocked Apple API", () => {
     expect(call[1].headers["Cache-Control"]).toBe("no-cache")
   })
 
+  it("should forward the language query parameter to Apple", async () => {
+    global.fetch = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify(arrayData), { status: 200 }))
+
+    await fetchJSONData("/documentation/swift/array", "objc")
+
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+    const call = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0]
+    expect(call[0]).toBe(
+      "https://developer.apple.com/tutorials/data/documentation/swift/array.json?language=objc",
+    )
+  })
+
   it("should handle concurrent requests efficiently", async () => {
     // Mock successful response for all requests - create new Response each time
     global.fetch = vi.fn().mockImplementation(() =>

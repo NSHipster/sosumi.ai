@@ -11,9 +11,11 @@ import type {
   TopicSection,
   Variant,
 } from "./types"
+import { applyVariantOverrides } from "./variants"
 
 interface RenderOptions {
   externalOrigin?: string
+  language?: string
 }
 
 /**
@@ -24,6 +26,10 @@ export async function renderFromJSON(
   sourceUrl: string,
   options: RenderOptions = {},
 ): Promise<string> {
+  // Apply DocC variant overrides upfront so all downstream rendering sees the
+  // requested language's declarations, references, and section layout.
+  jsonData = applyVariantOverrides(jsonData, options.language)
+
   let markdown = ""
 
   // Generate front matter
@@ -111,7 +117,12 @@ export async function renderFromJSON(
     const contentSections = jsonData.primaryContentSections.filter((s) => s.kind === "content")
     for (const section of contentSections) {
       if (section.content) {
-        markdown += renderContent(section.content, jsonData.references, options.externalOrigin)
+        markdown += renderContent(
+          section.content,
+          jsonData.references,
+          options.externalOrigin,
+          options.language,
+        )
       }
     }
   }
@@ -230,7 +241,9 @@ function generateBreadcrumbs(sourceUrl: string, externalOrigin?: string): string
 /**
  * Render declaration sections
  */
-function renderDeclarations(declarations: Array<{ tokens?: Array<{ text?: string }> }>): string {
+function renderDeclarations(
+  declarations: Array<{ tokens?: Array<{ text?: string }>; languages?: string[] }>,
+): string {
   let markdown = ""
 
   for (const decl of declarations) {
@@ -242,7 +255,8 @@ function renderDeclarations(declarations: Array<{ tokens?: Array<{ text?: string
         .join("")
         .trim()
 
-      markdown += `\`\`\`swift\n${code}\n\`\`\`\n\n`
+      const fence = decl.languages?.includes("occ") ? "objc" : "swift"
+      markdown += `\`\`\`${fence}\n${code}\n\`\`\`\n\n`
     }
   }
 
@@ -361,8 +375,9 @@ function renderContent(
   content: ContentItem[],
   references?: Record<string, ContentItem>,
   externalOrigin?: string,
+  language?: string,
 ): string {
-  return renderContentArray(content, references, 0, externalOrigin)
+  return renderContentArray(content, references, 0, externalOrigin, language)
 }
 
 /**
@@ -373,6 +388,7 @@ function renderContentArray(
   references?: Record<string, ContentItem>,
   depth: number = 0,
   externalOrigin?: string,
+  language?: string,
 ): string {
   // Prevent infinite recursion by limiting depth
   if (depth > 50) {
@@ -410,6 +426,7 @@ function renderContentArray(
             references,
             depth + 1,
             externalOrigin,
+            language,
           )
           markdown += `- ${itemText.replace(/\n\n$/, "")}\n`
         }
@@ -423,6 +440,7 @@ function renderContentArray(
             references,
             depth + 1,
             externalOrigin,
+            language,
           )
           markdown += `${index + 1}. ${itemText.replace(/\n\n$/, "")}\n`
         })
@@ -432,20 +450,33 @@ function renderContentArray(
       const style = item.style || "note"
       const calloutType = mapAsideStyleToCallout(style)
       const asideContent = item.content
-        ? renderContentArray(item.content, references, depth + 1, externalOrigin)
+        ? renderContentArray(item.content, references, depth + 1, externalOrigin, language)
         : ""
       const cleanContent = asideContent.trim().replace(/\n/g, "\n> ")
       markdown += `> [!${calloutType}]\n> ${cleanContent}\n\n`
     } else if (item.type === "table") {
       markdown += renderTable(item, references, depth, externalOrigin)
     } else if (item.type === "tabNavigator" && item.tabs?.length) {
-      for (const tab of item.tabs) {
-        const label = tab.title?.trim()
-        if (label) {
-          markdown += `**${label}**\n\n`
+      const TAB_TITLE_BY_LANGUAGE: Record<string, string> = {
+        swift: "Swift",
+        objc: "Objective-C",
+      }
+      // Default to Swift when no language specified, matching Apple's documentation default
+      const targetTitle = TAB_TITLE_BY_LANGUAGE[language ?? "swift"]
+      const filtered = targetTitle
+        ? item.tabs.filter((tab) => tab.title?.trim() === targetTitle)
+        : item.tabs
+      const tabsToRender = filtered.length > 0 ? filtered : item.tabs
+      const showLabel = tabsToRender.length > 1
+      for (const tab of tabsToRender) {
+        if (showLabel) {
+          const label = tab.title?.trim()
+          if (label) {
+            markdown += `**${label}**\n\n`
+          }
         }
         if (tab.content?.length) {
-          markdown += renderContentArray(tab.content, references, depth + 1, externalOrigin)
+          markdown += renderContentArray(tab.content, references, depth + 1, externalOrigin, language)
         }
       }
     }
