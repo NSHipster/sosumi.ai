@@ -186,4 +186,32 @@ describe("renderFromJSON with variant overrides", () => {
     expect(result).toContain("@interface NSExample : NSObject")
     expect(result).not.toContain("```swift\nclass NSExample")
   })
+
+  it("renders Swift when ?language=objc is requested but no objc variant exists", async () => {
+    const swiftOnlyData = {
+      metadata: { title: "Button" },
+      primaryContentSections: [
+        {
+          kind: "declarations",
+          declarations: [
+            {
+              tokens: [
+                { kind: "keyword", text: "struct" },
+                { kind: "text", text: " " },
+                { kind: "identifier", text: "Button" },
+              ],
+              languages: ["swift"],
+            },
+          ],
+        },
+      ],
+      // no variantOverrides — Swift-only API (e.g. SwiftUI)
+    }
+    const result = await renderFromJSON(swiftOnlyData as any, "https://test.com", {
+      language: "objc",
+    })
+    expect(result).toContain("```swift\nstruct Button")
+    expect(result).not.toContain("@interface")
+    expect(result).not.toContain("```objc")
+  })
 })
