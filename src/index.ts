@@ -36,13 +36,13 @@ interface Env {
 const skillName = "sosumi"
 const skillHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Cache-Control": "public, max-age=300",
+  "Cache-Control": "public, max-age=300, s-maxage=600",
   "Content-Type": "text/markdown; charset=utf-8",
 }
 
 const skillIndexHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Cache-Control": "public, max-age=300",
+  "Cache-Control": "public, max-age=300, s-maxage=600",
   "Content-Type": "application/json; charset=utf-8",
 }
 
@@ -96,34 +96,33 @@ app.all("/.well-known/agent-skills/index.json", async (c) => {
     return c.text("Method Not Allowed", 405, { Allow: "GET, HEAD" })
   }
 
+  const skill = await loadSkill(c)
+
   if (c.req.method === "HEAD") {
-    await assertSkillAssetExists(c)
     return new Response(null, {
       status: 200,
       headers: skillIndexHeaders,
     })
   }
 
-  const skill = await loadSkill(c)
   const index = await createSkillIndex(skill)
 
   return c.json(index, 200, skillIndexHeaders)
 })
 
-app.all("/.well-known/agent-skills/sosumi/SKILL.md", async (c) => {
+app.all(`/.well-known/agent-skills/${skillName}/SKILL.md`, async (c) => {
   if (c.req.method !== "GET" && c.req.method !== "HEAD") {
     return c.text("Method Not Allowed", 405, { Allow: "GET, HEAD" })
   }
 
+  const skill = await loadSkill(c)
+
   if (c.req.method === "HEAD") {
-    await assertSkillAssetExists(c)
     return new Response(null, {
       status: 200,
       headers: skillHeaders,
     })
   }
-
-  const skill = await loadSkill(c)
 
   return new Response(skill.bytes, {
     status: 200,
@@ -575,19 +574,6 @@ interface SkillArtifact {
   bytes: ArrayBuffer
   description: string
   name: string
-}
-
-async function assertSkillAssetExists(c: Context<{ Bindings: Env }>): Promise<void> {
-  const skillUrl = new URL("/SKILL.md", c.req.url)
-  const headResponse = await c.env.ASSETS.fetch(
-    new Request(skillUrl.toString(), { method: "HEAD" }),
-  )
-
-  if (!headResponse.ok) {
-    throw new HTTPException(500, {
-      message: "Failed to load SKILL.md",
-    })
-  }
 }
 
 async function loadSkill(c: Context<{ Bindings: Env }>): Promise<SkillArtifact> {
