@@ -33,6 +33,14 @@ export interface Token {
 }
 
 /**
+ * One panel in Apple DocC `tabNavigator` JSON (e.g. a language tab with examples).
+ */
+export interface TabNavigatorTab {
+  title?: string
+  content?: ContentItem[]
+}
+
+/**
  * The main content item type used throughout the documentation structure.
  * Can represent text, code, lists, headings, and other content elements.
  */
@@ -50,6 +58,9 @@ export interface ContentItem {
   content?: ContentItem[]
   inlineContent?: ContentItem[]
   items?: ContentItem[]
+
+  /** Tab panels for DocC `tabNavigator` content (e.g. Swift / Objective-C examples). */
+  tabs?: TabNavigatorTab[]
 
   // Code content
   code?: string | string[]
