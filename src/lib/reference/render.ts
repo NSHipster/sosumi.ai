@@ -239,9 +239,6 @@ function generateBreadcrumbs(sourceUrl: string, externalOrigin?: string): string
 }
 
 /**
- * Render declaration sections
- */
-/**
  * Map a DocC language code to a Markdown code-fence identifier. DocC uses
  * `occ` for Objective-C internally, but Markdown highlighters expect `objc`.
  */
@@ -249,6 +246,9 @@ function normalizeFenceLanguage(syntax: string): string {
   return syntax === "occ" ? "objc" : syntax
 }
 
+/**
+ * Render declaration sections
+ */
 function renderDeclarations(
   declarations: Array<{ tokens?: Array<{ text?: string }>; languages?: string[] }>,
 ): string {
@@ -263,7 +263,7 @@ function renderDeclarations(
         .join("")
         .trim()
 
-      const fence = normalizeFenceLanguage(decl.languages?.includes("occ") ? "occ" : "swift")
+      const fence = decl.languages?.includes("occ") ? "objc" : "swift"
       markdown += `\`\`\`${fence}\n${code}\n\`\`\`\n\n`
     }
   }
