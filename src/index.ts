@@ -96,15 +96,16 @@ app.all("/.well-known/agent-skills/index.json", async (c) => {
     return c.text("Method Not Allowed", 405, { Allow: "GET, HEAD" })
   }
 
-  const skill = await loadSkill(c)
-  const index = await createSkillIndex(skill)
-
   if (c.req.method === "HEAD") {
+    await assertSkillAssetExists(c)
     return new Response(null, {
       status: 200,
       headers: skillIndexHeaders,
     })
   }
+
+  const skill = await loadSkill(c)
+  const index = await createSkillIndex(skill)
 
   return c.json(index, 200, skillIndexHeaders)
 })
@@ -114,14 +115,15 @@ app.all("/.well-known/agent-skills/sosumi/SKILL.md", async (c) => {
     return c.text("Method Not Allowed", 405, { Allow: "GET, HEAD" })
   }
 
-  const skill = await loadSkill(c)
-
   if (c.req.method === "HEAD") {
+    await assertSkillAssetExists(c)
     return new Response(null, {
       status: 200,
       headers: skillHeaders,
     })
   }
+
+  const skill = await loadSkill(c)
 
   return new Response(skill.bytes, {
     status: 200,
@@ -575,6 +577,19 @@ interface SkillArtifact {
   name: string
 }
 
+async function assertSkillAssetExists(c: Context<{ Bindings: Env }>): Promise<void> {
+  const skillUrl = new URL("/SKILL.md", c.req.url)
+  const headResponse = await c.env.ASSETS.fetch(
+    new Request(skillUrl.toString(), { method: "HEAD" }),
+  )
+
+  if (!headResponse.ok) {
+    throw new HTTPException(500, {
+      message: "Failed to load SKILL.md",
+    })
+  }
+}
+
 async function loadSkill(c: Context<{ Bindings: Env }>): Promise<SkillArtifact> {
   const skillUrl = new URL("/SKILL.md", c.req.url)
   const skillResponse = await c.env.ASSETS.fetch(new Request(skillUrl.toString()))
@@ -614,7 +629,7 @@ async function createSkillIndex(skill: SkillArtifact) {
 }
 
 function parseSkillFrontmatter(markdown: string): Record<string, string> {
-  const match = markdown.match(/^---\n([\s\S]*?)\n---\n/)
+  const match = markdown.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/)
 
   if (!match) {
     throw new HTTPException(500, {
@@ -624,7 +639,7 @@ function parseSkillFrontmatter(markdown: string): Record<string, string> {
 
   const fields: Record<string, string> = {}
 
-  for (const line of match[1].split("\n")) {
+  for (const line of match[1].split(/\r?\n/)) {
     if (!line.trim()) {
       continue
     }
@@ -658,9 +673,15 @@ function stripQuotes(value: string): string {
 }
 
 function assertValidSkillFrontmatter(frontmatter: Record<string, string>) {
+  if (typeof frontmatter.name !== "string" || frontmatter.name.length === 0) {
+    throw new HTTPException(500, {
+      message: "Skill name is required.",
+    })
+  }
+
   if (frontmatter.name !== skillName) {
     throw new HTTPException(500, {
-      message: `Expected skill name "${skillName}", got "${frontmatter.name ?? ""}".`,
+      message: `Expected skill name "${skillName}", got "${frontmatter.name}".`,
     })
   }
 
@@ -670,7 +691,7 @@ function assertValidSkillFrontmatter(frontmatter: Record<string, string>) {
     })
   }
 
-  if (frontmatter.description.length === 0) {
+  if (typeof frontmatter.description !== "string" || frontmatter.description.length === 0) {
     throw new HTTPException(500, {
       message: "Skill description is required.",
     })
