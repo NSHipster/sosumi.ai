@@ -308,6 +308,58 @@ describe("Render Function", () => {
     })
   })
 
+  describe("Tab navigator rendering", () => {
+    it("should render Swift and Objective-C code from tab navigator", async () => {
+      const data = {
+        metadata: { title: "NSBackgroundActivityScheduler" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [
+              {
+                type: "tabNavigator",
+                tabs: [
+                  {
+                    title: "Swift",
+                    content: [
+                      {
+                        type: "codeListing",
+                        syntax: "swift",
+                        code: ['let activity = NSBackgroundActivityScheduler(identifier: "com.example.app")'],
+                      },
+                    ],
+                  },
+                  {
+                    title: "Objective-C",
+                    content: [
+                      {
+                        type: "codeListing",
+                        syntax: "objc",
+                        code: [
+                          'NSBackgroundActivityScheduler *activity = [[NSBackgroundActivityScheduler alloc] initWithIdentifier:@"com.example.app"];',
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).toContain("**Swift**")
+      expect(result).toContain("```swift")
+      expect(result).toContain(
+        'let activity = NSBackgroundActivityScheduler(identifier: "com.example.app")',
+      )
+      expect(result).toContain("**Objective-C**")
+      expect(result).toContain("```objc")
+      expect(result).toContain("NSBackgroundActivityScheduler *activity")
+    })
+  })
+
   describe("Properties rendering", () => {
     it("should render primaryContentSections with kind properties", async () => {
       const data = {
