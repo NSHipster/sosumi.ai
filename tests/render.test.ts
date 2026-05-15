@@ -397,6 +397,123 @@ describe("Render Function", () => {
     })
   })
 
+  describe("Code listing fence normalization", () => {
+    it("normalizes DocC's 'occ' syntax to 'objc' for Markdown highlighters", async () => {
+      const data = {
+        metadata: { title: "Example" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [
+              {
+                type: "codeListing",
+                syntax: "occ",
+                code: ['@property NSArray<NSDate *> *dates;'],
+              },
+            ],
+          },
+        ],
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).toContain("```objc")
+      expect(result).not.toContain("```occ\n")
+    })
+
+    it("passes through other syntax values unchanged", async () => {
+      const data = {
+        metadata: { title: "Example" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [
+              {
+                type: "codeListing",
+                syntax: "swift",
+                code: ["let x = 1"],
+              },
+            ],
+          },
+        ],
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).toContain("```swift")
+    })
+
+    it("preserves alternating Swift and Obj-C code listings on bilingual article pages", async () => {
+      const data = {
+        metadata: { title: "Using Lightweight Generics" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [
+              {
+                type: "codeListing",
+                syntax: "occ",
+                code: ["@property NSArray<NSDate *> *dates;"],
+              },
+              {
+                type: "codeListing",
+                syntax: "swift",
+                code: ["var dates: [Date]"],
+              },
+              {
+                type: "codeListing",
+                syntax: "occ",
+                code: ["@interface List<T: id<NSCopying>> : NSObject"],
+              },
+              {
+                type: "codeListing",
+                syntax: "swift",
+                code: ["class List<T: NSCopying> : NSObject"],
+              },
+            ],
+          },
+        ],
+      }
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).toContain("```objc\n@property NSArray<NSDate *> *dates;")
+      expect(result).toContain("```swift\nvar dates: [Date]")
+      expect(result).toContain("```objc\n@interface List")
+      expect(result).toContain("```swift\nclass List")
+      expect(result).not.toContain("```occ")
+    })
+
+    it("retains both Swift and Obj-C listings regardless of language preference (no variantOverrides)", async () => {
+      const data = {
+        metadata: { title: "Using Lightweight Generics" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [
+              {
+                type: "codeListing",
+                syntax: "occ",
+                code: ["@property NSArray<NSDate *> *dates;"],
+              },
+              {
+                type: "codeListing",
+                syntax: "swift",
+                code: ["var dates: [Date]"],
+              },
+            ],
+          },
+        ],
+      }
+      const swiftResult = await renderFromJSON(data as any, "https://test.com", {
+        language: "swift",
+      })
+      const objcResult = await renderFromJSON(data as any, "https://test.com", {
+        language: "objc",
+      })
+      for (const result of [swiftResult, objcResult]) {
+        expect(result).toContain("```objc\n@property NSArray<NSDate *> *dates;")
+        expect(result).toContain("```swift\nvar dates: [Date]")
+      }
+    })
+  })
+
   describe("Properties rendering", () => {
     it("should render primaryContentSections with kind properties", async () => {
       const data = {
