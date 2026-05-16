@@ -5,6 +5,7 @@
 import type {
   AppleDocJSON,
   ContentItem,
+  Declaration,
   IndexContentItem,
   PossibleValueItem,
   PropertyItem,
@@ -238,9 +239,7 @@ function normalizeFenceLanguage(syntax: string): string {
 /**
  * Render declaration sections
  */
-function renderDeclarations(
-  declarations: Array<{ tokens?: Array<{ text?: string }>; languages?: string[] }>,
-): string {
+function renderDeclarations(declarations: Declaration[]): string {
   let markdown = ""
 
   for (const decl of declarations) {
