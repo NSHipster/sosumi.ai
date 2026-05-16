@@ -1,0 +1,19 @@
+{
+  "name": "sosumi-monitor",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --minify",
+    "check": "biome check --write .",
+    "check:ci": "biome check .",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "mimetext": "^3.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240320.0",
+    "typescript": "^5.0.0"
+  }
+}
