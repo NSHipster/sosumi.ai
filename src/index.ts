@@ -248,6 +248,7 @@ This service only works with Apple Developer documentation URLs:
     "Content-Location": appleUrl,
     "Cache-Control": "public, max-age=3600, s-maxage=86400",
     ETag: `"${Buffer.from(markdown).toString("base64").slice(0, 16)}"`,
+    "X-Robots-Tag": "noindex, nofollow, noarchive",
   }
 
   if (c.req.header("Accept")?.includes("application/json")) {
@@ -290,6 +291,7 @@ app.get("/external/*", async (c) => {
     "Content-Location": targetUrl.toString(),
     "Cache-Control": "public, max-age=3600, s-maxage=86400",
     ETag: `"${Buffer.from(markdown).toString("base64").slice(0, 16)}"`,
+    "X-Robots-Tag": "noindex, nofollow, noarchive",
   }
 
   if (c.req.header("Accept")?.includes("application/json")) {
@@ -328,6 +330,7 @@ app.get("/design/human-interface-guidelines", async (c) => {
     "Content-Location": sourceUrl,
     "Cache-Control": "public, max-age=3600, s-maxage=86400",
     ETag: `"${Buffer.from(markdown).toString("base64").slice(0, 16)}"`,
+    "X-Robots-Tag": "noindex, nofollow, noarchive",
   }
 
   if (c.req.header("Accept")?.includes("application/json")) {
@@ -370,6 +373,7 @@ app.get("/design/human-interface-guidelines/:path{.+}", async (c) => {
     "Content-Location": sourceUrl,
     "Cache-Control": "public, max-age=3600, s-maxage=86400",
     ETag: `"${Buffer.from(markdown).toString("base64").slice(0, 16)}"`,
+    "X-Robots-Tag": "noindex, nofollow, noarchive",
   }
 
   if (c.req.header("Accept")?.includes("application/json")) {
@@ -423,6 +427,7 @@ app.get("/videos/play/:collection/:id", async (c) => {
     "Content-Location": sourceUrl,
     "Cache-Control": "public, max-age=3600, s-maxage=86400",
     ETag: `"${Buffer.from(markdown).toString("base64").slice(0, 16)}"`,
+    "X-Robots-Tag": "noindex, nofollow, noarchive",
   }
 
   if (c.req.header("Accept")?.includes("application/json")) {
