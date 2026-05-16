@@ -373,11 +373,21 @@ describe("Render Function", () => {
                 tabs: [
                   {
                     title: "iOS",
-                    content: [{ type: "paragraph", inlineContent: [{ type: "text", text: "iOS-specific note." }] }],
+                    content: [
+                      {
+                        type: "paragraph",
+                        inlineContent: [{ type: "text", text: "iOS-specific note." }],
+                      },
+                    ],
                   },
                   {
                     title: "macOS",
-                    content: [{ type: "paragraph", inlineContent: [{ type: "text", text: "macOS-specific note." }] }],
+                    content: [
+                      {
+                        type: "paragraph",
+                        inlineContent: [{ type: "text", text: "macOS-specific note." }],
+                      },
+                    ],
                   },
                 ],
               },
@@ -404,13 +414,13 @@ describe("Render Function", () => {
                 tabs: [
                   {
                     title: "Swift",
-                    content: [
-                      { type: "codeListing", syntax: "swift", code: ["let x = 1"] },
-                    ],
+                    content: [{ type: "codeListing", syntax: "swift", code: ["let x = 1"] }],
                   },
                   {
                     title: "iOS",
-                    content: [{ type: "paragraph", inlineContent: [{ type: "text", text: "iOS note." }] }],
+                    content: [
+                      { type: "paragraph", inlineContent: [{ type: "text", text: "iOS note." }] },
+                    ],
                   },
                 ],
               },
