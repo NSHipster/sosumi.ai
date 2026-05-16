@@ -1,7 +1,28 @@
 {
   "name": "@nshipster/sosumi",
   "version": "1.0.3",
+  "description": "Making Apple docs AI-readable",
   "license": "MIT",
+  "author": "NSHipster",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NSHipster/sosumi.ai"
+  },
+  "keywords": [
+    "apple",
+    "docs",
+    "documentation",
+    "mcp",
+    "cli",
+    "markdown",
+    "swift-docc",
+    "ai"
+  ],
+  "preferGlobal": true,
+  "homepage": "https://sosumi.ai",
+  "bugs": {
+    "url": "https://github.com/NSHipster/sosumi.ai/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=20.18.1"
