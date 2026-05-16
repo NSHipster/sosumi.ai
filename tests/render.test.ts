@@ -360,6 +360,49 @@ describe("Render Function", () => {
       expect(result).not.toContain("```objc")
       expect(result).not.toContain("NSBackgroundActivityScheduler *activity")
     })
+
+    it("renders all tabs with labels when no Swift tab exists", async () => {
+      const data = {
+        metadata: { title: "Example" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [
+              {
+                type: "tabNavigator",
+                tabs: [
+                  {
+                    title: "Objective-C",
+                    content: [
+                      {
+                        type: "codeListing",
+                        syntax: "occ",
+                        code: ["@interface Foo : NSObject"],
+                      },
+                    ],
+                  },
+                  {
+                    title: "C",
+                    content: [
+                      {
+                        type: "codeListing",
+                        syntax: "c",
+                        code: ["struct Foo;"],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).toContain("**Objective-C**")
+      expect(result).toContain("```objc\n@interface Foo : NSObject")
+      expect(result).toContain("**C**")
+      expect(result).toContain("```c\nstruct Foo;")
+    })
   })
 
   describe("Code listing fence normalization", () => {
