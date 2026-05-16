@@ -26,6 +26,7 @@ import {
   createSkillIndex,
   loadSkill,
   SKILL_NAME,
+  skillExists,
   skillHeaders,
   skillIndexHeaders,
 } from "./lib/skill"
@@ -89,15 +90,17 @@ app.all("/.well-known/agent-skills/index.json", async (c) => {
     return c.text("Method Not Allowed", 405, { Allow: "GET, HEAD" })
   }
 
-  const skill = await loadSkill(c.env.ASSETS, c.req.url)
-
   if (c.req.method === "HEAD") {
+    if (!(await skillExists(c.env.ASSETS, c.req.url))) {
+      throw new HTTPException(500, { message: "Failed to load SKILL.md" })
+    }
     return new Response(null, {
       status: 200,
       headers: skillIndexHeaders,
     })
   }
 
+  const skill = await loadSkill(c.env.ASSETS, c.req.url)
   const index = await createSkillIndex(skill)
 
   return c.json(index, 200, skillIndexHeaders)
@@ -108,14 +111,17 @@ app.all(`/.well-known/agent-skills/${SKILL_NAME}/SKILL.md`, async (c) => {
     return c.text("Method Not Allowed", 405, { Allow: "GET, HEAD" })
   }
 
-  const skill = await loadSkill(c.env.ASSETS, c.req.url)
-
   if (c.req.method === "HEAD") {
+    if (!(await skillExists(c.env.ASSETS, c.req.url))) {
+      throw new HTTPException(500, { message: "Failed to load SKILL.md" })
+    }
     return new Response(null, {
       status: 200,
       headers: skillHeaders,
     })
   }
+
+  const skill = await loadSkill(c.env.ASSETS, c.req.url)
 
   return new Response(skill.bytes, {
     status: 200,

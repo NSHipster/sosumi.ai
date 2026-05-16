@@ -12,7 +12,7 @@ describe("Agent Skills discovery", () => {
     expect(response.headers.get("Access-Control-Allow-Origin")).toBe("*")
     expect(response.headers.get("Content-Type")).toContain("application/json")
 
-    const index = await response.json<{
+    const index = (await response.json()) as {
       $schema: string
       skills: Array<{
         name: string
@@ -22,7 +22,7 @@ describe("Agent Skills discovery", () => {
         digest: string
         files: string[]
       }>
-    }>()
+    }
 
     expect(index.$schema).toBe("https://schemas.agentskills.io/discovery/0.2.0/schema.json")
     expect(index.skills).toHaveLength(1)
@@ -54,7 +54,7 @@ describe("Agent Skills discovery", () => {
       SELF.fetch(skillUrl),
     ])
 
-    const index = await indexResponse.json<{ skills: Array<{ digest: string }> }>()
+    const index = (await indexResponse.json()) as { skills: Array<{ digest: string }> }
     const skillBytes = await skillResponse.arrayBuffer()
     const digest = await crypto.subtle.digest("SHA-256", skillBytes)
     const hexDigest = [...new Uint8Array(digest)]

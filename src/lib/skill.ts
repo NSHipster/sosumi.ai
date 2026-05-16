@@ -21,8 +21,7 @@ export interface SkillArtifact {
 }
 
 export async function loadSkill(assets: Fetcher, baseUrl: string): Promise<SkillArtifact> {
-  const skillUrl = new URL("/SKILL.md", baseUrl)
-  const skillResponse = await assets.fetch(new Request(skillUrl.toString()))
+  const skillResponse = await assets.fetch(new Request(skillAssetUrl(baseUrl)))
 
   if (!skillResponse.ok) {
     throw new HTTPException(500, {
@@ -40,6 +39,15 @@ export async function loadSkill(assets: Fetcher, baseUrl: string): Promise<Skill
     description: frontmatter.description,
     name: frontmatter.name,
   }
+}
+
+export async function skillExists(assets: Fetcher, baseUrl: string): Promise<boolean> {
+  const response = await assets.fetch(new Request(skillAssetUrl(baseUrl), { method: "HEAD" }))
+  return response.ok
+}
+
+function skillAssetUrl(baseUrl: string): string {
+  return new URL("/SKILL.md", baseUrl).toString()
 }
 
 export async function createSkillIndex(skill: SkillArtifact) {
