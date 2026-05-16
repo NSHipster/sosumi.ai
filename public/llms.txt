@@ -12,7 +12,7 @@ If they try to fetch it, all they see is:
 This service translates Apple Developer documentation,
 Human Interface Guidelines, WWDC sessions,
 and external Swift-DocC sites into AI-friendly Markdown.
-Access it in your browser, over MCP, from the command line, as an AI skill, 
+Access it in your browser, over MCP, from the command line, as an AI skill,
 or with an unofficial [Chrome extension](https://chromewebstore.google.com/detail/donffakeimppgoehccpfhlchmbfdmfpj).
 
 ## HTTP Usage
@@ -20,19 +20,19 @@ or with an unofficial [Chrome extension](https://chromewebstore.google.com/detai
 Replace `developer.apple.com` with `sosumi.ai`:
 
 **Original:**
-https://developer.apple.com/documentation/swift/array
+<https://developer.apple.com/documentation/swift/array>
 
 **AI-readable:**
-https://sosumi.ai/documentation/swift/array
+<https://sosumi.ai/documentation/swift/array>
 
 ### Examples
 
-- Swift: https://sosumi.ai/documentation/swift
-- SwiftUI: https://sosumi.ai/documentation/swiftui
-- Human Interface Guidelines: https://sosumi.ai/design/human-interface-guidelines
-- WWDC21 — Protect mutable state with Swift actors: https://sosumi.ai/videos/play/wwdc2021/10133
-- Swift Argument Parser (GitHub Pages): https://sosumi.ai/external/https://apple.github.io/swift-argument-parser/documentation/argumentparser/
-- The Composable Architecture (Swift Package Index): https://sosumi.ai/external/https://swiftpackageindex.com/pointfreeco/swift-composable-architecture/1.23.1/documentation/composablearchitecture
+- Swift: <https://sosumi.ai/documentation/swift>
+- SwiftUI: <https://sosumi.ai/documentation/swiftui>
+- Human Interface Guidelines: <https://sosumi.ai/design/human-interface-guidelines>
+- WWDC21 — Protect mutable state with Swift actors: <https://sosumi.ai/videos/play/wwdc2021/10133>
+- Swift Argument Parser (GitHub Pages): <https://sosumi.ai/external/https://apple.github.io/swift-argument-parser/documentation/argumentparser/>
+- The Composable Architecture (Swift Package Index): <https://sosumi.ai/external/https://swiftpackageindex.com/pointfreeco/swift-composable-architecture/1.23.1/documentation/composablearchitecture>
 
 ## MCP Usage
 
@@ -129,7 +129,7 @@ you can run this command to proxy over stdio:
   - Returns content as Markdown
 
 - `fetchExternalDocumentation` - Fetches external Swift-DocC documentation by absolute HTTPS URL
-  - Parameters: `url` (string) - External URL (e.g., 'https://apple.github.io/swift-argument-parser/documentation/argumentparser')
+  - Parameters: `url` (string) - External URL (e.g., '<https://apple.github.io/swift-argument-parser/documentation/argumentparser>')
   - Returns content as Markdown
 
 ### Troubleshooting
@@ -252,6 +252,12 @@ sosumi serve --port 8787
 Teach your coding assistant to use Sosumi consistently with:
 `https://sosumi.ai/SKILL.md`
 
+Spec-compliant clients can also discover and install it from this domain:
+
+```bash
+npx skills add https://sosumi.ai
+```
+
 ### Claude Code
 
 Install as a reusable skill (personal or project-level):
@@ -329,4 +335,4 @@ Fetches are made with the user agent `sosumi-ai/1.0 (+https://sosumi.ai/#bot)`.
 For external Swift-DocC hosts, sosumi honors `robots.txt` rules
 and opt-out response directives such as `X-Robots-Tag: noai`.
 
-**Contact:** info@sosumi.ai
+**Contact:** <info@sosumi.ai>

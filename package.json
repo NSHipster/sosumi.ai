@@ -1,6 +1,6 @@
 {
   "name": "@nshipster/sosumi",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "license": "MIT",
   "type": "module",
   "engines": {
@@ -18,7 +18,7 @@
     "access": "public"
   },
   "bin": {
-    "sosumi": "./bin/sosumi.mjs"
+    "sosumi": "bin/sosumi.mjs"
   },
   "scripts": {
     "dev": "wrangler dev",

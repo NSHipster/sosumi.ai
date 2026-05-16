@@ -17,7 +17,7 @@
   "assets": {
     "binding": "ASSETS",
     "directory": "./public",
-    "run_worker_first": ["/"]
+    "run_worker_first": ["/", "/.well-known/agent-skills/*"]
   },
   "observability": {
     "enabled": true
