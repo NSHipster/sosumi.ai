@@ -56,8 +56,7 @@ export function resolveFetchEndpoint(input: string): string {
 
     if (target.hostname === "developer.apple.com") {
       if (target.pathname.startsWith("/documentation/")) {
-        const lang = target.searchParams.get("language")
-        return lang ? `${target.pathname}?language=${lang}` : target.pathname
+        return target.pathname
       }
 
       if (target.pathname.startsWith("/design/human-interface-guidelines")) {

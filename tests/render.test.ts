@@ -360,41 +360,6 @@ describe("Render Function", () => {
       expect(result).not.toContain("```objc")
       expect(result).not.toContain("NSBackgroundActivityScheduler *activity")
     })
-
-    it("should render only Swift code when language=swift", async () => {
-      const result = await renderFromJSON(tabNavigatorData as any, "https://test.com", {
-        language: "swift",
-      })
-      expect(result).not.toContain("**Swift**")
-      expect(result).toContain("```swift")
-      expect(result).not.toContain("**Objective-C**")
-      expect(result).not.toContain("```objc")
-      expect(result).not.toContain("NSBackgroundActivityScheduler *activity")
-    })
-
-    it("should render only Objective-C code when language=objc", async () => {
-      const result = await renderFromJSON(tabNavigatorData as any, "https://test.com", {
-        language: "objc",
-      })
-      expect(result).not.toContain("**Swift**")
-      expect(result).not.toContain("```swift")
-      expect(result).not.toContain(
-        'let activity = NSBackgroundActivityScheduler(identifier: "com.example.app")',
-      )
-      expect(result).not.toContain("**Objective-C**")
-      expect(result).toContain("```objc")
-      expect(result).toContain("NSBackgroundActivityScheduler *activity")
-    })
-
-    it("should render all tabs with labels when language is unrecognized", async () => {
-      const result = await renderFromJSON(tabNavigatorData as any, "https://test.com", {
-        language: "kotlin",
-      })
-      expect(result).toContain("**Swift**")
-      expect(result).toContain("```swift")
-      expect(result).toContain("**Objective-C**")
-      expect(result).toContain("```objc")
-    })
   })
 
   describe("Code listing fence normalization", () => {
@@ -408,7 +373,7 @@ describe("Render Function", () => {
               {
                 type: "codeListing",
                 syntax: "occ",
-                code: ['@property NSArray<NSDate *> *dates;'],
+                code: ["@property NSArray<NSDate *> *dates;"],
               },
             ],
           },
@@ -480,7 +445,7 @@ describe("Render Function", () => {
       expect(result).not.toContain("```occ")
     })
 
-    it("retains both Swift and Obj-C listings regardless of language preference (no variantOverrides)", async () => {
+    it("retains both Swift and Obj-C listings in bilingual articles (plain codeListings are not filtered)", async () => {
       const data = {
         metadata: { title: "Using Lightweight Generics" },
         primaryContentSections: [
@@ -501,16 +466,9 @@ describe("Render Function", () => {
           },
         ],
       }
-      const swiftResult = await renderFromJSON(data as any, "https://test.com", {
-        language: "swift",
-      })
-      const objcResult = await renderFromJSON(data as any, "https://test.com", {
-        language: "objc",
-      })
-      for (const result of [swiftResult, objcResult]) {
-        expect(result).toContain("```objc\n@property NSArray<NSDate *> *dates;")
-        expect(result).toContain("```swift\nvar dates: [Date]")
-      }
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).toContain("```objc\n@property NSArray<NSDate *> *dates;")
+      expect(result).toContain("```swift\nvar dates: [Date]")
     })
   })
 

@@ -7,12 +7,9 @@ import { normalizeDocumentationPath } from "../url"
 import type { AppleDocJSON } from "./types"
 
 /**
- * Fetch Apple Developer reference documentation JSON data for a given path.
- *
- * When `language` is provided (e.g. "objc"), it is appended to the upstream
- * request so Apple returns the language-specific variant of the page.
+ * Fetch Apple Developer reference documentation JSON data for a given path
  */
-export async function fetchJSONData(path: string, language?: string): Promise<AppleDocJSON> {
+export async function fetchJSONData(path: string): Promise<AppleDocJSON> {
   // Normalize the path using the shared function
   const normalizedPath = normalizeDocumentationPath(path)
 
@@ -30,10 +27,6 @@ export async function fetchJSONData(path: string, language?: string): Promise<Ap
   } else {
     // Individual page (e.g., /documentation/swiftui/view)
     jsonUrl = `https://developer.apple.com/tutorials/data/${jsonPath}.json`
-  }
-
-  if (language) {
-    jsonUrl += `?language=${encodeURIComponent(language)}`
   }
 
   // Generate a random Safari user agent with uniform selection

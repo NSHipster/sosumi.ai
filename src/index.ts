@@ -232,9 +232,8 @@ This service only works with Apple Developer documentation URLs:
     throw new HTTPException(400, { res: errorResponse })
   }
 
-  const language = c.req.query("language")
-  const jsonData = await fetchJSONData(path, language)
-  const markdown = await renderFromJSON(jsonData, appleUrl, { language })
+  const jsonData = await fetchJSONData(path)
+  const markdown = await renderFromJSON(jsonData, appleUrl)
 
   // Validate that we got meaningful content
   if (!markdown || markdown.trim().length < 100) {

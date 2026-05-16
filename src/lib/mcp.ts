@@ -131,10 +131,6 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
           .describe(
             "Documentation path (e.g., '/documentation/swift', 'swiftui/view', 'design/human-interface-guidelines/foundations/color')",
           ),
-        language: z
-          .enum(["swift", "objc"])
-          .optional()
-          .describe("Programming language for code examples. Defaults to 'swift'."),
       },
       annotations: {
         readOnlyHint: true,
@@ -143,7 +139,7 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
         openWorldHint: true,
       },
     },
-    async ({ path, language }) => {
+    async ({ path }) => {
       try {
         // Check if this is a HIG path
         if (path.includes("design/human-interface-guidelines")) {
@@ -171,8 +167,8 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
           const normalizedPath = normalizeDocumentationPath(path)
           const appleUrl = generateAppleDocUrl(normalizedPath)
 
-          const jsonData = await fetchJSONData(normalizedPath, language)
-          const markdown = await renderFromJSON(jsonData, appleUrl, { language })
+          const jsonData = await fetchJSONData(normalizedPath)
+          const markdown = await renderFromJSON(jsonData, appleUrl)
 
           if (!markdown || markdown.trim().length < 100) {
             throw new Error("Insufficient content in documentation")
