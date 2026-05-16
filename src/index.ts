@@ -75,14 +75,31 @@ app.use("*", async (c, next) => {
   await next()
 })
 
-app.all("/mcp", async (c) => {
-  const mcpServer = createMcpServer({
-    EXTERNAL_DOC_HOST_ALLOWLIST: c.env.EXTERNAL_DOC_HOST_ALLOWLIST,
-    EXTERNAL_DOC_HOST_BLOCKLIST: c.env.EXTERNAL_DOC_HOST_BLOCKLIST,
+app.get("/", async (c) => {
+  const accepted = accepts(c, {
+    header: "Accept",
+    supports: ["text/markdown", "text/html"],
+    default: "text/html",
   })
-  const transport = new StreamableHTTPTransport()
-  await mcpServer.connect(transport)
-  return transport.handleRequest(c)
+
+  if (accepted === "text/markdown") {
+    const llmsUrl = new URL("/llms.txt", c.req.url)
+    const llmsResponse = await c.env.ASSETS.fetch(new Request(llmsUrl.toString()))
+
+    if (!llmsResponse.ok) {
+      throw new HTTPException(500, {
+        message: "Failed to load llms.txt",
+      })
+    }
+
+    const markdown = await llmsResponse.text()
+    return c.text(markdown, 200, {
+      "Content-Type": "text/markdown; charset=utf-8",
+      "Cache-Control": "public, max-age=300, s-maxage=600",
+    })
+  }
+
+  return c.env.ASSETS.fetch(c.req.raw)
 })
 
 app.all("/.well-known/agent-skills/index.json", async (c) => {
@@ -129,34 +146,17 @@ app.all(`/.well-known/agent-skills/${SKILL_NAME}/SKILL.md`, async (c) => {
   })
 })
 
-app.get("/", async (c) => {
-  const accepted = accepts(c, {
-    header: "Accept",
-    supports: ["text/markdown", "text/html"],
-    default: "text/html",
-  })
-
-  if (accepted === "text/markdown") {
-    const llmsUrl = new URL("/llms.txt", c.req.url)
-    const llmsResponse = await c.env.ASSETS.fetch(new Request(llmsUrl.toString()))
-
-    if (!llmsResponse.ok) {
-      throw new HTTPException(500, {
-        message: "Failed to load llms.txt",
-      })
-    }
-
-    const markdown = await llmsResponse.text()
-    return c.text(markdown, 200, {
-      "Content-Type": "text/markdown; charset=utf-8",
-      "Cache-Control": "public, max-age=300, s-maxage=600",
-    })
-  }
-
-  return c.env.ASSETS.fetch(c.req.raw)
-})
-
 app.get("/bot", (c) => c.redirect("/#bot", 302))
+
+app.all("/mcp", async (c) => {
+  const mcpServer = createMcpServer({
+    EXTERNAL_DOC_HOST_ALLOWLIST: c.env.EXTERNAL_DOC_HOST_ALLOWLIST,
+    EXTERNAL_DOC_HOST_BLOCKLIST: c.env.EXTERNAL_DOC_HOST_BLOCKLIST,
+  })
+  const transport = new StreamableHTTPTransport()
+  await mcpServer.connect(transport)
+  return transport.handleRequest(c)
+})
 
 app.get("/search", async (c) => {
   const query = c.req.query("q")?.trim() ?? ""
