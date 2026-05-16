@@ -237,6 +237,13 @@ function normalizeFenceLanguage(syntax: string): string {
 }
 
 /**
+ * Tab titles DocC uses for language-variant code examples. Used to detect
+ * whether a `tabNavigator` is a language switch (so we can default to Swift)
+ * versus some other tabbed content we should leave alone.
+ */
+const LANGUAGE_TAB_TITLES = new Set(["Swift", "Objective-C"])
+
+/**
  * Render declaration sections
  */
 function renderDeclarations(declarations: Declaration[]): string {
@@ -449,9 +456,17 @@ function renderContentArray(
     } else if (item.type === "table") {
       markdown += renderTable(item, references, depth, externalOrigin)
     } else if (item.type === "tabNavigator" && item.tabs?.length) {
-      // Default to Swift tabs, matching Apple's documentation default
-      const swiftTabs = item.tabs.filter((tab) => tab.title?.trim() === "Swift")
-      const tabsToRender = swiftTabs.length > 0 ? swiftTabs : item.tabs
+      // Only filter when every tab is a known language tab — otherwise
+      // `tabNavigator` may carry non-language content (e.g. platform or
+      // theme variants) that we shouldn't drop.
+      const allLanguageTabs = item.tabs.every(
+        (tab) => tab.title != null && LANGUAGE_TAB_TITLES.has(tab.title.trim()),
+      )
+      let tabsToRender = item.tabs
+      if (allLanguageTabs) {
+        const swiftTabs = item.tabs.filter((tab) => tab.title?.trim() === "Swift")
+        tabsToRender = swiftTabs.length > 0 ? swiftTabs : item.tabs
+      }
       const showLabel = tabsToRender.length > 1
       for (const tab of tabsToRender) {
         if (showLabel) {

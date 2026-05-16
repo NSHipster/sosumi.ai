@@ -361,6 +361,70 @@ describe("Render Function", () => {
       expect(result).not.toContain("NSBackgroundActivityScheduler *activity")
     })
 
+    it("renders all tabs with labels when tabs are not language tabs", async () => {
+      const data = {
+        metadata: { title: "Example" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [
+              {
+                type: "tabNavigator",
+                tabs: [
+                  {
+                    title: "iOS",
+                    content: [{ type: "paragraph", inlineContent: [{ type: "text", text: "iOS-specific note." }] }],
+                  },
+                  {
+                    title: "macOS",
+                    content: [{ type: "paragraph", inlineContent: [{ type: "text", text: "macOS-specific note." }] }],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).toContain("**iOS**")
+      expect(result).toContain("iOS-specific note.")
+      expect(result).toContain("**macOS**")
+      expect(result).toContain("macOS-specific note.")
+    })
+
+    it("does not filter when a Swift tab is mixed with non-language tabs", async () => {
+      const data = {
+        metadata: { title: "Example" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [
+              {
+                type: "tabNavigator",
+                tabs: [
+                  {
+                    title: "Swift",
+                    content: [
+                      { type: "codeListing", syntax: "swift", code: ["let x = 1"] },
+                    ],
+                  },
+                  {
+                    title: "iOS",
+                    content: [{ type: "paragraph", inlineContent: [{ type: "text", text: "iOS note." }] }],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).toContain("**Swift**")
+      expect(result).toContain("```swift\nlet x = 1")
+      expect(result).toContain("**iOS**")
+      expect(result).toContain("iOS note.")
+    })
+
     it("renders all tabs with labels when no Swift tab exists", async () => {
       const data = {
         metadata: { title: "Example" },
