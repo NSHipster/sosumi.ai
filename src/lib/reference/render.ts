@@ -5,6 +5,7 @@
 import type {
   AppleDocJSON,
   ContentItem,
+  Declaration,
   IndexContentItem,
   PossibleValueItem,
   PropertyItem,
@@ -228,9 +229,24 @@ function generateBreadcrumbs(sourceUrl: string, externalOrigin?: string): string
 }
 
 /**
+ * Map a DocC language code to a Markdown code-fence identifier. DocC uses
+ * `occ` for Objective-C internally, but Markdown highlighters expect `objc`.
+ */
+function normalizeFenceLanguage(syntax: string): string {
+  return syntax === "occ" ? "objc" : syntax
+}
+
+/**
+ * Tab titles DocC uses for language-variant code examples. Used to detect
+ * whether a `tabNavigator` is a language switch (so we can default to Swift)
+ * versus some other tabbed content we should leave alone.
+ */
+const LANGUAGE_TAB_TITLES = new Set(["Swift", "Objective-C"])
+
+/**
  * Render declaration sections
  */
-function renderDeclarations(declarations: Array<{ tokens?: Array<{ text?: string }> }>): string {
+function renderDeclarations(declarations: Declaration[]): string {
   let markdown = ""
 
   for (const decl of declarations) {
@@ -242,7 +258,8 @@ function renderDeclarations(declarations: Array<{ tokens?: Array<{ text?: string
         .join("")
         .trim()
 
-      markdown += `\`\`\`swift\n${code}\n\`\`\`\n\n`
+      const fence = decl.languages?.includes("occ") ? "objc" : "swift"
+      markdown += `\`\`\`${fence}\n${code}\n\`\`\`\n\n`
     }
   }
 
@@ -399,7 +416,7 @@ function renderContentArray(
       } else {
         code = String(item.code || "")
       }
-      const syntax = item.syntax || "swift"
+      const syntax = normalizeFenceLanguage(item.syntax || "swift")
 
       markdown += `\`\`\`${syntax}\n${code}\n\`\`\`\n\n`
     } else if (item.type === "unorderedList") {
@@ -439,10 +456,24 @@ function renderContentArray(
     } else if (item.type === "table") {
       markdown += renderTable(item, references, depth, externalOrigin)
     } else if (item.type === "tabNavigator" && item.tabs?.length) {
-      for (const tab of item.tabs) {
-        const label = tab.title?.trim()
-        if (label) {
-          markdown += `**${label}**\n\n`
+      // Only filter when every tab is a known language tab — otherwise
+      // `tabNavigator` may carry non-language content (e.g. platform or
+      // theme variants) that we shouldn't drop.
+      const allLanguageTabs = item.tabs.every(
+        (tab) => tab.title != null && LANGUAGE_TAB_TITLES.has(tab.title.trim()),
+      )
+      let tabsToRender = item.tabs
+      if (allLanguageTabs) {
+        const swiftTabs = item.tabs.filter((tab) => tab.title?.trim() === "Swift")
+        tabsToRender = swiftTabs.length > 0 ? swiftTabs : item.tabs
+      }
+      const showLabel = tabsToRender.length > 1
+      for (const tab of tabsToRender) {
+        if (showLabel) {
+          const label = tab.title?.trim()
+          if (label) {
+            markdown += `**${label}**\n\n`
+          }
         }
         if (tab.content?.length) {
           markdown += renderContentArray(tab.content, references, depth + 1, externalOrigin)

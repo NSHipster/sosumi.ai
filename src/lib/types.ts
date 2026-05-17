@@ -86,6 +86,7 @@ export interface ContentItem {
  */
 export interface Declaration {
   tokens?: Token[]
+  languages?: string[]
 }
 
 /**

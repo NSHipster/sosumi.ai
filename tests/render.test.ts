@@ -309,9 +309,61 @@ describe("Render Function", () => {
   })
 
   describe("Tab navigator rendering", () => {
-    it("should render Swift and Objective-C code from tab navigator", async () => {
+    const tabNavigatorData = {
+      metadata: { title: "NSBackgroundActivityScheduler" },
+      primaryContentSections: [
+        {
+          kind: "content",
+          content: [
+            {
+              type: "tabNavigator",
+              tabs: [
+                {
+                  title: "Swift",
+                  content: [
+                    {
+                      type: "codeListing",
+                      syntax: "swift",
+                      code: [
+                        'let activity = NSBackgroundActivityScheduler(identifier: "com.example.app")',
+                      ],
+                    },
+                  ],
+                },
+                {
+                  title: "Objective-C",
+                  content: [
+                    {
+                      type: "codeListing",
+                      syntax: "objc",
+                      code: [
+                        'NSBackgroundActivityScheduler *activity = [[NSBackgroundActivityScheduler alloc] initWithIdentifier:@"com.example.app"];',
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }
+
+    it("should render only Swift code by default (no language specified)", async () => {
+      const result = await renderFromJSON(tabNavigatorData as any, "https://test.com")
+      expect(result).not.toContain("**Swift**")
+      expect(result).toContain("```swift")
+      expect(result).toContain(
+        'let activity = NSBackgroundActivityScheduler(identifier: "com.example.app")',
+      )
+      expect(result).not.toContain("**Objective-C**")
+      expect(result).not.toContain("```objc")
+      expect(result).not.toContain("NSBackgroundActivityScheduler *activity")
+    })
+
+    it("renders all tabs with labels when tabs are not language tabs", async () => {
       const data = {
-        metadata: { title: "NSBackgroundActivityScheduler" },
+        metadata: { title: "Example" },
         primaryContentSections: [
           {
             kind: "content",
@@ -320,26 +372,20 @@ describe("Render Function", () => {
                 type: "tabNavigator",
                 tabs: [
                   {
-                    title: "Swift",
+                    title: "iOS",
                     content: [
                       {
-                        type: "codeListing",
-                        syntax: "swift",
-                        code: [
-                          'let activity = NSBackgroundActivityScheduler(identifier: "com.example.app")',
-                        ],
+                        type: "paragraph",
+                        inlineContent: [{ type: "text", text: "iOS-specific note." }],
                       },
                     ],
                   },
                   {
-                    title: "Objective-C",
+                    title: "macOS",
                     content: [
                       {
-                        type: "codeListing",
-                        syntax: "objc",
-                        code: [
-                          'NSBackgroundActivityScheduler *activity = [[NSBackgroundActivityScheduler alloc] initWithIdentifier:@"com.example.app"];',
-                        ],
+                        type: "paragraph",
+                        inlineContent: [{ type: "text", text: "macOS-specific note." }],
                       },
                     ],
                   },
@@ -349,16 +395,197 @@ describe("Render Function", () => {
           },
         ],
       }
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).toContain("**iOS**")
+      expect(result).toContain("iOS-specific note.")
+      expect(result).toContain("**macOS**")
+      expect(result).toContain("macOS-specific note.")
+    })
 
+    it("does not filter when a Swift tab is mixed with non-language tabs", async () => {
+      const data = {
+        metadata: { title: "Example" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [
+              {
+                type: "tabNavigator",
+                tabs: [
+                  {
+                    title: "Swift",
+                    content: [{ type: "codeListing", syntax: "swift", code: ["let x = 1"] }],
+                  },
+                  {
+                    title: "iOS",
+                    content: [
+                      { type: "paragraph", inlineContent: [{ type: "text", text: "iOS note." }] },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }
       const result = await renderFromJSON(data as any, "https://test.com")
       expect(result).toContain("**Swift**")
-      expect(result).toContain("```swift")
-      expect(result).toContain(
-        'let activity = NSBackgroundActivityScheduler(identifier: "com.example.app")',
-      )
+      expect(result).toContain("```swift\nlet x = 1")
+      expect(result).toContain("**iOS**")
+      expect(result).toContain("iOS note.")
+    })
+
+    it("renders all tabs with labels when no Swift tab exists", async () => {
+      const data = {
+        metadata: { title: "Example" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [
+              {
+                type: "tabNavigator",
+                tabs: [
+                  {
+                    title: "Objective-C",
+                    content: [
+                      {
+                        type: "codeListing",
+                        syntax: "occ",
+                        code: ["@interface Foo : NSObject"],
+                      },
+                    ],
+                  },
+                  {
+                    title: "C",
+                    content: [
+                      {
+                        type: "codeListing",
+                        syntax: "c",
+                        code: ["struct Foo;"],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }
+      const result = await renderFromJSON(data as any, "https://test.com")
       expect(result).toContain("**Objective-C**")
+      expect(result).toContain("```objc\n@interface Foo : NSObject")
+      expect(result).toContain("**C**")
+      expect(result).toContain("```c\nstruct Foo;")
+    })
+  })
+
+  describe("Code listing fence normalization", () => {
+    it("normalizes DocC's 'occ' syntax to 'objc' for Markdown highlighters", async () => {
+      const data = {
+        metadata: { title: "Example" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [
+              {
+                type: "codeListing",
+                syntax: "occ",
+                code: ["@property NSArray<NSDate *> *dates;"],
+              },
+            ],
+          },
+        ],
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com")
       expect(result).toContain("```objc")
-      expect(result).toContain("NSBackgroundActivityScheduler *activity")
+      expect(result).not.toContain("```occ\n")
+    })
+
+    it("passes through other syntax values unchanged", async () => {
+      const data = {
+        metadata: { title: "Example" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [
+              {
+                type: "codeListing",
+                syntax: "swift",
+                code: ["let x = 1"],
+              },
+            ],
+          },
+        ],
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).toContain("```swift")
+    })
+
+    it("preserves alternating Swift and Obj-C code listings on bilingual article pages", async () => {
+      const data = {
+        metadata: { title: "Using Lightweight Generics" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [
+              {
+                type: "codeListing",
+                syntax: "occ",
+                code: ["@property NSArray<NSDate *> *dates;"],
+              },
+              {
+                type: "codeListing",
+                syntax: "swift",
+                code: ["var dates: [Date]"],
+              },
+              {
+                type: "codeListing",
+                syntax: "occ",
+                code: ["@interface List<T: id<NSCopying>> : NSObject"],
+              },
+              {
+                type: "codeListing",
+                syntax: "swift",
+                code: ["class List<T: NSCopying> : NSObject"],
+              },
+            ],
+          },
+        ],
+      }
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).toContain("```objc\n@property NSArray<NSDate *> *dates;")
+      expect(result).toContain("```swift\nvar dates: [Date]")
+      expect(result).toContain("```objc\n@interface List")
+      expect(result).toContain("```swift\nclass List")
+      expect(result).not.toContain("```occ")
+    })
+
+    it("retains both Swift and Obj-C listings in bilingual articles (plain codeListings are not filtered)", async () => {
+      const data = {
+        metadata: { title: "Using Lightweight Generics" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [
+              {
+                type: "codeListing",
+                syntax: "occ",
+                code: ["@property NSArray<NSDate *> *dates;"],
+              },
+              {
+                type: "codeListing",
+                syntax: "swift",
+                code: ["var dates: [Date]"],
+              },
+            ],
+          },
+        ],
+      }
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).toContain("```objc\n@property NSArray<NSDate *> *dates;")
+      expect(result).toContain("```swift\nvar dates: [Date]")
     })
   })
 
