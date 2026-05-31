@@ -32,6 +32,7 @@ import {
 } from "./lib/skill"
 import { generateAppleDocUrl, isValidAppleDocUrl, normalizeDocumentationPath } from "./lib/url"
 import { fetchVideoTranscriptMarkdown, TranscriptNotFoundError } from "./lib/video"
+import { buildWebMcpManifest } from "./lib/webmcp"
 
 interface Env {
   ASSETS: Fetcher
@@ -215,6 +216,13 @@ app.get("/.well-known/mcp/server-card.json", (c) => {
     },
   )
 })
+
+app.get("/webmcp/manifest.json", (c) =>
+  c.json(buildWebMcpManifest(), 200, {
+    ...discoveryHeaders,
+    "Content-Type": "application/json; charset=utf-8",
+  }),
+)
 
 app.get("/bot", (c) => c.redirect("/#bot", 302))
 

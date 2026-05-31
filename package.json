@@ -61,7 +61,8 @@
     "hono": "^4.9.4",
     "robots-parser": "^3.0.1",
     "tsx": "^4.21.0",
-    "zod": "^3"
+    "zod": "^3",
+    "zod-to-json-schema": "^3.25.2"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.2",

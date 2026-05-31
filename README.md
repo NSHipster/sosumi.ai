@@ -93,7 +93,7 @@ See [the website](https://sosumi.ai/#clients) for client-specific instructions.
   - Returns structured results with titles, URLs, descriptions, breadcrumbs, and tags
 
 - `fetchAppleDocumentation` - Fetches Apple Developer documentation and Human Interface Guidelines by path
-  - Parameters: `path` (string) - Documentation path (e.g., '/documentation/swift', 'swiftui/view', 'design/human-interface-guidelines/foundations/color')
+  - Parameters: `path` (string) - Documentation path (e.g., '/documentation/swift', '/documentation/swiftui/view', '/design/human-interface-guidelines/foundations/color')
   - Returns content as Markdown
 
 - `fetchAppleVideoTranscript` - Fetches video transcripts, including WWDC sessions
