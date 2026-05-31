@@ -1,0 +1,414 @@
+{
+  "metadata": {
+    "externalID": "c:objc(cs)NSData(im)getBytes:",
+    "roleHeading": "Instance Method",
+    "role": "symbol",
+    "modules": [
+      {
+        "name": "Foundation"
+      }
+    ],
+    "title": "getBytes(_:)",
+    "platforms": [
+      {
+        "unavailable": false,
+        "name": "iOS",
+        "beta": false,
+        "deprecated": false,
+        "deprecatedAt": "8.0",
+        "message": "This method is unsafe because it could potentially cause buffer overruns. Use -getBytes:length: instead.",
+        "introducedAt": "2.0"
+      },
+      {
+        "name": "iPadOS",
+        "beta": false,
+        "deprecated": false,
+        "unavailable": false,
+        "message": "This method is unsafe because it could potentially cause buffer overruns. Use -getBytes:length: instead.",
+        "introducedAt": "2.0",
+        "deprecatedAt": "8.0"
+      },
+      {
+        "beta": false,
+        "message": "This method is unsafe because it could potentially cause buffer overruns. Use -getBytes:length: instead.",
+        "introducedAt": "13.1",
+        "unavailable": false,
+        "deprecated": false,
+        "name": "Mac Catalyst",
+        "deprecatedAt": "13.1"
+      },
+      {
+        "beta": false,
+        "deprecatedAt": "10.10",
+        "introducedAt": "10.0",
+        "name": "macOS",
+        "unavailable": false,
+        "deprecated": false,
+        "message": "This method is unsafe because it could potentially cause buffer overruns. Use -getBytes:length: instead."
+      },
+      {
+        "deprecatedAt": "9.0",
+        "beta": false,
+        "name": "tvOS",
+        "unavailable": false,
+        "introducedAt": "9.0",
+        "message": "This method is unsafe because it could potentially cause buffer overruns. Use -getBytes:length: instead.",
+        "deprecated": false
+      },
+      {
+        "name": "visionOS",
+        "deprecatedAt": "1.0",
+        "unavailable": false,
+        "deprecated": false,
+        "message": "This method is unsafe because it could potentially cause buffer overruns. Use -getBytes:length: instead.",
+        "beta": false,
+        "introducedAt": "1.0"
+      },
+      {
+        "message": "This method is unsafe because it could potentially cause buffer overruns. Use -getBytes:length: instead.",
+        "deprecatedAt": "2.0",
+        "introducedAt": "2.0",
+        "deprecated": false,
+        "unavailable": false,
+        "name": "watchOS",
+        "beta": false
+      }
+    ],
+    "extendedModule": "Foundation",
+    "fragments": [
+      {
+        "text": "func",
+        "kind": "keyword"
+      },
+      {
+        "text": " ",
+        "kind": "text"
+      },
+      {
+        "kind": "identifier",
+        "text": "getBytes"
+      },
+      {
+        "kind": "text",
+        "text": "("
+      },
+      {
+        "preciseIdentifier": "s:Sv",
+        "kind": "typeIdentifier",
+        "text": "UnsafeMutableRawPointer"
+      },
+      {
+        "kind": "text",
+        "text": ")"
+      }
+    ],
+    "navigatorTitle": [
+      {
+        "text": "- ",
+        "kind": "text"
+      },
+      {
+        "kind": "identifier",
+        "text": "getBytes:"
+      }
+    ],
+    "symbolKind": "method"
+  },
+  "abstract": [
+    {
+      "text": "Copies a data object\u2019s contents into a given buffer.",
+      "type": "text"
+    }
+  ],
+  "deprecationSummary": [
+    {
+      "inlineContent": [
+        {
+          "type": "text",
+          "text": "This method is unsafe because it could potentially cause buffer overruns. Use "
+        },
+        {
+          "type": "reference",
+          "identifier": "doc://com.apple.foundation/documentation/Foundation/NSData/getBytes(_:length:)",
+          "isActive": true
+        },
+        {
+          "text": " or ",
+          "type": "text"
+        },
+        {
+          "identifier": "doc://com.apple.foundation/documentation/Foundation/NSData/getBytes(_:range:)",
+          "isActive": true,
+          "type": "reference"
+        },
+        {
+          "type": "text",
+          "text": " instead."
+        }
+      ],
+      "type": "paragraph"
+    }
+  ],
+  "identifier": {
+    "interfaceLanguage": "swift",
+    "url": "doc://com.apple.foundation/documentation/Foundation/NSData/getBytes(_:)"
+  },
+  "references": {
+    "doc://com.apple.foundation/documentation/Foundation": {
+      "abstract": [
+        {
+          "text": "Access essential data types, collections, and operating-system services to define the base layer of functionality for your app.",
+          "type": "text"
+        }
+      ],
+      "role": "collection",
+      "url": "/documentation/foundation",
+      "type": "topic",
+      "title": "Foundation",
+      "identifier": "doc://com.apple.foundation/documentation/Foundation",
+      "kind": "symbol"
+    },
+    "doc://com.apple.foundation/documentation/Foundation/NSData/getBytes(_:)": {
+      "identifier": "doc://com.apple.foundation/documentation/Foundation/NSData/getBytes(_:)",
+      "kind": "symbol",
+      "title": "getBytes(_:)",
+      "fragments": [
+        {
+          "kind": "keyword",
+          "text": "func"
+        },
+        {
+          "kind": "text",
+          "text": " "
+        },
+        {
+          "text": "getBytes",
+          "kind": "identifier"
+        },
+        {
+          "text": "(",
+          "kind": "text"
+        },
+        {
+          "text": "UnsafeMutableRawPointer",
+          "kind": "typeIdentifier",
+          "preciseIdentifier": "s:Sv"
+        },
+        {
+          "text": ")",
+          "kind": "text"
+        }
+      ],
+      "type": "topic",
+      "abstract": [
+        {
+          "type": "text",
+          "text": "Copies a data object\u2019s contents into a given buffer."
+        }
+      ],
+      "navigatorTitle": [
+        {
+          "kind": "text",
+          "text": "- "
+        },
+        {
+          "kind": "identifier",
+          "text": "getBytes:"
+        }
+      ],
+      "url": "/documentation/foundation/nsdata/getbytes(_:)",
+      "deprecated": true,
+      "role": "symbol"
+    },
+    "doc://com.apple.foundation/documentation/Foundation/NSData/getBytes(_:length:)": {
+      "type": "topic",
+      "fragments": [
+        {
+          "kind": "keyword",
+          "text": "func"
+        },
+        {
+          "kind": "text",
+          "text": " "
+        },
+        {
+          "kind": "identifier",
+          "text": "getBytes"
+        },
+        {
+          "text": "(",
+          "kind": "text"
+        },
+        {
+          "text": "UnsafeMutableRawPointer",
+          "preciseIdentifier": "s:Sv",
+          "kind": "typeIdentifier"
+        },
+        {
+          "text": ", ",
+          "kind": "text"
+        },
+        {
+          "kind": "externalParam",
+          "text": "length"
+        },
+        {
+          "kind": "text",
+          "text": ": "
+        },
+        {
+          "text": "Int",
+          "kind": "typeIdentifier",
+          "preciseIdentifier": "s:Si"
+        },
+        {
+          "kind": "text",
+          "text": ")"
+        }
+      ],
+      "role": "symbol",
+      "navigatorTitle": [
+        {
+          "kind": "text",
+          "text": "- "
+        },
+        {
+          "kind": "identifier",
+          "text": "getBytes:length:"
+        }
+      ],
+      "url": "/documentation/foundation/nsdata/getbytes(_:length:)",
+      "abstract": [
+        {
+          "type": "text",
+          "text": "Copies a number of bytes from the start of the data object into a given buffer."
+        }
+      ],
+      "identifier": "doc://com.apple.foundation/documentation/Foundation/NSData/getBytes(_:length:)",
+      "title": "getBytes(_:length:)",
+      "kind": "symbol"
+    },
+    "doc://com.apple.foundation/documentation/Foundation/NSData/getBytes(_:range:)": {
+      "title": "getBytes(_:range:)",
+      "url": "/documentation/foundation/nsdata/getbytes(_:range:)",
+      "kind": "symbol",
+      "type": "topic",
+      "role": "symbol",
+      "navigatorTitle": [
+        {
+          "text": "- ",
+          "kind": "text"
+        },
+        {
+          "kind": "identifier",
+          "text": "getBytes:range:"
+        }
+      ],
+      "identifier": "doc://com.apple.foundation/documentation/Foundation/NSData/getBytes(_:range:)",
+      "fragments": [
+        {
+          "kind": "keyword",
+          "text": "func"
+        },
+        {
+          "text": " ",
+          "kind": "text"
+        },
+        {
+          "kind": "identifier",
+          "text": "getBytes"
+        },
+        {
+          "text": "(",
+          "kind": "text"
+        },
+        {
+          "kind": "typeIdentifier",
+          "text": "UnsafeMutableRawPointer",
+          "preciseIdentifier": "s:Sv"
+        },
+        {
+          "text": ", ",
+          "kind": "text"
+        },
+        {
+          "text": "range",
+          "kind": "externalParam"
+        },
+        {
+          "kind": "text",
+          "text": ": "
+        },
+        {
+          "kind": "typeIdentifier",
+          "text": "NSRange"
+        },
+        {
+          "text": ")",
+          "kind": "text"
+        }
+      ],
+      "abstract": [
+        {
+          "type": "text",
+          "text": "Copies a range of bytes from the data object into a given buffer."
+        }
+      ]
+    }
+  },
+  "primaryContentSections": [
+    {
+      "kind": "declarations",
+      "declarations": [
+        {
+          "tokens": [
+            {
+              "text": "func",
+              "kind": "keyword"
+            },
+            {
+              "text": " ",
+              "kind": "text"
+            },
+            {
+              "text": "getBytes",
+              "kind": "identifier"
+            },
+            {
+              "kind": "text",
+              "text": "("
+            },
+            {
+              "text": "_",
+              "kind": "externalParam"
+            },
+            {
+              "kind": "text",
+              "text": " "
+            },
+            {
+              "text": "buffer",
+              "kind": "internalParam"
+            },
+            {
+              "kind": "text",
+              "text": ": "
+            },
+            {
+              "preciseIdentifier": "s:Sv",
+              "text": "UnsafeMutableRawPointer",
+              "identifier": "doc://com.externally.resolved.symbol/s:Sv",
+              "kind": "typeIdentifier"
+            },
+            {
+              "kind": "text",
+              "text": ")"
+            }
+          ],
+          "languages": ["swift"],
+          "platforms": ["iOS", "iPadOS", "Mac Catalyst", "macOS", "tvOS", "visionOS", "watchOS"]
+        }
+      ]
+    }
+  ]
+}
