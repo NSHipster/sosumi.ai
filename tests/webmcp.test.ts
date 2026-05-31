@@ -1,24 +1,40 @@
 import { SELF } from "cloudflare:test"
 import { describe, expect, it } from "vitest"
 
-describe("WebMCP script", () => {
-  it("serves a generated WebMCP registration script", async () => {
+describe("WebMCP", () => {
+  it("serves a tool manifest derived from MCP definitions", async () => {
+    const response = await SELF.fetch("https://sosumi.ai/webmcp/manifest.json")
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get("Content-Type")).toContain("application/json")
+
+    const tools = (await response.json()) as Array<{
+      name: string
+      inputSchema: { type?: string; properties?: Record<string, unknown> }
+    }>
+
+    expect(tools).toHaveLength(4)
+    expect(tools.map((tool) => tool.name)).toEqual([
+      "searchAppleDocumentation",
+      "fetchAppleDocumentation",
+      "fetchExternalDocumentation",
+      "fetchAppleVideoTranscript",
+    ])
+    expect(tools[0].inputSchema.type).toBe("object")
+    expect(tools[0].inputSchema.properties).toHaveProperty("query")
+    expect(tools[1].inputSchema.properties).toHaveProperty("path")
+    expect(tools[2].inputSchema.properties).toHaveProperty("url")
+  })
+
+  it("serves a static WebMCP bootstrap script", async () => {
     const response = await SELF.fetch("https://sosumi.ai/webmcp.js")
 
     expect(response.status).toBe(200)
-    expect(response.headers.get("Content-Type")).toContain("text/javascript")
 
     const script = await response.text()
     expect(script).toContain("registerTool")
     expect(script).toContain("modelContext")
-    expect(script).toContain("searchAppleDocumentation")
-    expect(script).toContain("fetchAppleDocumentation")
-    expect(script).toContain("fetchExternalDocumentation")
-    expect(script).toContain("fetchAppleVideoTranscript")
-    expect(script).toContain('"type":"object"')
-    expect(script).toContain('"query"')
-    expect(script).toContain('"path"')
-    expect(script).toContain('"url"')
+    expect(script).toContain("/webmcp/manifest.json")
   })
 
   it("includes the WebMCP script on the homepage", async () => {
