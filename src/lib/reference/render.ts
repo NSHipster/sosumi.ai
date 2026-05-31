@@ -7,6 +7,7 @@ import type {
   ContentItem,
   Declaration,
   IndexContentItem,
+  Platform,
   PossibleValueItem,
   PropertyItem,
   TopicSection,
@@ -66,6 +67,8 @@ export async function renderFromJSON(
       markdown += `> ${abstractText}\n\n`
     }
   }
+
+  markdown += renderDeprecationNotice(jsonData, jsonData.references, options.externalOrigin)
 
   // Add declaration
   if (jsonData.primaryContentSections) {
@@ -192,6 +195,10 @@ function generateFrontMatterFromJSON(jsonData: AppleDocJSON, sourceUrl: string):
 
   frontMatter.source = sourceUrl
   frontMatter.timestamp = new Date().toISOString()
+
+  if (isSymbolDeprecated(jsonData)) {
+    frontMatter.deprecated = "true"
+  }
 
   // Convert to YAML format
   const yamlLines = Object.entries(frontMatter).map(([key, value]) => `${key}: ${value}`)
@@ -452,7 +459,8 @@ function renderContentArray(
         ? renderContentArray(item.content, references, depth + 1, externalOrigin)
         : ""
       const cleanContent = asideContent.trim().replace(/\n/g, "\n> ")
-      markdown += `> [!${calloutType}]\n> ${cleanContent}\n\n`
+      const deprecatedLabel = style.toLowerCase() === "deprecated" ? "**Deprecated**\n>\n> " : ""
+      markdown += `> [!${calloutType}]\n> ${deprecatedLabel}${cleanContent}\n\n`
     } else if (item.type === "table") {
       markdown += renderTable(item, references, depth, externalOrigin)
     } else if (item.type === "tabNavigator" && item.tabs?.length) {
@@ -625,7 +633,8 @@ function renderTopicSections(
                 ? reference.abstract.map((a: { text: string }) => a.text).join("")
                 : ""
 
-            markdown += `- [${title}](${url})`
+            const deprecatedLabel = reference?.deprecated ? " *(Deprecated)*" : ""
+            markdown += `- [${title}](${url})${deprecatedLabel}`
             if (abstract) {
               markdown += ` ${abstract}`
             }
@@ -723,6 +732,88 @@ function renderSeeAlso(
   }
 
   return markdown
+}
+
+/**
+ * Whether the symbol page represents a deprecated API.
+ */
+function isSymbolDeprecated(jsonData: AppleDocJSON): boolean {
+  if (jsonData.deprecationSummary?.length) {
+    return true
+  }
+
+  const identifier = jsonData.identifier?.url
+  if (identifier && jsonData.references?.[identifier]?.deprecated === true) {
+    return true
+  }
+
+  const platforms = jsonData.metadata?.platforms
+  if (platforms?.some((platform) => platform.deprecated === true || platform.deprecatedAt)) {
+    return true
+  }
+
+  return false
+}
+
+/**
+ * Collect a deprecation message from platform availability metadata.
+ */
+function getDeprecationMessageFromPlatforms(platforms?: Platform[]): string | null {
+  if (!platforms?.length) {
+    return null
+  }
+
+  const deprecatedPlatforms = platforms.filter(
+    (platform) => platform.deprecated === true || platform.deprecatedAt,
+  )
+  if (deprecatedPlatforms.length === 0) {
+    return null
+  }
+
+  const uniqueMessages = [
+    ...new Set(
+      deprecatedPlatforms
+        .map((platform) => platform.message?.trim())
+        .filter((message): message is string => Boolean(message)),
+    ),
+  ]
+
+  if (uniqueMessages.length === 1) {
+    return uniqueMessages[0]
+  }
+
+  if (uniqueMessages.length > 1) {
+    return deprecatedPlatforms
+      .filter((platform) => platform.message)
+      .map((platform) => `**${platform.name}:** ${platform.message}`)
+      .join("\n")
+  }
+
+  return "This symbol is deprecated."
+}
+
+/**
+ * Render a deprecation callout for deprecated symbol pages.
+ */
+function renderDeprecationNotice(
+  jsonData: AppleDocJSON,
+  references?: Record<string, ContentItem>,
+  externalOrigin?: string,
+): string {
+  let body = ""
+
+  if (jsonData.deprecationSummary?.length) {
+    body = renderContentArray(jsonData.deprecationSummary, references, 0, externalOrigin).trim()
+  } else {
+    body = getDeprecationMessageFromPlatforms(jsonData.metadata?.platforms) ?? ""
+  }
+
+  if (!body) {
+    return ""
+  }
+
+  const quotedBody = body.replace(/\n/g, "\n> ")
+  return `> [!WARNING]\n> **Deprecated**\n>\n> ${quotedBody}\n\n`
 }
 
 /**

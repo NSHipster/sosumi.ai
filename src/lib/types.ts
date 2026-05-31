@@ -75,6 +75,9 @@ export interface ContentItem {
 
   // Abstract content
   abstract?: TextFragment[]
+
+  /** Present on reference entries for deprecated symbols. */
+  deprecated?: boolean
 }
 
 // ============================================================================
@@ -261,6 +264,10 @@ export interface Platform {
   name: string
   introducedAt: string
   beta?: boolean
+  deprecated?: boolean
+  deprecatedAt?: string
+  message?: string
+  unavailable?: boolean
 }
 
 /**
@@ -297,6 +304,8 @@ export interface AppleDocJSON {
 
   // Content
   abstract?: Array<{ text: string; type: string }>
+  /** DocC deprecation notice shown at the top of deprecated symbol pages. */
+  deprecationSummary?: ContentItem[]
   sections?: ContentItem[]
 
   // Primary content sections

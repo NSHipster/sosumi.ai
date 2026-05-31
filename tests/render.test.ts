@@ -1,6 +1,7 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: pedantic type check */
 import { describe, expect, it } from "vitest"
 import { renderFromJSON } from "../src/lib/reference"
+import nsdataGetBytesFixture from "./fixtures/reference/nsdata-getbytes.json"
 import {
   circularReferenceData,
   deeplyNestedData,
@@ -61,6 +62,53 @@ describe("Render Function", () => {
         /^---\nsource: https:\/\/test\.com\ntimestamp: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z\n---\n\n/,
       )
       expect(result).not.toContain("title:")
+    })
+
+    it("should mark deprecated symbols in front matter", async () => {
+      const result = await renderFromJSON(
+        nsdataGetBytesFixture as any,
+        "https://developer.apple.com/documentation/foundation/nsdata/getbytes(_:)",
+      )
+
+      expect(result).toContain("deprecated: true")
+    })
+  })
+
+  describe("Deprecation", () => {
+    it("should render deprecation summary from Apple DocC JSON", async () => {
+      const result = await renderFromJSON(
+        nsdataGetBytesFixture as any,
+        "https://developer.apple.com/documentation/foundation/nsdata/getbytes(_:)",
+      )
+
+      expect(result).toContain("> [!WARNING]")
+      expect(result).toContain("> **Deprecated**")
+      expect(result).toContain("buffer overruns")
+      expect(result).toContain(
+        "[getBytes(_:length:)](/documentation/foundation/nsdata/getbytes(_:length:)",
+      )
+    })
+
+    it("should render platform deprecation messages when deprecationSummary is absent", async () => {
+      const data = {
+        metadata: {
+          title: "legacyMethod()",
+          platforms: [
+            {
+              name: "iOS",
+              introducedAt: "2.0",
+              deprecatedAt: "8.0",
+              message: "Use modernMethod() instead.",
+            },
+          ],
+        },
+        abstract: [{ type: "text", text: "A legacy API." }],
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com")
+
+      expect(result).toContain("> **Deprecated**")
+      expect(result).toContain("Use modernMethod() instead.")
     })
   })
 
@@ -233,6 +281,9 @@ describe("Render Function", () => {
 
         const result = await renderFromJSON(data as any, "https://test.com")
         expect(result).toContain(`> ${test.expected}`)
+        if (test.style === "deprecated") {
+          expect(result).toContain("> **Deprecated**")
+        }
         expect(result).toContain(`> This is a ${test.style} aside.`)
       }
     })
