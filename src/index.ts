@@ -32,7 +32,7 @@ import {
 } from "./lib/skill"
 import { generateAppleDocUrl, isValidAppleDocUrl, normalizeDocumentationPath } from "./lib/url"
 import { fetchVideoTranscriptMarkdown, TranscriptNotFoundError } from "./lib/video"
-import { buildWebMcpManifest, renderWebMcpScript } from "./lib/webmcp"
+import { buildWebMcpManifest } from "./lib/webmcp"
 
 interface Env {
   ASSETS: Fetcher
@@ -217,10 +217,10 @@ app.get("/.well-known/mcp/server-card.json", (c) => {
   )
 })
 
-app.get("/webmcp.js", (c) =>
-  c.body(renderWebMcpScript(buildWebMcpManifest()), 200, {
-    "Content-Type": "text/javascript; charset=utf-8",
-    "Cache-Control": "public, max-age=300, s-maxage=600",
+app.get("/webmcp/manifest.json", (c) =>
+  c.json(buildWebMcpManifest(), 200, {
+    ...discoveryHeaders,
+    "Content-Type": "application/json; charset=utf-8",
   }),
 )
 
