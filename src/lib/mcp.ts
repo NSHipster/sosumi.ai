@@ -9,11 +9,13 @@ import { searchAppleDeveloperDocs } from "./search"
 import { generateAppleDocUrl, normalizeDocumentationPath } from "./url"
 import { fetchVideoTranscriptMarkdown } from "./video"
 
+export const MCP_SERVER_INFO = {
+  name: "sosumi.ai",
+  version: "1.0.0",
+} as const
+
 export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
-  const server = new McpServer({
-    name: "sosumi.ai",
-    version: "1.0.0",
-  })
+  const server = new McpServer(MCP_SERVER_INFO)
 
   // Register Apple search tool
   server.registerTool(
