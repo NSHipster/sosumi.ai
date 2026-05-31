@@ -738,21 +738,7 @@ function renderSeeAlso(
  * Whether the symbol page represents a deprecated API.
  */
 function isSymbolDeprecated(jsonData: AppleDocJSON): boolean {
-  if (jsonData.deprecationSummary?.length) {
-    return true
-  }
-
-  const identifier = jsonData.identifier?.url
-  if (identifier && jsonData.references?.[identifier]?.deprecated === true) {
-    return true
-  }
-
-  const platforms = jsonData.metadata?.platforms
-  if (platforms?.some((platform) => platform.deprecated === true || platform.deprecatedAt)) {
-    return true
-  }
-
-  return false
+  return getDeprecationNoticeBody(jsonData, jsonData.references) !== null
 }
 
 /**
@@ -789,7 +775,42 @@ function getDeprecationMessageFromPlatforms(platforms?: Platform[]): string | nu
       .join("\n")
   }
 
-  return "This symbol is deprecated."
+  return DEFAULT_DEPRECATION_MESSAGE
+}
+
+const DEFAULT_DEPRECATION_MESSAGE = "This symbol is deprecated."
+
+/**
+ * Resolve deprecation notice text from DocC JSON (without rendering the callout).
+ */
+function getDeprecationNoticeBody(
+  jsonData: AppleDocJSON,
+  references?: Record<string, ContentItem>,
+  externalOrigin?: string,
+): string | null {
+  if (jsonData.deprecationSummary?.length) {
+    const summary = renderContentArray(
+      jsonData.deprecationSummary,
+      references,
+      0,
+      externalOrigin,
+    ).trim()
+    if (summary) {
+      return summary
+    }
+  }
+
+  const platformMessage = getDeprecationMessageFromPlatforms(jsonData.metadata?.platforms)
+  if (platformMessage) {
+    return platformMessage
+  }
+
+  const identifier = jsonData.identifier?.url
+  if (identifier && references?.[identifier]?.deprecated === true) {
+    return DEFAULT_DEPRECATION_MESSAGE
+  }
+
+  return null
 }
 
 /**
@@ -800,14 +821,7 @@ function renderDeprecationNotice(
   references?: Record<string, ContentItem>,
   externalOrigin?: string,
 ): string {
-  let body = ""
-
-  if (jsonData.deprecationSummary?.length) {
-    body = renderContentArray(jsonData.deprecationSummary, references, 0, externalOrigin).trim()
-  } else {
-    body = getDeprecationMessageFromPlatforms(jsonData.metadata?.platforms) ?? ""
-  }
-
+  const body = getDeprecationNoticeBody(jsonData, references, externalOrigin)
   if (!body) {
     return ""
   }

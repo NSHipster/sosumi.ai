@@ -110,6 +110,24 @@ describe("Render Function", () => {
       expect(result).toContain("> **Deprecated**")
       expect(result).toContain("Use modernMethod() instead.")
     })
+
+    it("should render a deprecation callout when only the self-reference is marked deprecated", async () => {
+      const symbolId = "doc://com.example/documentation/Example/legacy()"
+      const data = {
+        metadata: { title: "legacy()" },
+        identifier: { url: symbolId },
+        references: {
+          [symbolId]: { deprecated: true, title: "legacy()" },
+        },
+        abstract: [{ type: "text", text: "A legacy API." }],
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com")
+
+      expect(result).toContain("deprecated: true")
+      expect(result).toContain("> **Deprecated**")
+      expect(result).toContain("> This symbol is deprecated.")
+    })
   })
 
   describe("Breadcrumb Navigation", () => {
