@@ -76,7 +76,7 @@ export const TOOL_DEFINITIONS = {
       path: z
         .string()
         .describe(
-          "Documentation path (e.g., '/documentation/swift', 'swiftui/view', 'design/human-interface-guidelines/foundations/color')",
+          "Documentation path (e.g., '/documentation/swift', '/documentation/swiftui/view', '/design/human-interface-guidelines/foundations/color')",
         ),
     },
     annotations: readOnlyAnnotations,
