@@ -19,7 +19,7 @@ import {
   renderHIGFromJSON,
   renderHIGTableOfContents,
 } from "./lib/hig"
-import { createMcpServer } from "./lib/mcp"
+import { createMcpServer, MCP_SERVER_INFO } from "./lib/mcp"
 import { fetchJSONData, renderFromJSON } from "./lib/reference"
 import { searchAppleDeveloperDocs } from "./lib/search"
 import {
@@ -58,6 +58,18 @@ app.use("*", async (c, next) => {
   // Development-specific headers
   if (c.env.NODE_ENV === "development") {
     c.header("Cache-Control", "no-store")
+  }
+
+  if (c.req.path === "/") {
+    c.header(
+      "Link",
+      [
+        '</.well-known/api-catalog>; rel="api-catalog"',
+        '</.well-known/mcp/server-card.json>; rel="service-desc"',
+        '</SKILL.md>; rel="service-doc"',
+        '</llms.txt>; rel="alternate"; type="text/markdown"',
+      ].join(", "),
+    )
   }
 })
 
@@ -144,6 +156,64 @@ app.all(`/.well-known/agent-skills/${SKILL_NAME}/SKILL.md`, async (c) => {
     status: 200,
     headers: skillHeaders,
   })
+})
+
+const discoveryHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Cache-Control": "public, max-age=300, s-maxage=600",
+} as const
+
+app.get("/.well-known/api-catalog", (c) => {
+  const origin = new URL(c.req.url).origin
+
+  return c.json(
+    {
+      linkset: [
+        {
+          anchor: `${origin}/mcp`,
+          "service-desc": [
+            {
+              href: `${origin}/.well-known/mcp/server-card.json`,
+              type: "application/json",
+            },
+          ],
+          "service-doc": [{ href: `${origin}/SKILL.md`, type: "text/markdown" }],
+          status: [{ href: `${origin}/` }],
+        },
+        {
+          anchor: `${origin}/documentation`,
+          "service-doc": [{ href: `${origin}/SKILL.md`, type: "text/markdown" }],
+        },
+      ],
+    },
+    200,
+    {
+      ...discoveryHeaders,
+      "Content-Type": "application/linkset+json; charset=utf-8",
+    },
+  )
+})
+
+app.get("/.well-known/mcp/server-card.json", (c) => {
+  const origin = new URL(c.req.url).origin
+
+  return c.json(
+    {
+      serverInfo: MCP_SERVER_INFO,
+      transport: {
+        type: "streamable-http",
+        endpoint: `${origin}/mcp`,
+      },
+      capabilities: {
+        tools: {},
+      },
+    },
+    200,
+    {
+      ...discoveryHeaders,
+      "Content-Type": "application/json; charset=utf-8",
+    },
+  )
 })
 
 app.get("/bot", (c) => c.redirect("/#bot", 302))
