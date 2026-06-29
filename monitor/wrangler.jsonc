@@ -12,5 +12,9 @@
       "name": "EMAIL",
       "destination_address": "alerts@sosumi.ai"
     }
-  ]
+  ],
+  "durable_objects": {
+    "bindings": [{ "name": "MONITOR_STATE", "class_name": "MonitorState" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["MonitorState"] }]
 }

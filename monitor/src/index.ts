@@ -1,8 +1,10 @@
+import { DurableObject } from "cloudflare:workers";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
 interface Env {
   EMAIL: SendEmail;
+  MONITOR_STATE: DurableObjectNamespace<MonitorState>;
 }
 
 const MONITOR_NAME = "sosumi.ai Monitor";
@@ -45,6 +47,21 @@ async function runMcpHealthCheck(): Promise<void> {
   }
 }
 
+type HealthTransition = "failed" | "recovered" | "none";
+
+// Persists the last known health state so alerts fire only on transitions,
+// rather than on every cron run during a sustained outage.
+export class MonitorState extends DurableObject {
+  async reportResult(healthy: boolean): Promise<HealthTransition> {
+    const previous = (await this.ctx.storage.get<boolean>("healthy")) ?? true;
+    if (healthy === previous) {
+      return "none";
+    }
+    await this.ctx.storage.put("healthy", healthy);
+    return healthy ? "recovered" : "failed";
+  }
+}
+
 async function sendAlert(
   env: Env,
   subject: string,
@@ -60,9 +77,17 @@ async function sendAlert(
 
 export default {
   async scheduled(_controller, env): Promise<void> {
+    let error: unknown;
     try {
       await runMcpHealthCheck();
-    } catch (error) {
+    } catch (e) {
+      error = e;
+    }
+
+    const stub = env.MONITOR_STATE.get(env.MONITOR_STATE.idFromName("singleton"));
+    const transition = await stub.reportResult(error === undefined);
+
+    if (transition === "failed") {
       await sendAlert(
         env,
         "Sosumi MCP Alert: Health check failed",
@@ -71,6 +96,16 @@ export default {
           `URL: ${TARGET_URL}`,
           `Time: ${new Date().toISOString()}`,
           `Error: ${error instanceof Error ? error.message : String(error)}`,
+        ].join("\n"),
+      );
+    } else if (transition === "recovered") {
+      await sendAlert(
+        env,
+        "Sosumi MCP Recovered: Health check passing",
+        [
+          "The MCP client health check is passing again.",
+          `URL: ${TARGET_URL}`,
+          `Time: ${new Date().toISOString()}`,
         ].join("\n"),
       );
     }
