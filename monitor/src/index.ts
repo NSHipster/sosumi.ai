@@ -11,6 +11,7 @@ const ALERT_TO = "alerts@sosumi.ai";
 const TARGET_URL = "https://sosumi.ai/mcp";
 const PROBE_TOOL_NAME = "fetchAppleDocumentation";
 const PROBE_TOOL_ARGS = { path: "/documentation/swift/array" };
+const REQUEST_TIMEOUT_MS = 10_000;
 
 async function runMcpHealthCheck(): Promise<void> {
   const client = new Client({
@@ -20,18 +21,21 @@ async function runMcpHealthCheck(): Promise<void> {
   const transport = new StreamableHTTPClientTransport(new URL(TARGET_URL));
 
   try {
-    await client.connect(transport);
+    await client.connect(transport, { timeout: REQUEST_TIMEOUT_MS });
 
-    const toolsResult = await client.listTools();
+    const toolsResult = await client.listTools(undefined, {
+      timeout: REQUEST_TIMEOUT_MS,
+    });
     const hasProbeTool = toolsResult.tools.some((tool) => tool.name === PROBE_TOOL_NAME);
     if (!hasProbeTool) {
       throw new Error(`Missing required MCP tool: ${PROBE_TOOL_NAME}`);
     }
 
-    const callResult = await client.callTool({
-      name: PROBE_TOOL_NAME,
-      arguments: PROBE_TOOL_ARGS,
-    });
+    const callResult = await client.callTool(
+      { name: PROBE_TOOL_NAME, arguments: PROBE_TOOL_ARGS },
+      undefined,
+      { timeout: REQUEST_TIMEOUT_MS },
+    );
 
     if (callResult.isError) {
       throw new Error(`MCP tool call returned an error: ${PROBE_TOOL_NAME}`);
