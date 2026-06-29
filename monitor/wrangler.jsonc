@@ -7,12 +7,10 @@
   "triggers": {
     "crons": ["*/5 * * * *"]
   },
-  "send_email": [
-    {
-      "name": "EMAIL",
-      "destination_address": "alerts@sosumi.ai"
-    }
-  ],
+  "vars": {
+    "ALERT_TO": "alerts@sosumi.ai"
+  },
+  "send_email": [{ "name": "EMAIL" }],
   "durable_objects": {
     "bindings": [{ "name": "MONITOR_STATE", "class_name": "MonitorState" }]
   },

@@ -3,13 +3,13 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
 interface Env {
+  ALERT_TO: string;
   EMAIL: SendEmail;
   MONITOR_STATE: DurableObjectNamespace<MonitorState>;
 }
 
 const MONITOR_NAME = "sosumi.ai Monitor";
 const ALERT_FROM = "no-reply@sosumi.ai";
-const ALERT_TO = "alerts@sosumi.ai";
 const TARGET_URL = "https://sosumi.ai/mcp";
 const PROBE_TOOL_NAME = "fetchAppleDocumentation";
 const PROBE_TOOL_ARGS = { path: "/documentation/swift/array" };
@@ -73,7 +73,7 @@ async function sendAlert(
 ): Promise<void> {
   await env.EMAIL.send({
     from: { name: MONITOR_NAME, email: ALERT_FROM },
-    to: ALERT_TO,
+    to: env.ALERT_TO,
     subject,
     text: body,
   });
