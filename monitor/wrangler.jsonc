@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sosumi-monitor",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-25",
+  "compatibility_flags": ["nodejs_compat"],
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  },
+  "vars": {
+    "ALERT_TO": "alerts@sosumi.ai"
+  },
+  "send_email": [{ "name": "EMAIL" }],
+  "durable_objects": {
+    "bindings": [{ "name": "MONITOR_STATE", "class_name": "MonitorState" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["MonitorState"] }]
+}
