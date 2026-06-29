@@ -1,10 +1,8 @@
-import { EmailMessage } from "cloudflare:email";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { createMimeMessage } from "mimetext";
 
 interface Env {
-  EMAIL_ALERT: SendEmail;
+  EMAIL: SendEmail;
 }
 
 const MONITOR_NAME = "sosumi.ai Monitor";
@@ -48,17 +46,12 @@ async function sendAlert(
   subject: string,
   body: string,
 ): Promise<void> {
-  const msg = createMimeMessage();
-  msg.setSender({ name: MONITOR_NAME, addr: ALERT_FROM });
-  msg.setRecipient(ALERT_TO);
-  msg.setSubject(subject);
-  msg.addMessage({
-    contentType: "text/plain",
-    data: body,
+  await env.EMAIL.send({
+    from: { name: MONITOR_NAME, email: ALERT_FROM },
+    to: ALERT_TO,
+    subject,
+    text: body,
   });
-
-  const message = new EmailMessage(ALERT_FROM, ALERT_TO, msg.asRaw());
-  await env.EMAIL_ALERT.send(message);
 }
 
 export default {

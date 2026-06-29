@@ -2,14 +2,14 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "sosumi-monitor",
   "main": "src/index.ts",
-  "compatibility_date": "2024-09-23",
+  "compatibility_date": "2026-06-25",
   "compatibility_flags": ["nodejs_compat"],
   "triggers": {
     "crons": ["*/5 * * * *"]
   },
   "send_email": [
     {
-      "name": "EMAIL_ALERT",
+      "name": "EMAIL",
       "destination_address": "alerts@sosumi.ai"
     }
   ]
