@@ -40,7 +40,9 @@ async function runMcpHealthCheck(): Promise<void> {
     );
 
     if (callResult.isError) {
-      throw new Error(`MCP tool call returned an error: ${PROBE_TOOL_NAME}`);
+      throw new Error(
+        `MCP tool call returned an error: ${PROBE_TOOL_NAME}: ${JSON.stringify(callResult.content)}`,
+      );
     }
   } finally {
     // Best-effort cleanup: closing the transport must not change the health
