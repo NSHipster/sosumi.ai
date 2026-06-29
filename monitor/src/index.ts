@@ -43,7 +43,9 @@ async function runMcpHealthCheck(): Promise<void> {
       throw new Error(`MCP tool call returned an error: ${PROBE_TOOL_NAME}`);
     }
   } finally {
-    await transport.close();
+    // Best-effort cleanup: closing the transport must not change the health
+    // result or mask an error from the operations above.
+    await transport.close().catch(() => {});
   }
 }
 
