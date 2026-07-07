@@ -1008,6 +1008,39 @@ describe("Render Function", () => {
       const result = await renderFromJSON(data as any, "https://test.com")
       expect(result).toContain("[Unknown Reference](unknown://identifier/format)")
     })
+
+    it("should use the reference title for inline links without an inline title", async () => {
+      const url = "https://github.com/apple/foundation-models-utilities"
+      const data = {
+        metadata: { title: "Workaround Test" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [
+              {
+                type: "paragraph",
+                inlineContent: [
+                  { type: "text", text: "Import the " },
+                  { type: "reference", identifier: url },
+                  { type: "text", text: " package." },
+                ],
+              },
+            ],
+          },
+        ],
+        references: {
+          [url]: {
+            type: "link",
+            title: "Foundation Models framework utilities",
+            url,
+          },
+        },
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).toContain(`[Foundation Models framework utilities](${url})`)
+      expect(result).not.toContain("[foundation-models]")
+    })
   })
 
   describe("Title Extraction from Identifiers", () => {
