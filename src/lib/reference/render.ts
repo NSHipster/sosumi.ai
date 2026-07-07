@@ -552,9 +552,11 @@ function renderInlineContent(
       } else if (item.type === "codeVoice") {
         return `\`${item.code}\``
       } else if (item.type === "reference") {
+        const reference = item.identifier ? references?.[item.identifier] : undefined
         const title =
           item.title ||
           item.text ||
+          reference?.title ||
           (item.identifier ? extractTitleFromIdentifier(item.identifier) : "")
         const url = item.identifier
           ? convertIdentifierToURL(item.identifier, references, externalOrigin)
