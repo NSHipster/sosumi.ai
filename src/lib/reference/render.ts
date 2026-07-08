@@ -621,34 +621,34 @@ function renderTopicSections(
   for (const topic of topics) {
     if (topic.title) {
       markdown += `## ${topic.title}\n\n`
+    }
 
-      if (topic.identifiers) {
-        for (const id of topic.identifiers) {
-          const info = variants?.find((v: Variant) => v.identifier === id)
-          const reference = references?.[id]
-          if (info || reference) {
-            const title = info?.title || reference?.title || extractTitleFromIdentifier(id)
-            const url = convertIdentifierToURL(id, references, externalOrigin)
-            const abstract = info?.abstract
-              ? info.abstract.map((a: { text: string }) => a.text).join("")
-              : reference?.abstract
-                ? reference.abstract.map((a: { text: string }) => a.text).join("")
-                : ""
+    if (topic.identifiers) {
+      for (const id of topic.identifiers) {
+        const info = variants?.find((v: Variant) => v.identifier === id)
+        const reference = references?.[id]
+        if (info || reference) {
+          const title = info?.title || reference?.title || extractTitleFromIdentifier(id)
+          const url = convertIdentifierToURL(id, references, externalOrigin)
+          const abstract = info?.abstract
+            ? info.abstract.map((a: { text: string }) => a.text).join("")
+            : reference?.abstract
+              ? reference.abstract.map((a: { text: string }) => a.text).join("")
+              : ""
 
-            const deprecatedLabel = reference?.deprecated ? " *(Deprecated)*" : ""
-            markdown += `- [${title}](${url})${deprecatedLabel}`
-            if (abstract) {
-              markdown += ` ${abstract}`
-            }
-            markdown += "\n"
-          } else {
-            const title = extractTitleFromIdentifier(id)
-            const url = convertIdentifierToURL(id, references, externalOrigin)
-            markdown += `- [${title}](${url})\n`
+          const deprecatedLabel = reference?.deprecated ? " *(Deprecated)*" : ""
+          markdown += `- [${title}](${url})${deprecatedLabel}`
+          if (abstract) {
+            markdown += ` ${abstract}`
           }
+          markdown += "\n"
+        } else {
+          const title = extractTitleFromIdentifier(id)
+          const url = convertIdentifierToURL(id, references, externalOrigin)
+          markdown += `- [${title}](${url})\n`
         }
-        markdown += "\n"
       }
+      markdown += "\n"
     }
   }
 
