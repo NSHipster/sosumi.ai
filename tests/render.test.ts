@@ -1170,6 +1170,30 @@ describe("Render Function", () => {
     })
   })
 
+  describe("Topic Sections", () => {
+    it("should render topic sections that have no title", async () => {
+      const data = {
+        metadata: { title: "Migration Guide" },
+        topicSections: [
+          {
+            identifiers: ["doc://test/DataRaceSafety", "doc://test/MigrationStrategy"],
+          },
+          {
+            title: "Swift Concurrency in Depth",
+            identifiers: ["doc://test/RuntimeBehavior"],
+          },
+        ],
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com")
+
+      expect(result).toContain("[Data Race Safety]")
+      expect(result).toContain("[Migration Strategy]")
+      expect(result).toContain("## Swift Concurrency in Depth")
+      expect(result).toContain("[Runtime Behavior]")
+    })
+  })
+
   describe("Platform Information Rendering", () => {
     it("should render platform availability information", async () => {
       const data = {
