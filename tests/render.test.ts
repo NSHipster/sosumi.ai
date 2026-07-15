@@ -1041,6 +1041,39 @@ describe("Render Function", () => {
       expect(result).toContain(`[Foundation Models framework utilities](${url})`)
       expect(result).not.toContain("[foundation-models]")
     })
+
+    it("should preserve code spans in inline link text via titleInlineContent", async () => {
+      const url = "https://developer.apple.com/documentation/storekit/transaction/revocationtype-swift.property"
+      const data = {
+        metadata: { title: "Release Notes" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [
+              {
+                type: "paragraph",
+                inlineContent: [
+                  { type: "text", text: "New fields " },
+                  { type: "reference", identifier: url },
+                  { type: "text", text: " have been added." },
+                ],
+              },
+            ],
+          },
+        ],
+        references: {
+          [url]: {
+            type: "link",
+            title: "revocationType",
+            titleInlineContent: [{ type: "codeVoice", code: "revocationType" }],
+            url,
+          },
+        },
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).toContain(`[\`revocationType\`](${url})`)
+    })
   })
 
   describe("Title Extraction from Identifiers", () => {

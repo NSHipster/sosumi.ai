@@ -51,6 +51,13 @@ export interface ContentItem {
   title?: string
   name?: string
 
+  /**
+   * Rich inline rendering of a reference's title (e.g. a symbol name wrapped in
+   * a `codeVoice` span). Present on entries in the `references` map and preferred
+   * over `title` so code spans survive inside link text.
+   */
+  titleInlineContent?: ContentItem[]
+
   // Tokenized content
   tokens?: Token[]
 

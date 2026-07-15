@@ -553,10 +553,13 @@ function renderInlineContent(
         return `\`${item.code}\``
       } else if (item.type === "reference") {
         const reference = item.identifier ? references?.[item.identifier] : undefined
+        const referenceTitle = reference?.titleInlineContent
+          ? renderInlineContent(reference.titleInlineContent, references, depth + 1, externalOrigin)
+          : reference?.title
         const title =
           item.title ||
           item.text ||
-          reference?.title ||
+          referenceTitle ||
           (item.identifier ? extractTitleFromIdentifier(item.identifier) : "")
         const url = item.identifier
           ? convertIdentifierToURL(item.identifier, references, externalOrigin)
