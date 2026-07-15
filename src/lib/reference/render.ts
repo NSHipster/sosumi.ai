@@ -553,13 +553,10 @@ function renderInlineContent(
         return `\`${item.code}\``
       } else if (item.type === "reference") {
         const reference = item.identifier ? references?.[item.identifier] : undefined
-        const referenceTitle = reference?.titleInlineContent
-          ? renderInlineContent(reference.titleInlineContent, references, depth + 1, externalOrigin)
-          : reference?.title
         const title =
           item.title ||
           item.text ||
-          referenceTitle ||
+          resolveReferenceTitle(reference, references, depth, externalOrigin) ||
           (item.identifier ? extractTitleFromIdentifier(item.identifier) : "")
         const url = item.identifier
           ? convertIdentifierToURL(item.identifier, references, externalOrigin)
@@ -583,6 +580,51 @@ function renderInlineContent(
 }
 
 /**
+ * Resolve the display title for a reference, preferring its rich
+ * `titleInlineContent` (which preserves code spans) over the flat `title`.
+ */
+function resolveReferenceTitle(
+  reference: ContentItem | undefined,
+  references?: Record<string, ContentItem>,
+  depth: number = 0,
+  externalOrigin?: string,
+): string | undefined {
+  if (reference?.titleInlineContent) {
+    return renderInlineContent(reference.titleInlineContent, references, depth + 1, externalOrigin)
+  }
+  return reference?.title
+}
+
+interface ResolvedLink {
+  title: string
+  url: string
+  abstract: string
+  deprecated: boolean
+}
+
+/**
+ * Resolve an identifier to a Markdown link, drawing the title and abstract from
+ * the page's variants first, then the shared references map, and finally the
+ * identifier itself.
+ */
+function resolveLink(
+  id: string,
+  variants?: Variant[],
+  references?: Record<string, ContentItem>,
+  externalOrigin?: string,
+): ResolvedLink {
+  const info = variants?.find((v) => v.identifier === id)
+  const reference = references?.[id]
+  const title =
+    info?.title ||
+    resolveReferenceTitle(reference, references, 0, externalOrigin) ||
+    extractTitleFromIdentifier(id)
+  const url = convertIdentifierToURL(id, references, externalOrigin)
+  const abstract = (info?.abstract ?? reference?.abstract)?.map((a) => a.text).join("") ?? ""
+  return { title, url, abstract, deprecated: reference?.deprecated === true }
+}
+
+/**
  * Render relationship sections
  */
 function renderRelationships(
@@ -597,10 +639,7 @@ function renderRelationships(
     if (rel.title && rel.identifiers) {
       markdown += `## ${rel.title}\n\n`
       for (const id of rel.identifiers) {
-        const info = variants?.find((v: Variant) => v.identifier === id)
-        const reference = references?.[id]
-        const title = info?.title || reference?.title || extractTitleFromIdentifier(id)
-        const url = convertIdentifierToURL(id, references, externalOrigin)
+        const { title, url } = resolveLink(id, variants, references, externalOrigin)
         markdown += `- [${title}](${url})\n`
       }
       markdown += "\n"
@@ -628,28 +667,18 @@ function renderTopicSections(
 
     if (topic.identifiers) {
       for (const id of topic.identifiers) {
-        const info = variants?.find((v: Variant) => v.identifier === id)
-        const reference = references?.[id]
-        if (info || reference) {
-          const title = info?.title || reference?.title || extractTitleFromIdentifier(id)
-          const url = convertIdentifierToURL(id, references, externalOrigin)
-          const abstract = info?.abstract
-            ? info.abstract.map((a: { text: string }) => a.text).join("")
-            : reference?.abstract
-              ? reference.abstract.map((a: { text: string }) => a.text).join("")
-              : ""
-
-          const deprecatedLabel = reference?.deprecated ? " *(Deprecated)*" : ""
-          markdown += `- [${title}](${url})${deprecatedLabel}`
-          if (abstract) {
-            markdown += ` ${abstract}`
-          }
-          markdown += "\n"
-        } else {
-          const title = extractTitleFromIdentifier(id)
-          const url = convertIdentifierToURL(id, references, externalOrigin)
-          markdown += `- [${title}](${url})\n`
+        const { title, url, abstract, deprecated } = resolveLink(
+          id,
+          variants,
+          references,
+          externalOrigin,
+        )
+        const deprecatedLabel = deprecated ? " *(Deprecated)*" : ""
+        markdown += `- [${title}](${url})${deprecatedLabel}`
+        if (abstract) {
+          markdown += ` ${abstract}`
         }
+        markdown += "\n"
       }
       markdown += "\n"
     }
@@ -726,10 +755,7 @@ function renderSeeAlso(
     if (section.title && section.identifiers) {
       markdown += `## ${section.title}\n\n`
       for (const id of section.identifiers) {
-        const info = variants?.find((v: Variant) => v.identifier === id)
-        const reference = references?.[id]
-        const title = info?.title || reference?.title || extractTitleFromIdentifier(id)
-        const url = convertIdentifierToURL(id, references, externalOrigin)
+        const { title, url } = resolveLink(id, variants, references, externalOrigin)
         markdown += `- [${title}](${url})\n`
       }
       markdown += "\n"

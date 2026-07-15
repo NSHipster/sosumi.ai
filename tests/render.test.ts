@@ -1043,7 +1043,8 @@ describe("Render Function", () => {
     })
 
     it("should preserve code spans in inline link text via titleInlineContent", async () => {
-      const url = "https://developer.apple.com/documentation/storekit/transaction/revocationtype-swift.property"
+      const url =
+        "https://developer.apple.com/documentation/storekit/transaction/revocationtype-swift.property"
       const data = {
         metadata: { title: "Release Notes" },
         primaryContentSections: [
