@@ -76,6 +76,11 @@ export interface ContentItem {
   // Structural properties
   level?: number
   style?: string
+  /**
+   * DocC reference role (e.g. `"symbol"`, `"collection"`, `"article"`).
+   * Used to decide whether a plain title should be rendered as a code span.
+   */
+  role?: string
   identifier?: string
   identifiers?: string[]
   url?: string
