@@ -582,6 +582,8 @@ function renderInlineContent(
 /**
  * Resolve the display title for a reference, preferring its rich
  * `titleInlineContent` (which preserves code spans) over the flat `title`.
+ * When there is no rich title, wrap symbol titles in backticks so older DocC
+ * pages that omit `titleInlineContent` still render code spans in link text.
  */
 function resolveReferenceTitle(
   reference: ContentItem | undefined,
@@ -591,6 +593,9 @@ function resolveReferenceTitle(
 ): string | undefined {
   if (reference?.titleInlineContent) {
     return renderInlineContent(reference.titleInlineContent, references, depth + 1, externalOrigin)
+  }
+  if (reference?.title && reference.role === "symbol") {
+    return `\`${reference.title}\``
   }
   return reference?.title
 }

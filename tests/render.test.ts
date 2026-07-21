@@ -85,7 +85,7 @@ describe("Render Function", () => {
       expect(result).toContain("> **Deprecated**")
       expect(result).toContain("buffer overruns")
       expect(result).toContain(
-        "[getBytes(_:length:)](/documentation/foundation/nsdata/getbytes(_:length:)",
+        "[`getBytes(_:length:)`](/documentation/foundation/nsdata/getbytes(_:length:)",
       )
     })
 
@@ -1074,6 +1074,107 @@ describe("Render Function", () => {
 
       const result = await renderFromJSON(data as any, "https://test.com")
       expect(result).toContain(`[\`revocationType\`](${url})`)
+    })
+
+    it("should backtick inline symbol links that lack titleInlineContent", async () => {
+      const id =
+        "doc://com.apple.documentation/documentation/Metal/MTLAccelerationStructure/gpuResourceID"
+      const url = "/documentation/Metal/MTLAccelerationStructure/gpuResourceID"
+      const data = {
+        metadata: { title: "Release Notes" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [
+              {
+                type: "paragraph",
+                inlineContent: [
+                  { type: "text", text: "Use " },
+                  { type: "reference", identifier: id },
+                  { type: "text", text: " instead." },
+                ],
+              },
+            ],
+          },
+        ],
+        references: {
+          [id]: {
+            type: "topic",
+            kind: "symbol",
+            role: "symbol",
+            title: "gpuResourceID",
+            url,
+            identifier: id,
+          },
+        },
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).toContain(`[\`gpuResourceID\`](${url})`)
+    })
+
+    it("should not backtick collection references", async () => {
+      const id = "doc://com.apple.documentation/documentation/StoreKit"
+      const url = "/documentation/StoreKit"
+      const data = {
+        metadata: { title: "Release Notes" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [
+              {
+                type: "paragraph",
+                inlineContent: [
+                  { type: "text", text: "See " },
+                  { type: "reference", identifier: id },
+                  { type: "text", text: "." },
+                ],
+              },
+            ],
+          },
+        ],
+        references: {
+          [id]: {
+            type: "topic",
+            kind: "symbol",
+            role: "collection",
+            title: "StoreKit",
+            url,
+            identifier: id,
+          },
+        },
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).toContain(`[StoreKit](${url})`)
+      expect(result).not.toContain("[`StoreKit`]")
+    })
+
+    it("should backtick symbol links in topic sections", async () => {
+      const id = "doc://test/HStack"
+      const url = "/documentation/SwiftUI/HStack"
+      const data = {
+        metadata: { title: "SwiftUI" },
+        topicSections: [
+          {
+            title: "Containers",
+            identifiers: [id],
+          },
+        ],
+        references: {
+          [id]: {
+            type: "topic",
+            kind: "symbol",
+            role: "symbol",
+            title: "HStack",
+            url,
+            identifier: id,
+          },
+        },
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).toContain(`- [\`HStack\`](${url})`)
     })
   })
 

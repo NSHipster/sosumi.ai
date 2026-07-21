@@ -45,10 +45,10 @@ if (process.env.CI === "1") {
         expect(result).toContain("## Accessing Elements")
 
         // Should contain array-specific methods (note: URLs are lowercase 'swift/array')
-        expect(result).toContain("[init()](/documentation/swift/array/init())")
-        expect(result).toContain("[append(_:)](/documentation/swift/array/append(_:))")
-        expect(result).toContain("[isEmpty](/documentation/swift/array/isempty)") // Note: actual output
-        expect(result).toContain("[count](/documentation/swift/array/count)")
+        expect(result).toContain("[`init()`](/documentation/swift/array/init())")
+        expect(result).toContain("[`append(_:)`](/documentation/swift/array/append(_:))")
+        expect(result).toContain("[`isEmpty`](/documentation/swift/array/isempty)") // Note: actual output
+        expect(result).toContain("[`count`](/documentation/swift/array/count)")
 
         // Footer validation
         expect(result).toContain("*Extracted by [sosumi.ai](https://sosumi.ai)")
@@ -151,9 +151,9 @@ if (process.env.CI === "1") {
         )
 
         // Just verify that method names are properly rendered - don't be too specific
-        expect(result).toContain("[randomElement()]") // Should find this method
-        expect(result).toContain("[isEmpty]") // Should find this property
-        expect(result).toContain("[firstIndex") // Should find methods starting with firstIndex
+        expect(result).toContain("[`randomElement()`]") // Should find this method
+        expect(result).toContain("[`isEmpty`]") // Should find this property
+        expect(result).toContain("[`firstIndex") // Should find methods starting with firstIndex
       },
       TIMEOUT_MS,
     )
@@ -167,14 +167,14 @@ if (process.env.CI === "1") {
         )
 
         // Should preserve method signatures like init(), append(_:), etc.
-        expect(result).toContain("[init()]")
-        expect(result).toContain("[append(_:)]")
-        expect(result).toContain("[insert(_:at:)]")
-        expect(result).toContain("[remove(at:)]")
+        expect(result).toContain("[`init()`]")
+        expect(result).toContain("[`append(_:)`]")
+        expect(result).toContain("[`insert(_:at:)`]")
+        expect(result).toContain("[`remove(at:)`]")
 
         // Should not break method signatures
-        expect(result).not.toContain("[init ()]") // No space before parentheses
-        expect(result).not.toContain("[append (_:)]") // No space before parentheses
+        expect(result).not.toContain("[`init ()`]") // No space before parentheses
+        expect(result).not.toContain("[`append (_:)`]") // No space before parentheses
       },
       TIMEOUT_MS,
     )
