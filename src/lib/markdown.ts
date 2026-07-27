@@ -31,3 +31,13 @@ export function formatList(itemContents: string[], ordered: boolean): string {
   )
   return `${items.join("")}\n`
 }
+
+/**
+ * Format a DocC code listing as a fenced code block, defaulting to Swift.
+ */
+export function formatCodeBlock(code?: string | string[], syntax?: string): string {
+  const body = Array.isArray(code) ? code.join("\n") : String(code || "")
+  // DocC uses `occ` for Objective-C internally, but highlighters expect `objc`.
+  const language = syntax === "occ" ? "objc" : syntax || "swift"
+  return `\`\`\`${language}\n${body}\n\`\`\`\n\n`
+}

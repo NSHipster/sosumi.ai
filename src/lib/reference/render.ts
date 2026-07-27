@@ -2,7 +2,7 @@
  * Apple Developer Reference documentation rendering functionality
  */
 
-import { formatList } from "../markdown"
+import { formatCodeBlock, formatList } from "../markdown"
 import type {
   AppleDocJSON,
   ContentItem,
@@ -237,14 +237,6 @@ function generateBreadcrumbs(sourceUrl: string, externalOrigin?: string): string
 }
 
 /**
- * Map a DocC language code to a Markdown code-fence identifier. DocC uses
- * `occ` for Objective-C internally, but Markdown highlighters expect `objc`.
- */
-function normalizeFenceLanguage(syntax: string): string {
-  return syntax === "occ" ? "objc" : syntax
-}
-
-/**
  * Tab titles DocC uses for language-variant code examples. Used to detect
  * whether a `tabNavigator` is a language switch (so we can default to Swift)
  * versus some other tabbed content we should leave alone.
@@ -418,15 +410,7 @@ function renderContentArray(
         markdown += `${text}\n\n`
       }
     } else if (item.type === "codeListing") {
-      let code = ""
-      if (Array.isArray(item.code)) {
-        code = item.code.join("\n")
-      } else {
-        code = String(item.code || "")
-      }
-      const syntax = normalizeFenceLanguage(item.syntax || "swift")
-
-      markdown += `\`\`\`${syntax}\n${code}\n\`\`\`\n\n`
+      markdown += formatCodeBlock(item.code, item.syntax)
     } else if (item.type === "unorderedList" || item.type === "orderedList") {
       if (item.items) {
         markdown += formatList(

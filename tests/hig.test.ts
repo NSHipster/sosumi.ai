@@ -376,6 +376,31 @@ describe("HIG Module", () => {
       expect(result).toContain('```swift\nprint("Hello, world!")\n```')
     })
 
+    it("should normalize DocC's 'occ' syntax to 'objc'", async () => {
+      const testData = {
+        ...higGettingStartedData,
+        primaryContentSections: [
+          {
+            kind: "content" as const,
+            content: [
+              {
+                type: "codeListing",
+                code: ["NSButton *button;"],
+                syntax: "occ",
+              },
+            ],
+          },
+        ],
+      } as HIGPageJSON
+
+      const result = await renderHIGFromJSON(
+        testData,
+        "https://developer.apple.com/design/human-interface-guidelines/test",
+      )
+
+      expect(result).toContain("```objc\nNSButton *button;\n```")
+    })
+
     it("should handle unordered and ordered lists", async () => {
       const testData = {
         ...higGettingStartedData,

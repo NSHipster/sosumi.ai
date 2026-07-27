@@ -2,7 +2,7 @@
  * Human Interface Guidelines (HIG) rendering functionality
  */
 
-import { formatList } from "../markdown"
+import { formatCodeBlock, formatList } from "../markdown"
 import { extractTitleFromIdentifier } from "../reference/render"
 import type { ContentItem, TextFragment } from "../types"
 import type {
@@ -239,14 +239,7 @@ function renderContentItem(
       markdown += `${text}\n\n`
     }
   } else if (item.type === "codeListing") {
-    let code = ""
-    if (Array.isArray(item.code)) {
-      code = item.code.join("\n")
-    } else {
-      code = String(item.code || "")
-    }
-    const syntax = item.syntax || "swift"
-    markdown += `\`\`\`${syntax}\n${code}\n\`\`\`\n\n`
+    markdown += formatCodeBlock(item.code, item.syntax)
   } else if ((item.type === "unorderedList" || item.type === "orderedList") && item.items) {
     markdown += formatList(
       item.items.map((listItem) => renderHIGContent(listItem.content || [], references)),
