@@ -451,6 +451,40 @@ describe("Render Function", () => {
         ].join("\n"),
       )
     })
+
+    it("should preserve paragraph breaks inside list items", async () => {
+      const data = {
+        metadata: { title: "Multi-paragraph List Item" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [
+              {
+                type: "unorderedList",
+                items: [
+                  {
+                    content: [
+                      {
+                        type: "paragraph",
+                        inlineContent: [{ type: "text", text: "First paragraph." }],
+                      },
+                      {
+                        type: "paragraph",
+                        inlineContent: [{ type: "text", text: "Second paragraph." }],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+        references: {},
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).toContain("- First paragraph.\n  \n  Second paragraph.")
+    })
   })
 
   describe("Tab navigator rendering", () => {
