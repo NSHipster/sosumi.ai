@@ -483,7 +483,7 @@ describe("Render Function", () => {
       }
 
       const result = await renderFromJSON(data as any, "https://test.com")
-      expect(result).toContain("- First paragraph.\n  \n  Second paragraph.")
+      expect(result).toContain("- First paragraph.\n\n  Second paragraph.")
     })
 
     it("should indent nested content under ordered list markers", async () => {
@@ -531,7 +531,7 @@ describe("Render Function", () => {
 
       const result = await renderFromJSON(data as any, "https://test.com")
       expect(result).toContain(
-        ["1. First paragraph.", "   ", "   Second paragraph.", "   - Nested item"].join("\n"),
+        ["1. First paragraph.", "", "   Second paragraph.", "   - Nested item"].join("\n"),
       )
     })
   })
