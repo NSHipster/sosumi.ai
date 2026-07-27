@@ -3,10 +3,14 @@
  */
 
 import {
+  CONTENT_TOO_DEEP,
   formatCallout,
   formatCodeBlock,
   formatList,
   formatTable,
+  INLINE_CONTENT_TOO_DEEP,
+  MAX_CONTENT_DEPTH,
+  MAX_INLINE_DEPTH,
   mapAsideStyleToCallout,
 } from "../markdown"
 import { extractTitleFromIdentifier } from "../url"
@@ -399,9 +403,9 @@ function renderContentArray(
   externalOrigin?: string,
 ): string {
   // Prevent infinite recursion by limiting depth
-  if (depth > 50) {
+  if (depth > MAX_CONTENT_DEPTH) {
     console.warn("Maximum recursion depth reached in renderContentArray")
-    return "[Content too deeply nested]"
+    return CONTENT_TOO_DEEP
   }
 
   let markdown = ""
@@ -503,9 +507,9 @@ function renderInlineContent(
   externalOrigin?: string,
 ): string {
   // Prevent infinite recursion by limiting depth
-  if (depth > 20) {
+  if (depth > MAX_INLINE_DEPTH) {
     console.warn("Maximum recursion depth reached in renderInlineContent")
-    return "[Inline content too deeply nested]"
+    return INLINE_CONTENT_TOO_DEEP
   }
 
   return inlineContent

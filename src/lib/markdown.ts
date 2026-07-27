@@ -1,6 +1,19 @@
 /**
- * Markdown formatting shared by the reference and HIG renderers.
+ * Markdown formatting and nesting limits shared by the reference and HIG
+ * renderers.
  */
+
+/** Depth limit guarding against cyclic or pathologically nested block content. */
+export const MAX_CONTENT_DEPTH = 50
+
+/** Depth limit guarding against cyclic or pathologically nested inline content. */
+export const MAX_INLINE_DEPTH = 20
+
+/** Emitted in place of block content that exceeds `MAX_CONTENT_DEPTH`. */
+export const CONTENT_TOO_DEEP = "[Content too deeply nested]"
+
+/** Emitted in place of inline content that exceeds `MAX_INLINE_DEPTH`. */
+export const INLINE_CONTENT_TOO_DEEP = "[Inline content too deeply nested]"
 
 /**
  * Format rendered content as a Markdown list item, indenting continuation

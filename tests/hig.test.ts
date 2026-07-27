@@ -706,6 +706,81 @@ describe("HIG Module", () => {
     })
   })
 
+  describe("Recursion Protection", () => {
+    it("should prevent infinite loops with extremely deep content nesting", async () => {
+      const createDeepContent = (depth: number): any => {
+        if (depth <= 0) {
+          return {
+            type: "paragraph",
+            inlineContent: [{ type: "text", text: "Deep content" }],
+          }
+        }
+
+        return {
+          type: "aside",
+          style: "note",
+          content: [createDeepContent(depth - 1)],
+        }
+      }
+
+      const testData = {
+        ...higGettingStartedData,
+        primaryContentSections: [
+          {
+            kind: "content" as const,
+            content: [createDeepContent(100)],
+          },
+        ],
+      } as HIGPageJSON
+
+      const startTime = Date.now()
+      const result = await renderHIGFromJSON(
+        testData,
+        "https://developer.apple.com/design/human-interface-guidelines/test",
+      )
+
+      expect(Date.now() - startTime).toBeLessThan(1000)
+      expect(result).toContain("[Content too deeply nested]")
+    })
+
+    it("should prevent infinite loops with extremely deep inline content nesting", async () => {
+      const createDeepInline = (depth: number): any => {
+        if (depth <= 0) {
+          return { type: "text", text: "Deep inline text" }
+        }
+
+        return {
+          type: depth % 2 === 0 ? "emphasis" : "strong",
+          inlineContent: [createDeepInline(depth - 1)],
+        }
+      }
+
+      const testData = {
+        ...higGettingStartedData,
+        primaryContentSections: [
+          {
+            kind: "content" as const,
+            content: [
+              {
+                type: "paragraph",
+                inlineContent: [createDeepInline(50)],
+              },
+            ],
+          },
+        ],
+      } as HIGPageJSON
+
+      const startTime = Date.now()
+      const result = await renderHIGFromJSON(
+        testData,
+        "https://developer.apple.com/design/human-interface-guidelines/test",
+      )
+
+      expect(Date.now() - startTime).toBeLessThan(1000)
+      expect(result).toContain("[Inline content too deeply nested]")
+    })
+  })
+
   describe("Edge Cases", () => {
     it("should handle empty or minimal data gracefully", async () => {
       const minimalTocData = {

@@ -3,10 +3,14 @@
  */
 
 import {
+  CONTENT_TOO_DEEP,
   formatCallout,
   formatCodeBlock,
   formatList,
   formatTable,
+  INLINE_CONTENT_TOO_DEEP,
+  MAX_CONTENT_DEPTH,
+  MAX_INLINE_DEPTH,
   mapAsideStyleToCallout,
 } from "../markdown"
 import type { ContentItem, TextFragment } from "../types"
@@ -191,7 +195,14 @@ function generateHIGBreadcrumbs(sourceUrl: string): string {
 function renderHIGContent(
   content: ContentItem[],
   references: Record<string, HIGReference | HIGImageReference | HIGExternalReference>,
+  depth: number = 0,
 ): string {
+  // Prevent infinite recursion by limiting depth
+  if (depth > MAX_CONTENT_DEPTH) {
+    console.warn("Maximum recursion depth reached in renderHIGContent")
+    return CONTENT_TOO_DEEP
+  }
+
   let markdown = ""
 
   for (const item of content) {
@@ -219,7 +230,7 @@ function renderHIGContent(
       markdown += "\n"
     } else {
       // Handle other content types using the existing content renderer
-      markdown += renderContentItem(item, references)
+      markdown += renderContentItem(item, references, depth)
     }
   }
 
@@ -232,6 +243,7 @@ function renderHIGContent(
 function renderContentItem(
   item: ContentItem,
   references: Record<string, HIGReference | HIGImageReference | HIGExternalReference>,
+  depth: number = 0,
 ): string {
   let markdown = ""
 
@@ -241,22 +253,22 @@ function renderContentItem(
     markdown += `${hashes} ${item.text}\n\n`
   } else if (item.type === "paragraph") {
     if (item.inlineContent) {
-      const text = renderHIGInlineContent(item.inlineContent, references)
+      const text = renderHIGInlineContent(item.inlineContent, references, depth)
       markdown += `${text}\n\n`
     }
   } else if (item.type === "codeListing") {
     markdown += formatCodeBlock(item.code, item.syntax)
   } else if ((item.type === "unorderedList" || item.type === "orderedList") && item.items) {
     markdown += formatList(
-      item.items.map((listItem) => renderHIGContent(listItem.content || [], references)),
+      item.items.map((listItem) => renderHIGContent(listItem.content || [], references, depth + 1)),
       item.type === "orderedList",
     )
   } else if (item.type === "table") {
-    markdown += renderHIGTable(item, references)
+    markdown += renderHIGTable(item, references, depth)
   } else if (item.type === "aside") {
-    markdown += renderHIGAside(item, references)
+    markdown += renderHIGAside(item, references, depth)
   } else if (item.type === "row") {
-    markdown += renderHIGRow(item, references)
+    markdown += renderHIGRow(item, references, depth)
   } else if (item.type === "video") {
     markdown += renderHIGVideo(item, references)
   }
@@ -271,13 +283,14 @@ function renderContentItem(
 function renderHIGTable(
   item: ContentItem,
   references: Record<string, HIGReference | HIGImageReference | HIGExternalReference>,
+  depth: number = 0,
 ): string {
   const table = item as ContentItem & {
     header?: string
     rows?: ContentItem[][][]
   }
   const rows = (table.rows ?? []).map((row) =>
-    row.map((cell) => renderHIGContent(Array.isArray(cell) ? cell : [cell], references)),
+    row.map((cell) => renderHIGContent(Array.isArray(cell) ? cell : [cell], references, depth + 1)),
   )
   return formatTable(rows, table.header === "row")
 }
@@ -288,10 +301,11 @@ function renderHIGTable(
 function renderHIGAside(
   item: ContentItem,
   references: Record<string, HIGReference | HIGImageReference | HIGExternalReference>,
+  depth: number = 0,
 ): string {
   const aside = item as ContentItem & { style?: string; name?: string }
   const rawType = (aside.style || aside.name || "note").toLowerCase()
-  const asideContent = item.content ? renderHIGContent(item.content, references) : ""
+  const asideContent = item.content ? renderHIGContent(item.content, references, depth + 1) : ""
   return formatCallout(mapAsideStyleToCallout(rawType), asideContent)
 }
 
@@ -301,6 +315,7 @@ function renderHIGAside(
 function renderHIGRow(
   item: ContentItem,
   references: Record<string, HIGReference | HIGImageReference | HIGExternalReference>,
+  depth: number = 0,
 ): string {
   const row = item as ContentItem & {
     columns?: Array<{
@@ -312,7 +327,7 @@ function renderHIGRow(
   let markdown = ""
   for (const column of row.columns) {
     if (column.content && column.content.length > 0) {
-      markdown += renderHIGContent(column.content, references)
+      markdown += renderHIGContent(column.content, references, depth + 1)
     }
   }
   return markdown
@@ -360,7 +375,14 @@ function renderHIGVideo(
 function renderHIGInlineContent(
   inlineContent: ContentItem[],
   references: Record<string, HIGReference | HIGImageReference | HIGExternalReference>,
+  depth: number = 0,
 ): string {
+  // Prevent infinite recursion by limiting depth
+  if (depth > MAX_INLINE_DEPTH) {
+    console.warn("Maximum recursion depth reached in renderHIGInlineContent")
+    return INLINE_CONTENT_TOO_DEEP
+  }
+
   return inlineContent
     .map((item) => {
       if (item.type === "text") {
@@ -382,11 +404,15 @@ function renderHIGInlineContent(
         return `[${title}](${url})`
       } else if (item.type === "emphasis") {
         return `*${
-          item.inlineContent ? renderHIGInlineContent(item.inlineContent, references) : ""
+          item.inlineContent
+            ? renderHIGInlineContent(item.inlineContent, references, depth + 1)
+            : ""
         }*`
       } else if (item.type === "strong") {
         return `**${
-          item.inlineContent ? renderHIGInlineContent(item.inlineContent, references) : ""
+          item.inlineContent
+            ? renderHIGInlineContent(item.inlineContent, references, depth + 1)
+            : ""
         }**`
       } else if (item.type === "image" && item.identifier) {
         const reference = references[item.identifier]
