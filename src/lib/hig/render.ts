@@ -2,7 +2,7 @@
  * Human Interface Guidelines (HIG) rendering functionality
  */
 
-import { formatListItem } from "../markdown/list"
+import { formatList } from "../markdown"
 import { extractTitleFromIdentifier } from "../reference/render"
 import type { ContentItem, TextFragment } from "../types"
 import type {
@@ -247,18 +247,11 @@ function renderContentItem(
     }
     const syntax = item.syntax || "swift"
     markdown += `\`\`\`${syntax}\n${code}\n\`\`\`\n\n`
-  } else if (item.type === "unorderedList" && item.items) {
-    for (const listItem of item.items) {
-      const itemText = renderHIGContent(listItem.content || [], references)
-      markdown += formatListItem("- ", itemText)
-    }
-    markdown += "\n"
-  } else if (item.type === "orderedList" && item.items) {
-    item.items.forEach((listItem: ContentItem, index: number) => {
-      const itemText = renderHIGContent(listItem.content || [], references)
-      markdown += formatListItem(`${index + 1}. `, itemText)
-    })
-    markdown += "\n"
+  } else if ((item.type === "unorderedList" || item.type === "orderedList") && item.items) {
+    markdown += formatList(
+      item.items.map((listItem) => renderHIGContent(listItem.content || [], references)),
+      item.type === "orderedList",
+    )
   } else if (item.type === "table") {
     markdown += renderHIGTable(item, references)
   } else if (item.type === "aside") {

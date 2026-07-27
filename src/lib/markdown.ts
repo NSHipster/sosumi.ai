@@ -1,8 +1,12 @@
 /**
+ * Markdown formatting shared by the reference and HIG renderers.
+ */
+
+/**
  * Format rendered content as a Markdown list item, indenting continuation
  * lines (including nested lists) under the marker.
  */
-export function formatListItem(marker: string, content: string): string {
+function formatListItem(marker: string, content: string): string {
   const trimmed = content.replace(/\n+$/, "")
   if (!trimmed) {
     return `${marker.trimEnd()}\n`
@@ -15,4 +19,15 @@ export function formatListItem(marker: string, content: string): string {
   const [first, ...rest] = tightened.split("\n")
   const continuation = rest.map((line) => (line ? indent + line : ""))
   return `${marker}${[first, ...continuation].join("\n")}\n`
+}
+
+/**
+ * Format pre-rendered item contents as a Markdown list, terminated by a blank
+ * line so following blocks aren't absorbed into the last item.
+ */
+export function formatList(itemContents: string[], ordered: boolean): string {
+  const items = itemContents.map((content, index) =>
+    formatListItem(ordered ? `${index + 1}. ` : "- ", content),
+  )
+  return `${items.join("")}\n`
 }

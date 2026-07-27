@@ -2,7 +2,7 @@
  * Apple Developer Reference documentation rendering functionality
  */
 
-import { formatListItem } from "../markdown/list"
+import { formatList } from "../markdown"
 import type {
   AppleDocJSON,
   ContentItem,
@@ -427,31 +427,14 @@ function renderContentArray(
       const syntax = normalizeFenceLanguage(item.syntax || "swift")
 
       markdown += `\`\`\`${syntax}\n${code}\n\`\`\`\n\n`
-    } else if (item.type === "unorderedList") {
+    } else if (item.type === "unorderedList" || item.type === "orderedList") {
       if (item.items) {
-        for (const listItem of item.items) {
-          const itemText = renderContentArray(
-            listItem.content || [],
-            references,
-            depth + 1,
-            externalOrigin,
-          )
-          markdown += formatListItem("- ", itemText)
-        }
-        markdown += "\n"
-      }
-    } else if (item.type === "orderedList") {
-      if (item.items) {
-        item.items.forEach((listItem: ContentItem, index: number) => {
-          const itemText = renderContentArray(
-            listItem.content || [],
-            references,
-            depth + 1,
-            externalOrigin,
-          )
-          markdown += formatListItem(`${index + 1}. `, itemText)
-        })
-        markdown += "\n"
+        markdown += formatList(
+          item.items.map((listItem) =>
+            renderContentArray(listItem.content || [], references, depth + 1, externalOrigin),
+          ),
+          item.type === "orderedList",
+        )
       }
     } else if (item.type === "aside") {
       const style = item.style || "note"
