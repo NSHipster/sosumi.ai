@@ -2,7 +2,7 @@
  * Apple Developer Reference documentation rendering functionality
  */
 
-import { formatCodeBlock, formatList } from "../markdown"
+import { formatCallout, formatCodeBlock, formatList, mapAsideStyleToCallout } from "../markdown"
 import type {
   AppleDocJSON,
   ContentItem,
@@ -422,13 +422,11 @@ function renderContentArray(
       }
     } else if (item.type === "aside") {
       const style = item.style || "note"
-      const calloutType = mapAsideStyleToCallout(style)
       const asideContent = item.content
         ? renderContentArray(item.content, references, depth + 1, externalOrigin)
         : ""
-      const cleanContent = asideContent.trim().replace(/\n/g, "\n> ")
-      const deprecatedLabel = style.toLowerCase() === "deprecated" ? "**Deprecated**\n>\n> " : ""
-      markdown += `> [!${calloutType}]\n> ${deprecatedLabel}${cleanContent}\n\n`
+      const lead = style.toLowerCase() === "deprecated" ? DEPRECATED_LEAD : undefined
+      markdown += formatCallout(mapAsideStyleToCallout(style), asideContent, lead)
     } else if (item.type === "table") {
       markdown += renderTable(item, references, depth, externalOrigin)
     } else if (item.type === "tabNavigator" && item.tabs?.length) {
@@ -784,6 +782,9 @@ function getDeprecationMessageFromPlatforms(platforms?: Platform[]): string | nu
 
 const DEFAULT_DEPRECATION_MESSAGE = "This symbol is deprecated."
 
+/** Leading paragraph for callouts that flag deprecated APIs. */
+const DEPRECATED_LEAD = "**Deprecated**"
+
 /**
  * Resolve deprecation notice text from DocC JSON (without rendering the callout).
  */
@@ -830,28 +831,7 @@ function renderDeprecationNotice(
     return ""
   }
 
-  const quotedBody = body.replace(/\n/g, "\n> ")
-  return `> [!WARNING]\n> **Deprecated**\n>\n> ${quotedBody}\n\n`
-}
-
-/**
- * Map aside style to GitHub-style callout
- */
-function mapAsideStyleToCallout(style: string): string {
-  switch (style.toLowerCase()) {
-    case "warning":
-      return "WARNING"
-    case "important":
-      return "IMPORTANT"
-    case "caution":
-      return "CAUTION"
-    case "tip":
-      return "TIP"
-    case "deprecated":
-      return "WARNING"
-    default:
-      return "NOTE"
-  }
+  return formatCallout("WARNING", body, DEPRECATED_LEAD)
 }
 
 /**

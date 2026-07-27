@@ -41,3 +41,41 @@ export function formatCodeBlock(code?: string | string[], syntax?: string): stri
   const language = syntax === "occ" ? "objc" : syntax || "swift"
   return `\`\`\`${language}\n${body}\n\`\`\`\n\n`
 }
+
+/**
+ * Format rendered content as a GitHub-style callout. An optional lead becomes
+ * the callout's first paragraph, ahead of the content.
+ */
+export function formatCallout(type: string, content: string, lead?: string): string {
+  const paragraphs = [lead, content.trim()].filter(Boolean)
+  if (paragraphs.length === 0) {
+    return ""
+  }
+
+  const quoted = paragraphs
+    .join("\n\n")
+    .split("\n")
+    .map((line) => (line ? `> ${line}` : ">"))
+    .join("\n")
+  return `> [!${type}]\n${quoted}\n\n`
+}
+
+/**
+ * Map a DocC aside style to a GitHub-style callout type.
+ */
+export function mapAsideStyleToCallout(style: string): string {
+  switch (style.toLowerCase()) {
+    case "warning":
+      return "WARNING"
+    case "important":
+      return "IMPORTANT"
+    case "caution":
+      return "CAUTION"
+    case "tip":
+      return "TIP"
+    case "deprecated":
+      return "WARNING"
+    default:
+      return "NOTE"
+  }
+}

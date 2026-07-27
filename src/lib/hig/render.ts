@@ -2,7 +2,7 @@
  * Human Interface Guidelines (HIG) rendering functionality
  */
 
-import { formatCodeBlock, formatList } from "../markdown"
+import { formatCallout, formatCodeBlock, formatList, mapAsideStyleToCallout } from "../markdown"
 import { extractTitleFromIdentifier } from "../reference/render"
 import type { ContentItem, TextFragment } from "../types"
 import type {
@@ -304,11 +304,8 @@ function renderHIGAside(
 ): string {
   const aside = item as ContentItem & { style?: string; name?: string }
   const rawType = (aside.style || aside.name || "note").toLowerCase()
-  const calloutType = mapHIGAsideStyleToCallout(rawType)
   const asideContent = item.content ? renderHIGContent(item.content, references) : ""
-  const cleanContent = asideContent.trim().replace(/\n/g, "\n> ")
-  if (!cleanContent) return ""
-  return `> [!${calloutType}]\n> ${cleanContent}\n\n`
+  return formatCallout(mapAsideStyleToCallout(rawType), asideContent)
 }
 
 /**
@@ -456,23 +453,6 @@ function renderHIGTopicSections(
   }
 
   return markdown
-}
-
-function mapHIGAsideStyleToCallout(style: string): string {
-  switch (style.toLowerCase()) {
-    case "warning":
-      return "WARNING"
-    case "important":
-      return "IMPORTANT"
-    case "caution":
-      return "CAUTION"
-    case "tip":
-      return "TIP"
-    case "deprecated":
-      return "WARNING"
-    default:
-      return "NOTE"
-  }
 }
 
 /**
