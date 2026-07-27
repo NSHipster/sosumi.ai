@@ -9,8 +9,8 @@ import {
   formatTable,
   mapAsideStyleToCallout,
 } from "../markdown"
-import { extractTitleFromIdentifier } from "../reference/render"
 import type { ContentItem, TextFragment } from "../types"
+import { extractTitleFromIdentifier } from "../url"
 import type {
   HIGExternalReference,
   HIGImageReference,

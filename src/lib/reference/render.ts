@@ -9,6 +9,7 @@ import {
   formatTable,
   mapAsideStyleToCallout,
 } from "../markdown"
+import { extractTitleFromIdentifier } from "../url"
 import type {
   AppleDocJSON,
   ContentItem,
@@ -872,35 +873,4 @@ function rewriteDocumentationPath(path: string | undefined, externalOrigin?: str
   }
 
   return `/external/${externalOrigin}${path}`
-}
-
-/**
- * Extract title from identifier
- */
-export function extractTitleFromIdentifier(identifier: string): string {
-  const parts = identifier.split("/")
-  const lastPart = parts[parts.length - 1]
-
-  // Handle disambiguation suffixes (e.g., "body-8kl5o" -> "body", "init(exactly:)-63925" -> "init(exactly:)")
-  const disambiguationMatch = lastPart.match(/^(.+?)(?:-\w+)?$/)
-  if (disambiguationMatch) {
-    const baseName = disambiguationMatch[1]
-
-    // If it looks like a method signature (contains parentheses), preserve it
-    if (baseName.includes("(") && baseName.includes(")")) {
-      return baseName
-    }
-
-    // For simple identifiers, convert camelCase to readable format
-    return baseName
-      .replace(/([a-z])([A-Z])/g, "$1 $2")
-      .replace(/\s+/g, " ")
-      .trim()
-  }
-
-  // Fallback: convert camelCase to readable format
-  return lastPart
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/\s+/g, " ")
-    .trim()
 }
