@@ -2,7 +2,13 @@
  * Human Interface Guidelines (HIG) rendering functionality
  */
 
-import { formatCallout, formatCodeBlock, formatList, mapAsideStyleToCallout } from "../markdown"
+import {
+  formatCallout,
+  formatCodeBlock,
+  formatList,
+  formatTable,
+  mapAsideStyleToCallout,
+} from "../markdown"
 import { extractTitleFromIdentifier } from "../reference/render"
 import type { ContentItem, TextFragment } from "../types"
 import type {
@@ -270,29 +276,10 @@ function renderHIGTable(
     header?: string
     rows?: ContentItem[][][]
   }
-  const rows = table.rows ?? []
-  if (rows.length === 0) return ""
-
-  const escapeCell = (s: string) => s.replace(/\|/g, "\\|").replace(/\n/g, " ").trim()
-  const renderCell = (cell: ContentItem | ContentItem[]) => {
-    const items = Array.isArray(cell) ? cell : [cell]
-    const text = renderHIGContent(items, references)
-    return escapeCell(text)
-  }
-
-  const firstRowIsHeader = table.header === "row"
-  let markdown = ""
-
-  rows.forEach((row, rowIndex) => {
-    const cells = row.map((cell) => renderCell(cell))
-    if (cells.length === 0) return
-    markdown += `| ${cells.join(" | ")} |\n`
-    if (firstRowIsHeader && rowIndex === 0) {
-      markdown += `| ${cells.map(() => "---").join(" | ")} |\n`
-    }
-  })
-
-  return markdown ? `${markdown}\n` : ""
+  const rows = (table.rows ?? []).map((row) =>
+    row.map((cell) => renderHIGContent(Array.isArray(cell) ? cell : [cell], references)),
+  )
+  return formatTable(rows, table.header === "row")
 }
 
 /**

@@ -43,6 +43,23 @@ export function formatCodeBlock(code?: string | string[], syntax?: string): stri
 }
 
 /**
+ * Format rendered cell contents as a Markdown table, escaping pipes and
+ * flattening newlines that would otherwise break a row.
+ */
+export function formatTable(rows: string[][], hasHeaderRow: boolean): string {
+  let markdown = ""
+  rows.forEach((row, index) => {
+    if (row.length === 0) return
+    const cells = row.map((cell) => cell.replace(/\|/g, "\\|").replace(/\n/g, " ").trim())
+    markdown += `| ${cells.join(" | ")} |\n`
+    if (hasHeaderRow && index === 0) {
+      markdown += `| ${cells.map(() => "---").join(" | ")} |\n`
+    }
+  })
+  return markdown ? `${markdown}\n` : ""
+}
+
+/**
  * Format rendered content as a GitHub-style callout. An optional lead becomes
  * the callout's first paragraph, ahead of the content.
  */

@@ -2,7 +2,13 @@
  * Apple Developer Reference documentation rendering functionality
  */
 
-import { formatCallout, formatCodeBlock, formatList, mapAsideStyleToCallout } from "../markdown"
+import {
+  formatCallout,
+  formatCodeBlock,
+  formatList,
+  formatTable,
+  mapAsideStyleToCallout,
+} from "../markdown"
 import type {
   AppleDocJSON,
   ContentItem,
@@ -473,27 +479,17 @@ function renderTable(
     header?: string
     rows?: ContentItem[][][] // rows[rowIndex][cellIndex] = ContentItem[]
   }
-  const rows = table.rows ?? []
-  if (rows.length === 0) return ""
-
-  const escapeCell = (s: string) => s.replace(/\|/g, "\\|").replace(/\n/g, " ").trim()
-  const renderCell = (cell: ContentItem | ContentItem[]) => {
-    const items = Array.isArray(cell) ? cell : [cell]
-    const s = renderContentArray(items, references, depth + 1, externalOrigin)
-    return escapeCell(s)
-  }
-
-  const firstRowIsHeader = table.header === "row"
-  let markdown = ""
-  rows.forEach((row, rowIndex) => {
-    const cells = row.map((c) => renderCell(c))
-    if (cells.length === 0) return
-    markdown += `| ${cells.join(" | ")} |\n`
-    if (firstRowIsHeader && rowIndex === 0) {
-      markdown += `| ${cells.map(() => "---").join(" | ")} |\n`
-    }
-  })
-  return markdown ? `${markdown}\n` : ""
+  const rows = (table.rows ?? []).map((row) =>
+    row.map((cell) =>
+      renderContentArray(
+        Array.isArray(cell) ? cell : [cell],
+        references,
+        depth + 1,
+        externalOrigin,
+      ),
+    ),
+  )
+  return formatTable(rows, table.header === "row")
 }
 
 /**
