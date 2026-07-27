@@ -485,6 +485,55 @@ describe("Render Function", () => {
       const result = await renderFromJSON(data as any, "https://test.com")
       expect(result).toContain("- First paragraph.\n  \n  Second paragraph.")
     })
+
+    it("should indent nested content under ordered list markers", async () => {
+      const data = {
+        metadata: { title: "Ordered Nested List" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [
+              {
+                type: "orderedList",
+                items: [
+                  {
+                    content: [
+                      {
+                        type: "paragraph",
+                        inlineContent: [{ type: "text", text: "First paragraph." }],
+                      },
+                      {
+                        type: "paragraph",
+                        inlineContent: [{ type: "text", text: "Second paragraph." }],
+                      },
+                      {
+                        type: "unorderedList",
+                        items: [
+                          {
+                            content: [
+                              {
+                                type: "paragraph",
+                                inlineContent: [{ type: "text", text: "Nested item" }],
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+        references: {},
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).toContain(
+        ["1. First paragraph.", "   ", "   Second paragraph.", "   - Nested item"].join("\n"),
+      )
+    })
   })
 
   describe("Tab navigator rendering", () => {

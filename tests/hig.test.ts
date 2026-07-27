@@ -464,6 +464,52 @@ describe("HIG Module", () => {
       expect(result).toContain(["- Parent item:", "  - Nested item"].join("\n"))
     })
 
+    it("should indent nested content under ordered list markers", async () => {
+      const testData = {
+        ...higGettingStartedData,
+        primaryContentSections: [
+          {
+            kind: "content" as const,
+            content: [
+              {
+                type: "orderedList",
+                items: [
+                  {
+                    content: [
+                      {
+                        type: "paragraph",
+                        inlineContent: [{ type: "text", text: "Parent item:" }],
+                      },
+                      {
+                        type: "unorderedList",
+                        items: [
+                          {
+                            content: [
+                              {
+                                type: "paragraph",
+                                inlineContent: [{ type: "text", text: "Nested item" }],
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      } as HIGPageJSON
+
+      const result = await renderHIGFromJSON(
+        testData,
+        "https://developer.apple.com/design/human-interface-guidelines/test",
+      )
+
+      expect(result).toContain(["1. Parent item:", "   - Nested item"].join("\n"))
+    })
+
     it("should render HIG tables and inline images", async () => {
       const testData = {
         ...higGettingStartedData,
