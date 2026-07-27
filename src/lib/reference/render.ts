@@ -435,7 +435,7 @@ function renderContentArray(
             depth + 1,
             externalOrigin,
           )
-          markdown += `- ${itemText.replace(/\n\n$/, "")}\n`
+          markdown += formatListItem("- ", itemText)
         }
         markdown += "\n"
       }
@@ -448,7 +448,7 @@ function renderContentArray(
             depth + 1,
             externalOrigin,
           )
-          markdown += `${index + 1}. ${itemText.replace(/\n\n$/, "")}\n`
+          markdown += formatListItem(`${index + 1}. `, itemText)
         })
         markdown += "\n"
       }
@@ -884,6 +884,28 @@ function mapAsideStyleToCallout(style: string): string {
     default:
       return "NOTE"
   }
+}
+
+/**
+ * Format rendered content as a Markdown list item, indenting continuation
+ * lines (including nested lists) under the marker.
+ */
+function formatListItem(marker: string, content: string): string {
+  const trimmed = content.replace(/\n+$/, "")
+  if (!trimmed) {
+    return `${marker}\n`
+  }
+
+  // Tighten paragraph spacing inside list items so nested lists sit under
+  // the parent item instead of appearing as sibling top-level items.
+  const lines = trimmed.replace(/\n{2,}/g, "\n").split("\n")
+  const indent = " ".repeat(marker.length)
+  const [first, ...rest] = lines
+  let result = `${marker}${first}`
+  for (const line of rest) {
+    result += `\n${line ? indent + line : ""}`
+  }
+  return `${result}\n`
 }
 
 /**

@@ -249,13 +249,13 @@ function renderContentItem(
   } else if (item.type === "unorderedList" && item.items) {
     for (const listItem of item.items) {
       const itemText = renderHIGContent(listItem.content || [], references)
-      markdown += `- ${itemText.replace(/\n\n$/, "")}\n`
+      markdown += formatListItem("- ", itemText)
     }
     markdown += "\n"
   } else if (item.type === "orderedList" && item.items) {
     item.items.forEach((listItem: ContentItem, index: number) => {
       const itemText = renderHIGContent(listItem.content || [], references)
-      markdown += `${index + 1}. ${itemText.replace(/\n\n$/, "")}\n`
+      markdown += formatListItem(`${index + 1}. `, itemText)
     })
     markdown += "\n"
   } else if (item.type === "table") {
@@ -486,6 +486,28 @@ function mapHIGAsideStyleToCallout(style: string): string {
     default:
       return "NOTE"
   }
+}
+
+/**
+ * Format rendered content as a Markdown list item, indenting continuation
+ * lines (including nested lists) under the marker.
+ */
+function formatListItem(marker: string, content: string): string {
+  const trimmed = content.replace(/\n+$/, "")
+  if (!trimmed) {
+    return `${marker}\n`
+  }
+
+  // Tighten paragraph spacing inside list items so nested lists sit under
+  // the parent item instead of appearing as sibling top-level items.
+  const lines = trimmed.replace(/\n{2,}/g, "\n").split("\n")
+  const indent = " ".repeat(marker.length)
+  const [first, ...rest] = lines
+  let result = `${marker}${first}`
+  for (const line of rest) {
+    result += `\n${line ? indent + line : ""}`
+  }
+  return `${result}\n`
 }
 
 /**

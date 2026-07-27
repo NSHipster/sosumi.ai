@@ -377,6 +377,82 @@ describe("Render Function", () => {
     })
   })
 
+  describe("List rendering", () => {
+    it("should indent nested unordered lists under their parent item", async () => {
+      const data = {
+        metadata: { title: "Nested List" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [
+              {
+                type: "unorderedList",
+                items: [
+                  {
+                    content: [
+                      {
+                        type: "paragraph",
+                        inlineContent: [
+                          {
+                            type: "text",
+                            text: "This release removes support for the following deprecated ",
+                          },
+                          { type: "codeVoice", code: "NSPersistentStore" },
+                          { type: "text", text: " option keys:" },
+                        ],
+                      },
+                      {
+                        type: "unorderedList",
+                        items: [
+                          {
+                            content: [
+                              {
+                                type: "paragraph",
+                                inlineContent: [
+                                  {
+                                    type: "codeVoice",
+                                    code: "NSPersistentStoreUbiquitousContentNameKey",
+                                  },
+                                ],
+                              },
+                            ],
+                          },
+                          {
+                            content: [
+                              {
+                                type: "paragraph",
+                                inlineContent: [
+                                  {
+                                    type: "codeVoice",
+                                    code: "NSPersistentStoreUbiquitousContentURLKey",
+                                  },
+                                ],
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+        references: {},
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com")
+      expect(result).toContain(
+        [
+          "- This release removes support for the following deprecated `NSPersistentStore` option keys:",
+          "  - `NSPersistentStoreUbiquitousContentNameKey`",
+          "  - `NSPersistentStoreUbiquitousContentURLKey`",
+        ].join("\n"),
+      )
+    })
+  })
+
   describe("Tab navigator rendering", () => {
     const tabNavigatorData = {
       metadata: { title: "NSBackgroundActivityScheduler" },
