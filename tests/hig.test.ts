@@ -707,6 +707,42 @@ describe("HIG Module", () => {
   })
 
   describe("Recursion Protection", () => {
+    it("should keep rendering inline content inside deeply nested blocks", async () => {
+      // Block nesting past the inline limit must not exhaust the inline budget,
+      // which is counted separately.
+      const nestBlocks = (depth: number): any => {
+        const paragraph = {
+          type: "paragraph",
+          inlineContent: [{ type: "text", text: `Level ${depth} text` }],
+        }
+        if (depth <= 0) {
+          return { content: [paragraph] }
+        }
+        return {
+          content: [paragraph, { type: "unorderedList", items: [nestBlocks(depth - 1)] }],
+        }
+      }
+
+      const testData = {
+        ...higGettingStartedData,
+        primaryContentSections: [
+          {
+            kind: "content" as const,
+            content: [{ type: "unorderedList", items: [nestBlocks(30)] }],
+          },
+        ],
+      } as HIGPageJSON
+
+      const result = await renderHIGFromJSON(
+        testData,
+        "https://developer.apple.com/design/human-interface-guidelines/test",
+      )
+
+      expect(result).not.toContain("[Inline content too deeply nested]")
+      expect(result).toContain("Level 0 text")
+      expect(result).toContain("Level 30 text")
+    })
+
     it("should prevent infinite loops with extremely deep content nesting", async () => {
       const createDeepContent = (depth: number): any => {
         if (depth <= 0) {

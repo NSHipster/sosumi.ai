@@ -6,7 +6,11 @@
 /** Depth limit guarding against cyclic or pathologically nested block content. */
 export const MAX_CONTENT_DEPTH = 50
 
-/** Depth limit guarding against cyclic or pathologically nested inline content. */
+/**
+ * Depth limit guarding against cyclic or pathologically nested inline content.
+ * Counted independently of block nesting, since inline content recurses on its
+ * own stack.
+ */
 export const MAX_INLINE_DEPTH = 20
 
 /** Emitted in place of block content that exceeds `MAX_CONTENT_DEPTH`. */

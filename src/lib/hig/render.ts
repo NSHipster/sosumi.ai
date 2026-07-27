@@ -253,7 +253,9 @@ function renderContentItem(
     markdown += `${hashes} ${item.text}\n\n`
   } else if (item.type === "paragraph") {
     if (item.inlineContent) {
-      const text = renderHIGInlineContent(item.inlineContent, references, depth)
+      // Inline nesting is counted separately from block nesting, so a
+      // paragraph's inline content starts a fresh depth budget.
+      const text = renderHIGInlineContent(item.inlineContent, references)
       markdown += `${text}\n\n`
     }
   } else if (item.type === "codeListing") {

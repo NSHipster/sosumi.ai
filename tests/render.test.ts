@@ -1734,6 +1734,40 @@ describe("Render Function", () => {
   })
 
   describe("Recursion Protection and Depth Limiting", () => {
+    it("should keep rendering inline content inside deeply nested blocks", async () => {
+      // Block nesting past the inline limit must not exhaust the inline budget,
+      // which is counted separately.
+      const nestBlocks = (depth: number): any => {
+        const paragraph = {
+          type: "paragraph",
+          inlineContent: [{ type: "text", text: `Level ${depth} text` }],
+        }
+        if (depth <= 0) {
+          return { content: [paragraph] }
+        }
+        return {
+          content: [paragraph, { type: "unorderedList", items: [nestBlocks(depth - 1)] }],
+        }
+      }
+
+      const data = {
+        metadata: { title: "Deep Blocks" },
+        primaryContentSections: [
+          {
+            kind: "content",
+            content: [{ type: "unorderedList", items: [nestBlocks(30)] }],
+          },
+        ],
+        references: {},
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com")
+
+      expect(result).not.toContain("[Inline content too deeply nested]")
+      expect(result).toContain("Level 0 text")
+      expect(result).toContain("Level 30 text")
+    })
+
     it("should prevent infinite loops with extremely deep content nesting", async () => {
       // Create extremely deep nesting that would cause stack overflow without protection
       const createExtremelyDeepContent = (depth: number): any => {

@@ -417,7 +417,9 @@ function renderContentArray(
       markdown += `${hashes} ${item.text}\n\n`
     } else if (item.type === "paragraph") {
       if (item.inlineContent) {
-        const text = renderInlineContent(item.inlineContent, references, depth, externalOrigin)
+        // Inline nesting is counted separately from block nesting, so a
+        // paragraph's inline content starts a fresh depth budget.
+        const text = renderInlineContent(item.inlineContent, references, 0, externalOrigin)
         markdown += `${text}\n\n`
       }
     } else if (item.type === "codeListing") {
