@@ -376,6 +376,31 @@ describe("HIG Module", () => {
       expect(result).toContain('```swift\nprint("Hello, world!")\n```')
     })
 
+    it("should normalize DocC's 'occ' syntax to 'objc'", async () => {
+      const testData = {
+        ...higGettingStartedData,
+        primaryContentSections: [
+          {
+            kind: "content" as const,
+            content: [
+              {
+                type: "codeListing",
+                code: ["NSButton *button;"],
+                syntax: "occ",
+              },
+            ],
+          },
+        ],
+      } as HIGPageJSON
+
+      const result = await renderHIGFromJSON(
+        testData,
+        "https://developer.apple.com/design/human-interface-guidelines/test",
+      )
+
+      expect(result).toContain("```objc\nNSButton *button;\n```")
+    })
+
     it("should handle unordered and ordered lists", async () => {
       const testData = {
         ...higGettingStartedData,
@@ -416,6 +441,98 @@ describe("HIG Module", () => {
 
       expect(result).toContain("- First item")
       expect(result).toContain("- Second item")
+    })
+
+    it("should indent nested unordered lists under their parent item", async () => {
+      const testData = {
+        ...higGettingStartedData,
+        primaryContentSections: [
+          {
+            kind: "content" as const,
+            content: [
+              {
+                type: "unorderedList",
+                items: [
+                  {
+                    content: [
+                      {
+                        type: "paragraph",
+                        inlineContent: [{ type: "text", text: "Parent item:" }],
+                      },
+                      {
+                        type: "unorderedList",
+                        items: [
+                          {
+                            content: [
+                              {
+                                type: "paragraph",
+                                inlineContent: [{ type: "text", text: "Nested item" }],
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      } as HIGPageJSON
+
+      const result = await renderHIGFromJSON(
+        testData,
+        "https://developer.apple.com/design/human-interface-guidelines/test",
+      )
+
+      expect(result).toContain(["- Parent item:", "  - Nested item"].join("\n"))
+    })
+
+    it("should indent nested content under ordered list markers", async () => {
+      const testData = {
+        ...higGettingStartedData,
+        primaryContentSections: [
+          {
+            kind: "content" as const,
+            content: [
+              {
+                type: "orderedList",
+                items: [
+                  {
+                    content: [
+                      {
+                        type: "paragraph",
+                        inlineContent: [{ type: "text", text: "Parent item:" }],
+                      },
+                      {
+                        type: "unorderedList",
+                        items: [
+                          {
+                            content: [
+                              {
+                                type: "paragraph",
+                                inlineContent: [{ type: "text", text: "Nested item" }],
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      } as HIGPageJSON
+
+      const result = await renderHIGFromJSON(
+        testData,
+        "https://developer.apple.com/design/human-interface-guidelines/test",
+      )
+
+      expect(result).toContain(["1. Parent item:", "   - Nested item"].join("\n"))
     })
 
     it("should render HIG tables and inline images", async () => {
@@ -586,6 +703,117 @@ describe("HIG Module", () => {
       expect(result).toContain(
         "[iOS app icon](https://docs-assets.developer.apple.com/published/app-icons-animation.mp4)",
       )
+    })
+  })
+
+  describe("Recursion Protection", () => {
+    it("should keep rendering inline content inside deeply nested blocks", async () => {
+      // Block nesting past the inline limit must not exhaust the inline budget,
+      // which is counted separately.
+      const nestBlocks = (depth: number): any => {
+        const paragraph = {
+          type: "paragraph",
+          inlineContent: [{ type: "text", text: `Level ${depth} text` }],
+        }
+        if (depth <= 0) {
+          return { content: [paragraph] }
+        }
+        return {
+          content: [paragraph, { type: "unorderedList", items: [nestBlocks(depth - 1)] }],
+        }
+      }
+
+      const testData = {
+        ...higGettingStartedData,
+        primaryContentSections: [
+          {
+            kind: "content" as const,
+            content: [{ type: "unorderedList", items: [nestBlocks(30)] }],
+          },
+        ],
+      } as HIGPageJSON
+
+      const result = await renderHIGFromJSON(
+        testData,
+        "https://developer.apple.com/design/human-interface-guidelines/test",
+      )
+
+      expect(result).not.toContain("[Inline content too deeply nested]")
+      expect(result).toContain("Level 0 text")
+      expect(result).toContain("Level 30 text")
+    })
+
+    it("should prevent infinite loops with extremely deep content nesting", async () => {
+      const createDeepContent = (depth: number): any => {
+        if (depth <= 0) {
+          return {
+            type: "paragraph",
+            inlineContent: [{ type: "text", text: "Deep content" }],
+          }
+        }
+
+        return {
+          type: "aside",
+          style: "note",
+          content: [createDeepContent(depth - 1)],
+        }
+      }
+
+      const testData = {
+        ...higGettingStartedData,
+        primaryContentSections: [
+          {
+            kind: "content" as const,
+            content: [createDeepContent(100)],
+          },
+        ],
+      } as HIGPageJSON
+
+      const startTime = Date.now()
+      const result = await renderHIGFromJSON(
+        testData,
+        "https://developer.apple.com/design/human-interface-guidelines/test",
+      )
+
+      expect(Date.now() - startTime).toBeLessThan(1000)
+      expect(result).toContain("[Content too deeply nested]")
+    })
+
+    it("should prevent infinite loops with extremely deep inline content nesting", async () => {
+      const createDeepInline = (depth: number): any => {
+        if (depth <= 0) {
+          return { type: "text", text: "Deep inline text" }
+        }
+
+        return {
+          type: depth % 2 === 0 ? "emphasis" : "strong",
+          inlineContent: [createDeepInline(depth - 1)],
+        }
+      }
+
+      const testData = {
+        ...higGettingStartedData,
+        primaryContentSections: [
+          {
+            kind: "content" as const,
+            content: [
+              {
+                type: "paragraph",
+                inlineContent: [createDeepInline(50)],
+              },
+            ],
+          },
+        ],
+      } as HIGPageJSON
+
+      const startTime = Date.now()
+      const result = await renderHIGFromJSON(
+        testData,
+        "https://developer.apple.com/design/human-interface-guidelines/test",
+      )
+
+      expect(Date.now() - startTime).toBeLessThan(1000)
+      expect(result).toContain("[Inline content too deeply nested]")
     })
   })
 

@@ -2,6 +2,18 @@
  * Apple Developer Reference documentation rendering functionality
  */
 
+import {
+  CONTENT_TOO_DEEP,
+  formatCallout,
+  formatCodeBlock,
+  formatList,
+  formatTable,
+  INLINE_CONTENT_TOO_DEEP,
+  MAX_CONTENT_DEPTH,
+  MAX_INLINE_DEPTH,
+  mapAsideStyleToCallout,
+} from "../markdown"
+import { extractTitleFromIdentifier } from "../url"
 import type {
   AppleDocJSON,
   ContentItem,
@@ -236,14 +248,6 @@ function generateBreadcrumbs(sourceUrl: string, externalOrigin?: string): string
 }
 
 /**
- * Map a DocC language code to a Markdown code-fence identifier. DocC uses
- * `occ` for Objective-C internally, but Markdown highlighters expect `objc`.
- */
-function normalizeFenceLanguage(syntax: string): string {
-  return syntax === "occ" ? "objc" : syntax
-}
-
-/**
  * Tab titles DocC uses for language-variant code examples. Used to detect
  * whether a `tabNavigator` is a language switch (so we can default to Swift)
  * versus some other tabbed content we should leave alone.
@@ -399,9 +403,9 @@ function renderContentArray(
   externalOrigin?: string,
 ): string {
   // Prevent infinite recursion by limiting depth
-  if (depth > 50) {
+  if (depth > MAX_CONTENT_DEPTH) {
     console.warn("Maximum recursion depth reached in renderContentArray")
-    return "[Content too deeply nested]"
+    return CONTENT_TOO_DEEP
   }
 
   let markdown = ""
@@ -413,54 +417,29 @@ function renderContentArray(
       markdown += `${hashes} ${item.text}\n\n`
     } else if (item.type === "paragraph") {
       if (item.inlineContent) {
-        const text = renderInlineContent(item.inlineContent, references, depth, externalOrigin)
+        // Inline nesting is counted separately from block nesting, so a
+        // paragraph's inline content starts a fresh depth budget.
+        const text = renderInlineContent(item.inlineContent, references, 0, externalOrigin)
         markdown += `${text}\n\n`
       }
     } else if (item.type === "codeListing") {
-      let code = ""
-      if (Array.isArray(item.code)) {
-        code = item.code.join("\n")
-      } else {
-        code = String(item.code || "")
-      }
-      const syntax = normalizeFenceLanguage(item.syntax || "swift")
-
-      markdown += `\`\`\`${syntax}\n${code}\n\`\`\`\n\n`
-    } else if (item.type === "unorderedList") {
+      markdown += formatCodeBlock(item.code, item.syntax)
+    } else if (item.type === "unorderedList" || item.type === "orderedList") {
       if (item.items) {
-        for (const listItem of item.items) {
-          const itemText = renderContentArray(
-            listItem.content || [],
-            references,
-            depth + 1,
-            externalOrigin,
-          )
-          markdown += `- ${itemText.replace(/\n\n$/, "")}\n`
-        }
-        markdown += "\n"
-      }
-    } else if (item.type === "orderedList") {
-      if (item.items) {
-        item.items.forEach((listItem: ContentItem, index: number) => {
-          const itemText = renderContentArray(
-            listItem.content || [],
-            references,
-            depth + 1,
-            externalOrigin,
-          )
-          markdown += `${index + 1}. ${itemText.replace(/\n\n$/, "")}\n`
-        })
-        markdown += "\n"
+        markdown += formatList(
+          item.items.map((listItem) =>
+            renderContentArray(listItem.content || [], references, depth + 1, externalOrigin),
+          ),
+          item.type === "orderedList",
+        )
       }
     } else if (item.type === "aside") {
       const style = item.style || "note"
-      const calloutType = mapAsideStyleToCallout(style)
       const asideContent = item.content
         ? renderContentArray(item.content, references, depth + 1, externalOrigin)
         : ""
-      const cleanContent = asideContent.trim().replace(/\n/g, "\n> ")
-      const deprecatedLabel = style.toLowerCase() === "deprecated" ? "**Deprecated**\n>\n> " : ""
-      markdown += `> [!${calloutType}]\n> ${deprecatedLabel}${cleanContent}\n\n`
+      const lead = style.toLowerCase() === "deprecated" ? DEPRECATED_LEAD : undefined
+      markdown += formatCallout(mapAsideStyleToCallout(style), asideContent, lead)
     } else if (item.type === "table") {
       markdown += renderTable(item, references, depth, externalOrigin)
     } else if (item.type === "tabNavigator" && item.tabs?.length) {
@@ -507,27 +486,17 @@ function renderTable(
     header?: string
     rows?: ContentItem[][][] // rows[rowIndex][cellIndex] = ContentItem[]
   }
-  const rows = table.rows ?? []
-  if (rows.length === 0) return ""
-
-  const escapeCell = (s: string) => s.replace(/\|/g, "\\|").replace(/\n/g, " ").trim()
-  const renderCell = (cell: ContentItem | ContentItem[]) => {
-    const items = Array.isArray(cell) ? cell : [cell]
-    const s = renderContentArray(items, references, depth + 1, externalOrigin)
-    return escapeCell(s)
-  }
-
-  const firstRowIsHeader = table.header === "row"
-  let markdown = ""
-  rows.forEach((row, rowIndex) => {
-    const cells = row.map((c) => renderCell(c))
-    if (cells.length === 0) return
-    markdown += `| ${cells.join(" | ")} |\n`
-    if (firstRowIsHeader && rowIndex === 0) {
-      markdown += `| ${cells.map(() => "---").join(" | ")} |\n`
-    }
-  })
-  return markdown ? `${markdown}\n` : ""
+  const rows = (table.rows ?? []).map((row) =>
+    row.map((cell) =>
+      renderContentArray(
+        Array.isArray(cell) ? cell : [cell],
+        references,
+        depth + 1,
+        externalOrigin,
+      ),
+    ),
+  )
+  return formatTable(rows, table.header === "row")
 }
 
 /**
@@ -540,9 +509,9 @@ function renderInlineContent(
   externalOrigin?: string,
 ): string {
   // Prevent infinite recursion by limiting depth
-  if (depth > 20) {
+  if (depth > MAX_INLINE_DEPTH) {
     console.warn("Maximum recursion depth reached in renderInlineContent")
-    return "[Inline content too deeply nested]"
+    return INLINE_CONTENT_TOO_DEEP
   }
 
   return inlineContent
@@ -816,6 +785,9 @@ function getDeprecationMessageFromPlatforms(platforms?: Platform[]): string | nu
 
 const DEFAULT_DEPRECATION_MESSAGE = "This symbol is deprecated."
 
+/** Leading paragraph for callouts that flag deprecated APIs. */
+const DEPRECATED_LEAD = "**Deprecated**"
+
 /**
  * Resolve deprecation notice text from DocC JSON (without rendering the callout).
  */
@@ -862,28 +834,7 @@ function renderDeprecationNotice(
     return ""
   }
 
-  const quotedBody = body.replace(/\n/g, "\n> ")
-  return `> [!WARNING]\n> **Deprecated**\n>\n> ${quotedBody}\n\n`
-}
-
-/**
- * Map aside style to GitHub-style callout
- */
-function mapAsideStyleToCallout(style: string): string {
-  switch (style.toLowerCase()) {
-    case "warning":
-      return "WARNING"
-    case "important":
-      return "IMPORTANT"
-    case "caution":
-      return "CAUTION"
-    case "tip":
-      return "TIP"
-    case "deprecated":
-      return "WARNING"
-    default:
-      return "NOTE"
-  }
+  return formatCallout("WARNING", body, DEPRECATED_LEAD)
 }
 
 /**
@@ -928,35 +879,4 @@ function rewriteDocumentationPath(path: string | undefined, externalOrigin?: str
   }
 
   return `/external/${externalOrigin}${path}`
-}
-
-/**
- * Extract title from identifier
- */
-export function extractTitleFromIdentifier(identifier: string): string {
-  const parts = identifier.split("/")
-  const lastPart = parts[parts.length - 1]
-
-  // Handle disambiguation suffixes (e.g., "body-8kl5o" -> "body", "init(exactly:)-63925" -> "init(exactly:)")
-  const disambiguationMatch = lastPart.match(/^(.+?)(?:-\w+)?$/)
-  if (disambiguationMatch) {
-    const baseName = disambiguationMatch[1]
-
-    // If it looks like a method signature (contains parentheses), preserve it
-    if (baseName.includes("(") && baseName.includes(")")) {
-      return baseName
-    }
-
-    // For simple identifiers, convert camelCase to readable format
-    return baseName
-      .replace(/([a-z])([A-Z])/g, "$1 $2")
-      .replace(/\s+/g, " ")
-      .trim()
-  }
-
-  // Fallback: convert camelCase to readable format
-  return lastPart
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/\s+/g, " ")
-    .trim()
 }
