@@ -251,13 +251,16 @@ To enable signing on your own deployment,
 provide an Ed25519 private key (as a JSON Web Key)
 via the `WEB_BOT_AUTH_KEY` secret.
 
-Generate a key (the JSON Web Key is the format `WEB_BOT_AUTH_KEY` expects):
+Generate a key (the JSON Web Key is the format `WEB_BOT_AUTH_KEY` expects),
+then paste the printed value when `wrangler secret put` prompts for it:
 
 ```bash
 node -e 'crypto.subtle.generateKey({name:"Ed25519"},true,["sign","verify"]).then(async k=>{const j=await crypto.subtle.exportKey("jwk",k.privateKey);console.log(JSON.stringify({kty:j.kty,crv:j.crv,x:j.x,d:j.d}))})'
+npx wrangler secret put WEB_BOT_AUTH_KEY
 ```
 
-Then set it as the secret (piping avoids writing the key to disk or shell history):
+Or generate and upload in a single step,
+which avoids writing the key to disk or shell history:
 
 ```bash
 node -e 'crypto.subtle.generateKey({name:"Ed25519"},true,["sign","verify"]).then(async k=>{const j=await crypto.subtle.exportKey("jwk",k.privateKey);console.log(JSON.stringify({kty:j.kty,crv:j.crv,x:j.x,d:j.d}))})' \
