@@ -32,6 +32,11 @@ import {
 } from "./lib/skill"
 import { generateAppleDocUrl, isValidAppleDocUrl, normalizeDocumentationPath } from "./lib/url"
 import { fetchVideoTranscriptMarkdown, TranscriptNotFoundError } from "./lib/video"
+import {
+  configureWebBotAuth,
+  DIRECTORY_PATH as WEB_BOT_AUTH_DIRECTORY_PATH,
+  webBotAuthDirectory,
+} from "./lib/webbotauth"
 import { buildWebMcpManifest } from "./lib/webmcp"
 
 interface Env {
@@ -39,11 +44,16 @@ interface Env {
   NODE_ENV: string
   EXTERNAL_DOC_HOST_ALLOWLIST?: string
   EXTERNAL_DOC_HOST_BLOCKLIST?: string
+  WEB_BOT_AUTH_KEY?: string
+  SIGNATURE_AGENT?: string
 }
 
 const app = new Hono<{ Bindings: Env }>()
 
 app.use("*", async (c, next) => {
+  // Prime Web Bot Auth signing before any route or outbound fetch runs.
+  configureWebBotAuth(c.env)
+
   await next()
 
   // Security headers
@@ -156,6 +166,18 @@ app.all(`/.well-known/agent-skills/${SKILL_NAME}/SKILL.md`, async (c) => {
   return new Response(skill.bytes, {
     status: 200,
     headers: skillHeaders,
+  })
+})
+
+app.get(WEB_BOT_AUTH_DIRECTORY_PATH, async (c) => {
+  const directory = await webBotAuthDirectory(c.req.url)
+  if (!directory) {
+    throw new HTTPException(404, { message: "Web Bot Auth key directory is not configured." })
+  }
+
+  return c.json(directory.body, 200, {
+    "Access-Control-Allow-Origin": "*",
+    ...directory.headers,
   })
 })
 

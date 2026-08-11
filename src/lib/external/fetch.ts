@@ -1,5 +1,6 @@
 import { renderFromJSON } from "../reference"
 import type { AppleDocJSON } from "../types"
+import { webBotAuthHeaders } from "../webbotauth"
 import {
   assertExternalDocumentationAccess,
   ExternalAccessError,
@@ -42,6 +43,7 @@ export async function fetchExternalDocCJSON(
     headers: {
       "User-Agent": EXTERNAL_DOC_USER_AGENT,
       Accept: "application/json",
+      ...(await webBotAuthHeaders("GET", jsonUrl)),
     },
   })
 
@@ -88,6 +90,7 @@ export async function fetchRobotsPolicy(
     headers: {
       "User-Agent": userAgent,
       Accept: "text/plain, text/*;q=0.9, */*;q=0.1",
+      ...(await webBotAuthHeaders("GET", robotsUrl)),
     },
   })
 
