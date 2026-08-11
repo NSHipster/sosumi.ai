@@ -1,0 +1,18 @@
+# Web Bot Auth signing key (Ed25519 private key as a JSON Web Key).
+#
+# Generate one with:
+#   openssl genpkey -algorithm ed25519 -out ed25519.pem
+# then convert it to a JWK (kty=OKP, crv=Ed25519, with "x" and "d"),
+# or generate a JWK directly with WebCrypto.
+# The public half is derived automatically
+# and published at /.well-known/http-message-signatures-directory.
+#
+# In production, set this as a secret instead of a plaintext var:
+#   npx wrangler secret put WEB_BOT_AUTH_KEY
+WEB_BOT_AUTH_KEY='{"kty":"OKP","crv":"Ed25519","x":"...","d":"..."}'
+
+# Optional.
+# Origin advertised in the Signature-Agent header
+# and hosting the key directory.
+# Defaults to https://sosumi.ai.
+# SIGNATURE_AGENT=https://sosumi.ai

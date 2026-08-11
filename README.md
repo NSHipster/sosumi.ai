@@ -234,6 +234,49 @@ with two environment variables (both newline-delimited):
 > Hostname-based private-network checks cannot fully prevent DNS rebinding.
 > Set an explicit `EXTERNAL_DOC_HOST_ALLOWLIST` in production.
 
+### Web Bot Auth
+
+Sosumi identifies itself
+when it fetches from external Swift-DocC hosts on a user's behalf
+using [Web Bot Auth](https://datatracker.ietf.org/wg/webbotauth/about/),
+so those hosts can cryptographically verify the traffic.
+
+- The public key set is published at
+  [`/.well-known/http-message-signatures-directory`](https://sosumi.ai/.well-known/http-message-signatures-directory).
+- Requests to external hosts are signed
+  with an Ed25519 [HTTP Message Signature (RFC 9421)](https://www.rfc-editor.org/rfc/rfc9421)
+  and carry `Signature-Agent`, `Signature-Input`, and `Signature` headers.
+
+To enable signing on your own deployment,
+provide an Ed25519 private key (as a JSON Web Key)
+via the `WEB_BOT_AUTH_KEY` secret.
+
+Generate a key (the JSON Web Key is the format `WEB_BOT_AUTH_KEY` expects),
+then paste the printed value when `wrangler secret put` prompts for it:
+
+```bash
+node -e 'crypto.subtle.generateKey({name:"Ed25519"},true,["sign","verify"]).then(async k=>{const j=await crypto.subtle.exportKey("jwk",k.privateKey);console.log(JSON.stringify({kty:j.kty,crv:j.crv,x:j.x,d:j.d}))})'
+npx wrangler secret put WEB_BOT_AUTH_KEY
+```
+
+Or generate and upload in a single step,
+which avoids writing the key to disk or shell history:
+
+```bash
+node -e 'crypto.subtle.generateKey({name:"Ed25519"},true,["sign","verify"]).then(async k=>{const j=await crypto.subtle.exportKey("jwk",k.privateKey);console.log(JSON.stringify({kty:j.kty,crv:j.crv,x:j.x,d:j.d}))})' \
+  | npx wrangler secret put WEB_BOT_AUTH_KEY
+```
+
+The matching public key and its `kid` (JWK thumbprint) are derived automatically,
+so no key material lives in the repository.
+Set the optional `SIGNATURE_AGENT` var to override the advertised origin
+(defaults to `https://sosumi.ai`).
+When no key is configured, requests are simply sent unsigned.
+
+Cloudflare provides
+[built-in verification](https://developers.cloudflare.com/bots/reference/bot-verification/web-bot-auth/)
+for these signatures.
+
 ## Development
 
 ### Testing
