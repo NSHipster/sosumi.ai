@@ -5,6 +5,7 @@ import { cache } from "hono/cache"
 import { cors } from "hono/cors"
 import { HTTPException } from "hono/http-exception"
 import { trimTrailingSlash } from "hono/trailing-slash"
+import { buildAgentCard } from "./lib/a2a"
 import {
   decodeExternalTargetPath,
   ExternalAccessError,
@@ -66,7 +67,8 @@ app.use("*", async (c, next) => {
       "Link",
       [
         '</.well-known/api-catalog>; rel="api-catalog"',
-        '</.well-known/mcp/server-card.json>; rel="service-desc"',
+        '</.well-known/agent-card.json>; rel="service-desc"; type="application/json"',
+        '</.well-known/mcp/server-card.json>; rel="service-desc"; type="application/json"',
         '</SKILL.md>; rel="service-doc"',
         '</llms.txt>; rel="alternate"; type="text/markdown"',
       ].join(", "),
@@ -215,6 +217,15 @@ app.get("/.well-known/mcp/server-card.json", (c) => {
       "Content-Type": "application/json; charset=utf-8",
     },
   )
+})
+
+app.get("/.well-known/agent-card.json", (c) => {
+  const origin = new URL(c.req.url).origin
+
+  return c.json(buildAgentCard(origin), 200, {
+    ...discoveryHeaders,
+    "Content-Type": "application/json; charset=utf-8",
+  })
 })
 
 app.get("/webmcp/manifest.json", (c) =>
