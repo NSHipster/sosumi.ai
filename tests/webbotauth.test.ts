@@ -112,3 +112,33 @@ describe("Web Bot Auth request signing", () => {
     expect(await webBotAuthHeaders("GET", "https://example.com/data.json")).toEqual({})
   })
 })
+
+describe("Web Bot Auth configuration validation", () => {
+  it("fails closed on a key missing the private `d` parameter", async () => {
+    // A public-only JWK cannot sign, so it must not be published or used.
+    configureWebBotAuth({ WEB_BOT_AUTH_KEY: JSON.stringify(TEST_PUBLIC_JWK) })
+    expect(await webBotAuthDirectory("https://sosumi.ai/")).toBeNull()
+    expect(await webBotAuthHeaders("GET", "https://example.com/data.json")).toEqual({})
+  })
+
+  it("fails closed on a non-Ed25519 key", async () => {
+    configureWebBotAuth({
+      WEB_BOT_AUTH_KEY: JSON.stringify({ ...TEST_PRIVATE_JWK, crv: "X25519" }),
+    })
+    expect(await webBotAuthDirectory("https://sosumi.ai/")).toBeNull()
+  })
+
+  it("fails closed on malformed JSON", async () => {
+    configureWebBotAuth({ WEB_BOT_AUTH_KEY: "not-json" })
+    expect(await webBotAuthHeaders("GET", "https://example.com/data.json")).toEqual({})
+  })
+
+  it("recovers once a valid key is configured after a bad one", async () => {
+    configureWebBotAuth({ WEB_BOT_AUTH_KEY: "not-json" })
+    expect(await webBotAuthHeaders("GET", "https://example.com/data.json")).toEqual({})
+
+    configureWebBotAuth({ WEB_BOT_AUTH_KEY: JSON.stringify(TEST_PRIVATE_JWK) })
+    const headers = await webBotAuthHeaders("GET", "https://example.com/data.json")
+    expect(headers.Signature).toBeTruthy()
+  })
+})

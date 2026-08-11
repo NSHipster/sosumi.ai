@@ -99,8 +99,45 @@ export function configureWebBotAuth(env: WebBotAuthEnv): void {
   cache = { key, agent, config: buildConfig(key, agent) }
 }
 
+interface Ed25519PrivateJwk {
+  kty: "OKP"
+  crv: "Ed25519"
+  x: string
+  d: string
+}
+
+/**
+ * Parse and validate the signing secret as an Ed25519 OKP private JWK.
+ * Fails closed on anything malformed
+ * so a misconfigured `WEB_BOT_AUTH_KEY` never yields a broken directory key
+ * or unverifiable signatures.
+ */
+function parseSigningJwk(key: string): Ed25519PrivateJwk {
+  let jwk: JsonWebKey
+  try {
+    jwk = JSON.parse(key) as JsonWebKey
+  } catch (error) {
+    throw new Error(`WEB_BOT_AUTH_KEY is not valid JSON: ${(error as Error).message}`)
+  }
+
+  if (
+    jwk.kty !== "OKP" ||
+    jwk.crv !== "Ed25519" ||
+    typeof jwk.x !== "string" ||
+    jwk.x.length === 0 ||
+    typeof jwk.d !== "string" ||
+    jwk.d.length === 0
+  ) {
+    throw new Error(
+      "WEB_BOT_AUTH_KEY must be an Ed25519 private JSON Web Key (kty=OKP, crv=Ed25519, with x and d).",
+    )
+  }
+
+  return { kty: jwk.kty, crv: jwk.crv, x: jwk.x, d: jwk.d }
+}
+
 async function buildConfig(key: string, agent: string): Promise<WebBotAuthConfig> {
-  const jwk = JSON.parse(key) as JsonWebKey
+  const jwk = parseSigningJwk(key)
   const signer = await signerFromJWK(jwk)
   const kid = await jwkToKeyID(jwk, helpers.WEBCRYPTO_SHA256, helpers.BASE64URL_DECODE)
 
@@ -117,14 +154,21 @@ async function buildConfig(key: string, agent: string): Promise<WebBotAuthConfig
 }
 
 async function currentConfig(): Promise<WebBotAuthConfig | null> {
-  if (!cache) {
+  const entry = cache
+  if (!entry) {
     return null
   }
 
   try {
-    return await cache.config
+    return await entry.config
   } catch (error) {
     console.error("web-bot-auth: failed to load signing key", error)
+    // Drop the failed config so the next request rebuilds it,
+    // rather than serving the cached rejection until the isolate restarts.
+    // Guard against clobbering a newer config set by a concurrent reconfigure.
+    if (cache === entry) {
+      cache = null
+    }
     return null
   }
 }
