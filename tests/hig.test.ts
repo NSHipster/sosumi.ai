@@ -604,6 +604,151 @@ describe("HIG Module", () => {
       )
     })
 
+    it("should render every tab of a HIG tab navigator", async () => {
+      const tabTable = (style: string, size: string) => ({
+        type: "table",
+        header: "row",
+        rows: [
+          [
+            [{ type: "paragraph", inlineContent: [{ type: "text", text: "Style" }] }],
+            [{ type: "paragraph", inlineContent: [{ type: "text", text: "Size (points)" }] }],
+          ],
+          [
+            [{ type: "paragraph", inlineContent: [{ type: "text", text: style }] }],
+            [{ type: "paragraph", inlineContent: [{ type: "text", text: size }] }],
+          ],
+        ],
+      })
+
+      const testData = {
+        ...higGettingStartedData,
+        primaryContentSections: [
+          {
+            kind: "content" as const,
+            content: [
+              {
+                type: "tabNavigator",
+                tabs: [
+                  {
+                    title: "xSmall",
+                    content: [
+                      { type: "heading", level: 4, anchor: "xSmall", text: "xSmall" },
+                      tabTable("Large Title", "31"),
+                    ],
+                  },
+                  {
+                    title: "Large (default)",
+                    content: [
+                      {
+                        type: "heading",
+                        level: 4,
+                        anchor: "Large-default",
+                        text: "Large (default)",
+                      },
+                      tabTable("Large Title", "34"),
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      } as HIGPageJSON
+
+      const result = await renderHIGFromJSON(
+        testData,
+        "https://developer.apple.com/design/human-interface-guidelines/typography",
+      )
+
+      expect(result).toContain("#### xSmall")
+      expect(result).toContain("| Large Title | 31 |")
+      expect(result).toContain("#### Large (default)")
+      expect(result).toContain("| Large Title | 34 |")
+      // The tabs already lead with their own headings, so no label is repeated.
+      expect(result).not.toContain("**xSmall**")
+    })
+
+    it("should label HIG tabs that don't lead with a heading", async () => {
+      const testData = {
+        ...higGettingStartedData,
+        primaryContentSections: [
+          {
+            kind: "content" as const,
+            content: [
+              {
+                type: "tabNavigator",
+                tabs: [
+                  {
+                    title: "SF Pro",
+                    content: [
+                      { type: "paragraph", inlineContent: [{ type: "text", text: "Neutral" }] },
+                    ],
+                  },
+                  {
+                    title: "New York",
+                    content: [
+                      { type: "paragraph", inlineContent: [{ type: "text", text: "Serif" }] },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      } as HIGPageJSON
+
+      const result = await renderHIGFromJSON(
+        testData,
+        "https://developer.apple.com/design/human-interface-guidelines/typography",
+      )
+
+      expect(result).toContain("**SF Pro**\n\nNeutral")
+      expect(result).toContain("**New York**\n\nSerif")
+    })
+
+    it("should keep the HIG tab label when the tab leads with an unrelated heading", async () => {
+      const testData = {
+        ...higGettingStartedData,
+        primaryContentSections: [
+          {
+            kind: "content" as const,
+            content: [
+              {
+                type: "tabNavigator",
+                tabs: [
+                  {
+                    title: "Small",
+                    content: [
+                      { type: "heading", level: 4, text: "Small (default 38mm)" },
+                      { type: "paragraph", inlineContent: [{ type: "text", text: "Compact" }] },
+                    ],
+                  },
+                  {
+                    title: "Large",
+                    content: [
+                      { type: "heading", level: 4, text: "Overview" },
+                      { type: "paragraph", inlineContent: [{ type: "text", text: "Roomy" }] },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      } as HIGPageJSON
+
+      const result = await renderHIGFromJSON(
+        testData,
+        "https://developer.apple.com/design/human-interface-guidelines/typography",
+      )
+
+      // A heading that repeats the title stands in for the label.
+      expect(result).not.toContain("**Small**")
+      expect(result).toContain("#### Small (default 38mm)\n\nCompact")
+      // An unrelated heading does not, so the title is kept.
+      expect(result).toContain("**Large**\n\n#### Overview\n\nRoomy")
+    })
+
     it("should render HIG asides and row columns", async () => {
       const testData = {
         ...higGettingStartedData,

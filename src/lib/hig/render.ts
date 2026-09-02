@@ -269,6 +269,8 @@ function renderContentItem(
     markdown += renderHIGTable(item, references, depth)
   } else if (item.type === "aside") {
     markdown += renderHIGAside(item, references, depth)
+  } else if (item.type === "tabNavigator") {
+    markdown += renderHIGTabNavigator(item, references, depth)
   } else if (item.type === "row") {
     markdown += renderHIGRow(item, references, depth)
   } else if (item.type === "video") {
@@ -309,6 +311,43 @@ function renderHIGAside(
   const rawType = (aside.style || aside.name || "note").toLowerCase()
   const asideContent = item.content ? renderHIGContent(item.content, references, depth + 1) : ""
   return formatCallout(mapAsideStyleToCallout(rawType), asideContent)
+}
+
+/**
+ * Render a HIG tabNavigator by flattening its tabs into a sequence.
+ * Only one tab is visible at a time on the web,
+ * so rendering them all keeps the content of every tab
+ * (such as the per-Dynamic Type size tables on the Typography page).
+ */
+function renderHIGTabNavigator(
+  item: ContentItem,
+  references: Record<string, HIGReference | HIGImageReference | HIGExternalReference>,
+  depth: number = 0,
+): string {
+  const tabs = item.tabs ?? []
+  if (tabs.length === 0) return ""
+
+  let markdown = ""
+  for (const tab of tabs) {
+    // Tabs usually repeat their title as a heading in their own content,
+    // so only add a label when the title would otherwise be lost.
+    // A leading heading only stands in for the label when it repeats the title,
+    // possibly with a qualifier, as in "Small" and "Small (default 38mm)".
+    const label = tab.title?.trim()
+    const first = tab.content?.[0]
+    const leadingHeading = first?.type === "heading" ? (first.text ?? "").trim() : undefined
+    const headingRepeatsTitle =
+      label !== undefined &&
+      leadingHeading !== undefined &&
+      leadingHeading.toLowerCase().startsWith(label.toLowerCase())
+    if (label && !headingRepeatsTitle) {
+      markdown += `**${label}**\n\n`
+    }
+    if (tab.content?.length) {
+      markdown += renderHIGContent(tab.content, references, depth + 1)
+    }
+  }
+  return markdown
 }
 
 /**
