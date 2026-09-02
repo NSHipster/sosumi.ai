@@ -125,4 +125,24 @@ describe("MCP tools registration", () => {
     expect(result.structuredContent.query).toBe("SchemaMigrationPlan")
     expect(result.structuredContent.results[0]?.title).toBe("SchemaMigrationPlan")
   })
+
+  it("reports an upstream search failure as an error rather than an empty result set", async () => {
+    searchAppleDeveloperDocs.mockRejectedValue(new Error("Search request failed: 404"))
+
+    const { createMcpServer } = await import("../src/lib/mcp")
+    createMcpServer()
+
+    const handler = toolHandlers.get("searchAppleDocumentation")
+    const result = (await handler?.({ query: "WKWebView" })) as {
+      isError?: boolean
+      content: Array<{ text: string }>
+      structuredContent?: { query: string; results: unknown[] }
+    }
+
+    expect(result.isError).toBe(true)
+    expect(result.content[0].text).toContain("Search request failed: 404")
+    // An empty `results` array would read as "no such documentation exists",
+    // which is exactly the answer the caller must not trust here.
+    expect(result.structuredContent).toBeUndefined()
+  })
 })
