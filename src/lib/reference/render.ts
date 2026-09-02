@@ -14,6 +14,11 @@ import {
   mapAsideStyleToCallout,
 } from "../markdown"
 import { extractTitleFromIdentifier } from "../url"
+import {
+  type DeploymentTarget,
+  formatDeploymentTargetLine,
+  formatPlatformAvailability,
+} from "./availability"
 import type {
   AppleDocJSON,
   ContentItem,
@@ -28,6 +33,8 @@ import type {
 
 interface RenderOptions {
   externalOrigin?: string
+  /** Platform and version the caller is building against, if they named one. */
+  deploymentTarget?: DeploymentTarget
 }
 
 /**
@@ -62,10 +69,13 @@ export async function renderFromJSON(
 
   // Add platform availability
   if (jsonData.metadata?.platforms && jsonData.metadata.platforms.length > 0) {
-    const platforms = jsonData.metadata.platforms
-      .map((p) => `${p.name} ${p.introducedAt}+${p.beta ? " Beta" : ""}`)
-      .join(", ")
+    const platforms = jsonData.metadata.platforms.map(formatPlatformAvailability).join(", ")
     markdown += `**Available on:** ${platforms}\n\n`
+  }
+
+  // Add the caller's deployment target and how this page's availability applies to it
+  if (options.deploymentTarget) {
+    markdown += `${formatDeploymentTargetLine(jsonData.metadata?.platforms, options.deploymentTarget)}\n\n`
   }
 
   // Add abstract

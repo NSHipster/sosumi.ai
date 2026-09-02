@@ -28,6 +28,28 @@ https://sosumi.ai/documentation/swift/array
 This works for all API reference docs,
 as well as Apple's [Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/) (HIG).
 
+#### Deployment Targets
+
+Reference pages accept optional `platform` and `osVersion` query parameters:
+
+```
+https://sosumi.ai/documentation/appkit/nsapplication/activate()?platform=macOS&osVersion=13.0
+```
+
+The rendered Markdown gains a `**Deployment target:**` line saying whether the symbol
+is available, deprecated, or not yet introduced on that target:
+
+```
+**Deployment target:** macOS 13.0 (not available; introduced in macOS 14.0)
+```
+
+Supported platforms are `iOS`, `iPadOS`, `Mac Catalyst`, `macOS`, `tvOS`, `visionOS`, and `watchOS`.
+
+> [!NOTE]
+> Apple publishes only the current revision of each page,
+> so this annotates the latest documentation with availability metadata.
+> It does not reconstruct how a page read on an older SDK.
+
 WWDC session transcripts are also supported by replacing the same host for video URLs:
 
 **Original:**
@@ -94,6 +116,7 @@ See [the website](https://sosumi.ai/#clients) for client-specific instructions.
 
 - `fetchAppleDocumentation` - Fetches Apple Developer documentation and Human Interface Guidelines by path
   - Parameters: `path` (string) - Documentation path (e.g., '/documentation/swift', '/documentation/swiftui/view', '/design/human-interface-guidelines/foundations/color')
+  - Optional parameters: `platform` (string) and `osVersion` (string) - deployment target used to annotate availability
   - Returns content as Markdown
 
 - `fetchAppleVideoTranscript` - Fetches video transcripts, including WWDC sessions

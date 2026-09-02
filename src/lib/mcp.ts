@@ -4,7 +4,13 @@ import { z } from "zod"
 import type { ExternalPolicyEnv } from "./external"
 import { fetchExternalDocumentationMarkdown } from "./external"
 import { fetchHIGPageData, renderHIGFromJSON } from "./hig"
-import { fetchJSONData, renderFromJSON } from "./reference"
+import {
+  fetchJSONData,
+  parseDeploymentTarget,
+  renderFromJSON,
+  SUPPORTED_PLATFORM_NAMES,
+  UNSUPPORTED_DEPLOYMENT_TARGET_MESSAGE,
+} from "./reference"
 import { searchAppleDeveloperDocs } from "./search"
 import { generateAppleDocUrl, normalizeDocumentationPath } from "./url"
 import { fetchVideoTranscriptMarkdown } from "./video"
@@ -77,6 +83,18 @@ export const TOOL_DEFINITIONS = {
         .string()
         .describe(
           "Documentation path (e.g., '/documentation/swift', '/documentation/swiftui/view', '/design/human-interface-guidelines/foundations/color')",
+        ),
+      platform: z
+        .string()
+        .optional()
+        .describe(
+          `Optional deployment target platform (${SUPPORTED_PLATFORM_NAMES.join(", ")}). Annotates the page with whether the symbol is available on that platform.`,
+        ),
+      osVersion: z
+        .string()
+        .optional()
+        .describe(
+          "Optional deployment target OS version (e.g., '14.5'). Requires platform. Apple publishes only current pages, so this annotates availability rather than showing an older revision.",
         ),
     },
     annotations: readOnlyAnnotations,
@@ -202,8 +220,13 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
       inputSchema: fetchDocs.inputSchema,
       annotations: fetchDocs.annotations,
     },
-    async ({ path }) => {
+    async ({ path, platform, osVersion }) => {
       try {
+        const deploymentTarget = platform ? parseDeploymentTarget(platform, osVersion) : undefined
+        if (platform && !deploymentTarget) {
+          throw new Error(UNSUPPORTED_DEPLOYMENT_TARGET_MESSAGE)
+        }
+
         if (path.includes("design/human-interface-guidelines")) {
           const higPath = path.replace(/^\/?(design\/human-interface-guidelines\/)/, "")
           const sourceUrl = `https://developer.apple.com/design/human-interface-guidelines/${higPath}`
@@ -229,7 +252,9 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
         const appleUrl = generateAppleDocUrl(normalizedPath)
 
         const jsonData = await fetchJSONData(normalizedPath)
-        const markdown = await renderFromJSON(jsonData, appleUrl)
+        const markdown = await renderFromJSON(jsonData, appleUrl, {
+          deploymentTarget: deploymentTarget ?? undefined,
+        })
 
         if (!markdown || markdown.trim().length < 100) {
           throw new Error("Insufficient content in documentation")

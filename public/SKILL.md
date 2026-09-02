@@ -47,6 +47,20 @@ Replace `developer.apple.com` with `sosumi.ai`:
   - `https://sosumi.ai/documentation/swift/array`
   - `https://sosumi.ai/documentation/swiftui/view`
 
+### Deployment Targets
+
+Apple publishes only the current revision of each page,
+so Sosumi cannot show a page as it read on an older SDK.
+It can say whether a symbol applies to the OS you are targeting.
+
+- Pattern: `https://sosumi.ai/documentation/{framework}/{symbol}?platform={platform}&osVersion={version}`
+- Platforms: `iOS`, `iPadOS`, `Mac Catalyst`, `macOS`, `tvOS`, `visionOS`, `watchOS`
+- Example: `https://sosumi.ai/documentation/appkit/nsapplication/activate()?platform=macOS&osVersion=13.0`
+
+The response adds a `**Deployment target:**` line, for example
+`**Deployment target:** macOS 13.0 (not available; introduced in macOS 14.0)`.
+Putting a version in a search `query` does not filter results; use these parameters instead.
+
 ### Human Interface Guidelines
 
 - Pattern: `https://sosumi.ai/design/human-interface-guidelines/{topic}`
@@ -75,7 +89,7 @@ Use these when Sosumi is configured as an MCP server (`https://sosumi.ai/mcp`):
 | Tool | Parameters | Use |
 |---|---|---|
 | `searchAppleDocumentation` | `query: string` | Search Apple documentation and return structured results |
-| `fetchAppleDocumentation` | `path: string` | Fetch Apple docs or HIG content by path as Markdown |
+| `fetchAppleDocumentation` | `path: string`, optional `platform: string`, `osVersion: string` | Fetch Apple docs or HIG content by path as Markdown |
 | `fetchAppleVideoTranscript` | `path: string` | Fetch Apple video transcript by `/videos/play/...` path |
 | `fetchExternalDocumentation` | `url: string` | Fetch external Swift-DocC page by absolute HTTPS URL |
 

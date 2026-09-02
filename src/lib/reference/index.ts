@@ -3,6 +3,7 @@
  * Re-exports all reference documentation related functions and types
  */
 
+export * from "./availability"
 export * from "./fetch"
 export * from "./render"
 export type * from "./types"

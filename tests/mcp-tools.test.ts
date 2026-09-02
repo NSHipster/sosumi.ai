@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 const toolHandlers = new Map<string, (input: unknown) => Promise<unknown>>()
 const fetchVideoTranscriptMarkdown = vi.fn()
 const searchAppleDeveloperDocs = vi.fn()
+const fetchJSONData = vi.fn()
+const renderFromJSON = vi.fn()
 
 vi.mock("@modelcontextprotocol/sdk/server/mcp.js", () => {
   class McpServerMock {
@@ -28,11 +30,53 @@ vi.mock("../src/lib/search", () => ({
   searchAppleDeveloperDocs,
 }))
 
+vi.mock("../src/lib/reference", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../src/lib/reference")>()
+  return { ...actual, fetchJSONData, renderFromJSON }
+})
+
 describe("MCP tools registration", () => {
   beforeEach(() => {
     toolHandlers.clear()
     fetchVideoTranscriptMarkdown.mockReset()
     searchAppleDeveloperDocs.mockReset()
+    fetchJSONData.mockReset()
+    renderFromJSON.mockReset()
+  })
+
+  it("passes an optional deployment target through to the renderer", async () => {
+    fetchJSONData.mockResolvedValue({ metadata: { title: "activate()" } })
+    renderFromJSON.mockResolvedValue(`# activate()\n\n${"A".repeat(150)}`)
+
+    const { createMcpServer } = await import("../src/lib/mcp")
+    createMcpServer()
+
+    const handler = toolHandlers.get("fetchAppleDocumentation")
+    await handler?.({
+      path: "/documentation/appkit/nsapplication/activate()",
+      platform: "macos",
+      osVersion: "14.5",
+    })
+
+    expect(renderFromJSON).toHaveBeenCalledWith(
+      expect.anything(),
+      "https://developer.apple.com/documentation/appkit/nsapplication/activate()",
+      { deploymentTarget: { platform: "macOS", version: "14.5" } },
+    )
+  })
+
+  it("returns a readable error for an unsupported deployment target", async () => {
+    const { createMcpServer } = await import("../src/lib/mcp")
+    createMcpServer()
+
+    const handler = toolHandlers.get("fetchAppleDocumentation")
+    const result = (await handler?.({
+      path: "/documentation/appkit/nsapplication",
+      platform: "windows",
+    })) as { content: Array<{ text: string }> }
+
+    expect(fetchJSONData).not.toHaveBeenCalled()
+    expect(result.content[0].text).toContain("Unsupported platform or version")
   })
 
   it("registers and runs fetchAppleVideoTranscript with path input", async () => {

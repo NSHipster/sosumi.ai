@@ -21,7 +21,12 @@ import {
   renderHIGTableOfContents,
 } from "./lib/hig"
 import { createMcpServer, MCP_SERVER_INFO } from "./lib/mcp"
-import { fetchJSONData, renderFromJSON } from "./lib/reference"
+import {
+  fetchJSONData,
+  parseDeploymentTarget,
+  renderFromJSON,
+  UNSUPPORTED_DEPLOYMENT_TARGET_MESSAGE,
+} from "./lib/reference"
 import { searchAppleDeveloperDocs } from "./lib/search"
 import {
   createSkillIndex,
@@ -343,8 +348,25 @@ This service only works with Apple Developer documentation URLs:
     throw new HTTPException(400, { res: errorResponse })
   }
 
+  // Optional deployment target, so callers can ask about the OS they actually ship against
+  const platformParam = c.req.query("platform")?.trim()
+  const osVersionParam = c.req.query("osVersion")?.trim()
+  if (!platformParam && osVersionParam) {
+    throw new HTTPException(400, {
+      message: "The osVersion parameter requires a platform parameter.",
+    })
+  }
+  const deploymentTarget = platformParam
+    ? parseDeploymentTarget(platformParam, osVersionParam)
+    : undefined
+  if (platformParam && !deploymentTarget) {
+    throw new HTTPException(400, { message: UNSUPPORTED_DEPLOYMENT_TARGET_MESSAGE })
+  }
+
   const jsonData = await fetchJSONData(path)
-  const markdown = await renderFromJSON(jsonData, appleUrl)
+  const markdown = await renderFromJSON(jsonData, appleUrl, {
+    deploymentTarget: deploymentTarget ?? undefined,
+  })
 
   // Validate that we got meaningful content
   if (!markdown || markdown.trim().length < 100) {
