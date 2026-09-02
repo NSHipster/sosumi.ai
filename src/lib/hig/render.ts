@@ -331,9 +331,16 @@ function renderHIGTabNavigator(
   for (const tab of tabs) {
     // Tabs usually repeat their title as a heading in their own content,
     // so only add a label when the title would otherwise be lost.
+    // A leading heading only stands in for the label when it repeats the title,
+    // possibly with a qualifier, as in "Small" and "Small (default 38mm)".
     const label = tab.title?.trim()
-    const leadsWithHeading = tab.content?.[0]?.type === "heading"
-    if (label && !leadsWithHeading) {
+    const first = tab.content?.[0]
+    const leadingHeading = first?.type === "heading" ? (first.text ?? "").trim() : undefined
+    const headingRepeatsTitle =
+      label !== undefined &&
+      leadingHeading !== undefined &&
+      leadingHeading.toLowerCase().startsWith(label.toLowerCase())
+    if (label && !headingRepeatsTitle) {
       markdown += `**${label}**\n\n`
     }
     if (tab.content?.length) {

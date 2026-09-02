@@ -706,6 +706,49 @@ describe("HIG Module", () => {
       expect(result).toContain("**New York**\n\nSerif")
     })
 
+    it("should keep the HIG tab label when the tab leads with an unrelated heading", async () => {
+      const testData = {
+        ...higGettingStartedData,
+        primaryContentSections: [
+          {
+            kind: "content" as const,
+            content: [
+              {
+                type: "tabNavigator",
+                tabs: [
+                  {
+                    title: "Small",
+                    content: [
+                      { type: "heading", level: 4, text: "Small (default 38mm)" },
+                      { type: "paragraph", inlineContent: [{ type: "text", text: "Compact" }] },
+                    ],
+                  },
+                  {
+                    title: "Large",
+                    content: [
+                      { type: "heading", level: 4, text: "Overview" },
+                      { type: "paragraph", inlineContent: [{ type: "text", text: "Roomy" }] },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      } as HIGPageJSON
+
+      const result = await renderHIGFromJSON(
+        testData,
+        "https://developer.apple.com/design/human-interface-guidelines/typography",
+      )
+
+      // A heading that repeats the title stands in for the label.
+      expect(result).not.toContain("**Small**")
+      expect(result).toContain("#### Small (default 38mm)\n\nCompact")
+      // An unrelated heading does not, so the title is kept.
+      expect(result).toContain("**Large**\n\n#### Overview\n\nRoomy")
+    })
+
     it("should render HIG asides and row columns", async () => {
       const testData = {
         ...higGettingStartedData,
