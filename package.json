@@ -68,9 +68,12 @@
   "devDependencies": {
     "@biomejs/biome": "2.2.2",
     "@cloudflare/puppeteer": "^1.0.4",
-    "@cloudflare/vitest-pool-workers": "^0.12.18",
-    "@vitest/ui": "^3.2.4",
-    "vitest": "^3.2.4",
-    "wrangler": "^4.32.0"
+    "@cloudflare/vitest-pool-workers": "^0.22.0",
+    "@vitest/ui": "^4.1.11",
+    "vitest": "^4.1.11",
+    "wrangler": "^4.128.0"
+  },
+  "overrides": {
+    "@puppeteer/browsers": "^3.2.1"
   }
 }
