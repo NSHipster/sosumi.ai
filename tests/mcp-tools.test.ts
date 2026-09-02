@@ -65,6 +65,21 @@ describe("MCP tools registration", () => {
     )
   })
 
+  it("rejects osVersion without platform instead of ignoring it", async () => {
+    const { createMcpServer } = await import("../src/lib/mcp")
+    createMcpServer()
+
+    const handler = toolHandlers.get("fetchAppleDocumentation")
+    const result = (await handler?.({
+      path: "/documentation/appkit/nsapplication",
+      osVersion: "14.5",
+    })) as { isError?: boolean; content: Array<{ text: string }> }
+
+    expect(fetchJSONData).not.toHaveBeenCalled()
+    expect(result.isError).toBe(true)
+    expect(result.content[0].text).toContain("requires a platform")
+  })
+
   it("returns a readable error for an unsupported deployment target", async () => {
     const { createMcpServer } = await import("../src/lib/mcp")
     createMcpServer()

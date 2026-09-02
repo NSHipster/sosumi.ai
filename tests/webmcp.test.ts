@@ -26,6 +26,18 @@ describe("WebMCP", () => {
     expect(tools[2].inputSchema.properties).toHaveProperty("url")
   })
 
+  it("describes the deployment target query parameters for fetchAppleDocumentation", async () => {
+    const response = await SELF.fetch("https://sosumi.ai/webmcp/manifest.json")
+    const tools = (await response.json()) as Array<{
+      name: string
+      http: { pathFrom?: string; query?: Record<string, string> }
+    }>
+
+    const fetchTool = tools.find((tool) => tool.name === "fetchAppleDocumentation")
+    expect(fetchTool?.http.pathFrom).toBe("path")
+    expect(fetchTool?.http.query).toEqual({ platform: "platform", osVersion: "osVersion" })
+  })
+
   it("serves a static WebMCP bootstrap script", async () => {
     const response = await SELF.fetch("https://sosumi.ai/webmcp.js")
 

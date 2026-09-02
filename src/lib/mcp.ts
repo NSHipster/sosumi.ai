@@ -98,7 +98,7 @@ export const TOOL_DEFINITIONS = {
         ),
     },
     annotations: readOnlyAnnotations,
-    http: { pathFrom: "path" },
+    http: { pathFrom: "path", query: { platform: "platform", osVersion: "osVersion" } },
   },
   fetchExternalDocumentation: {
     name: "fetchExternalDocumentation",
@@ -222,6 +222,11 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
     },
     async ({ path, platform, osVersion }) => {
       try {
+        // Mirror the HTTP route: a version on its own has nothing to apply to,
+        // so reject it rather than quietly rendering for the latest SDK.
+        if (osVersion && !platform) {
+          throw new Error("The osVersion parameter requires a platform parameter.")
+        }
         const deploymentTarget = platform ? parseDeploymentTarget(platform, osVersion) : undefined
         if (platform && !deploymentTarget) {
           throw new Error(UNSUPPORTED_DEPLOYMENT_TARGET_MESSAGE)
