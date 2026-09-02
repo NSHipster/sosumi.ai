@@ -277,6 +277,7 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error"
 
         return {
+          isError: true,
           content: [
             {
               type: "text" as const,
