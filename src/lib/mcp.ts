@@ -175,19 +175,17 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error"
 
-        const structuredContent = {
-          query,
-          results: [],
-        }
-
+        // Report the failure as an error rather than as structured content.
+        // An empty `results` array reads as "this documentation does not exist",
+        // which would leave the caller trusting its own memory instead of looking again.
         return {
+          isError: true,
           content: [
             {
               type: "text" as const,
               text: `Error searching Apple Developer documentation: ${errorMessage}`,
             },
           ],
-          structuredContent,
         }
       }
     },
