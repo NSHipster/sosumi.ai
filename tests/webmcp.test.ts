@@ -1,4 +1,4 @@
-import { SELF } from "cloudflare:test"
+import { env, SELF } from "cloudflare:test"
 import { describe, expect, it } from "vitest"
 
 describe("WebMCP", () => {
@@ -27,7 +27,10 @@ describe("WebMCP", () => {
   })
 
   it("serves a static WebMCP bootstrap script", async () => {
-    const response = await SELF.fetch("https://sosumi.ai/webmcp.js")
+    // `SELF` dispatches straight to the Worker in the current Workers test pool,
+    // so static files are requested through the assets binding
+    // the same way the router reaches them in production.
+    const response = await env.ASSETS.fetch(new Request("https://sosumi.ai/webmcp.js"))
 
     expect(response.status).toBe(200)
 
