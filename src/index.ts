@@ -51,6 +51,16 @@ interface Env {
 
 const app = new Hono<{ Bindings: Env }>()
 
+function isMarkdownContentRoute(path: string): boolean {
+  return (
+    path.startsWith("/documentation/") ||
+    path.startsWith("/external/") ||
+    path === "/design/human-interface-guidelines" ||
+    path.startsWith("/design/human-interface-guidelines/") ||
+    path.startsWith("/videos/play/")
+  )
+}
+
 app.use("*", async (c, next) => {
   // Prime Web Bot Auth signing before any route or outbound fetch runs.
   configureWebBotAuth(c.env)
@@ -72,18 +82,23 @@ app.use("*", async (c, next) => {
     c.header("Cache-Control", "no-store")
   }
 
+  const links = ['</llms.txt>; rel="describedby"']
+
   if (c.req.path === "/") {
-    c.header(
-      "Link",
-      [
-        '</.well-known/api-catalog>; rel="api-catalog"',
-        '</.well-known/agent-card.json>; rel="service-desc"; type="application/json"',
-        '</.well-known/mcp/server-card.json>; rel="service-desc"; type="application/json"',
-        '</SKILL.md>; rel="service-doc"',
-        '</llms.txt>; rel="alternate"; type="text/markdown"',
-      ].join(", "),
+    links.unshift(
+      '</.well-known/api-catalog>; rel="api-catalog"',
+      '</.well-known/agent-card.json>; rel="service-desc"; type="application/json"',
+      '</.well-known/mcp/server-card.json>; rel="service-desc"; type="application/json"',
+      '</SKILL.md>; rel="service-doc"',
+      '</llms.txt>; rel="alternate"; type="text/markdown"',
     )
   }
+
+  if (isMarkdownContentRoute(c.req.path)) {
+    links.push(`<${c.req.path}>; rel="alternate"; type="text/markdown"`)
+  }
+
+  c.header("Link", links.join(", "))
 })
 
 app.use("*", cors())

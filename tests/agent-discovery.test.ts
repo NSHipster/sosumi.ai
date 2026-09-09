@@ -93,5 +93,25 @@ describe("Agent discovery endpoints", () => {
     expect(link).toContain('rel="api-catalog"')
     expect(link).toContain("/.well-known/api-catalog")
     expect(link).toContain("/.well-known/agent-card.json")
+    expect(link).toContain('</llms.txt>; rel="alternate"; type="text/markdown"')
+    expect(link).toContain('</llms.txt>; rel="describedby"')
+  })
+
+  it("describes the site with llms.txt on every response", async () => {
+    const response = await SELF.fetch("https://sosumi.ai/.well-known/api-catalog")
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get("Link")).toContain('</llms.txt>; rel="describedby"')
+  })
+
+  it("advertises content routes as their own Markdown alternate", async () => {
+    const path = "/videos/play/invalid!/not-a-number"
+    const response = await SELF.fetch(`https://sosumi.ai${path}`)
+
+    expect(response.status).toBe(400)
+    expect(response.headers.get("Link")).toContain('</llms.txt>; rel="describedby"')
+    expect(response.headers.get("Link")).toContain(
+      `<${path}>; rel="alternate"; type="text/markdown"`,
+    )
   })
 })
