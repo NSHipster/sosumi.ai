@@ -168,6 +168,29 @@ const sendMessageRequestSchema = z
   })
   .strict()
 
+const LIST_TASK_QUERY_FIELDS = new Set([
+  "A2A-Version",
+  "tenant",
+  "contextId",
+  "status",
+  "pageSize",
+  "pageToken",
+  "historyLength",
+  "statusTimestampAfter",
+  "includeArtifacts",
+])
+
+const TASK_STATES = new Set([
+  "TASK_STATE_SUBMITTED",
+  "TASK_STATE_WORKING",
+  "TASK_STATE_COMPLETED",
+  "TASK_STATE_FAILED",
+  "TASK_STATE_CANCELED",
+  "TASK_STATE_INPUT_REQUIRED",
+  "TASK_STATE_REJECTED",
+  "TASK_STATE_AUTH_REQUIRED",
+])
+
 interface ParsedA2AMessage {
   contextId?: string
   prompt: string
@@ -374,6 +397,45 @@ export function pushNotificationsNotSupported(): A2AError {
   )
 }
 
+/** Validate a ListTasks query and return the page size used by the empty stateless result. */
+export function parseA2AListTasksQuery(query: URLSearchParams): number {
+  for (const key of query.keys()) {
+    if (!LIST_TASK_QUERY_FIELDS.has(key)) {
+      throw malformed(`Unsupported ListTasks query field "${key}".`)
+    }
+    if (query.getAll(key).length > 1) {
+      throw malformed(`ListTasks query field "${key}" must not be repeated.`)
+    }
+  }
+
+  if (query.get("tenant")) {
+    throw malformed("tenant is not supported by this interface.")
+  }
+
+  const status = query.get("status")
+  if (status !== null && !TASK_STATES.has(status)) {
+    throw malformed(`Invalid task status "${status}".`)
+  }
+
+  parseIntegerQuery(query.get("historyLength"), "historyLength", 0)
+
+  const timestamp = query.get("statusTimestampAfter")
+  if (
+    timestamp !== null &&
+    (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/.test(timestamp) ||
+      Number.isNaN(Date.parse(timestamp)))
+  ) {
+    throw malformed("statusTimestampAfter must be an ISO 8601 UTC timestamp.")
+  }
+
+  const includeArtifacts = query.get("includeArtifacts")
+  if (includeArtifacts !== null && includeArtifacts !== "true" && includeArtifacts !== "false") {
+    throw malformed('includeArtifacts must be "true" or "false".')
+  }
+
+  return parseIntegerQuery(query.get("pageSize"), "pageSize", 1, 100) ?? 50
+}
+
 /**
  * Execute a synchronous A2A message using one of Sosumi's existing HTTP
  * capabilities and return a direct Message response (no persistent Task).
@@ -403,7 +465,9 @@ export function resolveA2AEndpoint(prompt: string): string {
     try {
       const endpoint = resolveFetchEndpoint(fetchTarget)
       if (endpoint.startsWith("/external/")) {
-        return `/external/${encodeURIComponent(endpoint.slice("/external/".length))}`
+        const target = new URL(endpoint.slice("/external/".length))
+        target.hash = ""
+        return `/external/${encodeURIComponent(target.toString())}`
       }
       return endpoint
     } catch (error) {
@@ -563,6 +627,26 @@ function requestTooLarge(): A2AError {
     null,
     `Request body exceeds the ${A2A_MAX_REQUEST_BYTES}-byte limit.`,
   )
+}
+
+function parseIntegerQuery(
+  value: string | null,
+  name: string,
+  minimum: number,
+  maximum = Number.MAX_SAFE_INTEGER,
+): number | undefined {
+  if (value === null) {
+    return undefined
+  }
+  if (!/^\d+$/.test(value)) {
+    throw malformed(`${name} must be an integer.`)
+  }
+
+  const parsed = Number(value)
+  if (!Number.isSafeInteger(parsed) || parsed < minimum || parsed > maximum) {
+    throw malformed(`${name} must be between ${minimum} and ${maximum}.`)
+  }
+  return parsed
 }
 
 function capabilityResponseTooLarge(): A2AError {

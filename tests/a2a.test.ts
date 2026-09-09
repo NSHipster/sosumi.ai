@@ -13,6 +13,7 @@ import {
   resolveA2AEndpoint,
   validateA2ARequestHeaders,
 } from "../src/lib/a2a"
+import { decodeExternalTargetPath, validateExternalDocumentationUrl } from "../src/lib/external"
 
 const originalFetch = globalThis.fetch
 
@@ -106,7 +107,9 @@ describe("A2A HTTP+JSON service", () => {
     const internalUrl = new URL(externalEndpoint, "https://sosumi.ai")
     expect(internalUrl.search).toBe("")
     expect(internalUrl.hash).toBe("")
-    expect(decodeURIComponent(internalUrl.pathname.slice("/external/".length))).toBe(externalTarget)
+    const decodedTarget = decodeExternalTargetPath(internalUrl.pathname)
+    expect(decodedTarget).toBe(externalTarget.replace("#overview", ""))
+    expect(validateExternalDocumentationUrl(decodedTarget).search).toBe("?language=swift")
   })
 
   it("requires the protocol version advertised by the Agent Card", () => {
@@ -297,6 +300,25 @@ describe("A2A HTTP+JSON service", () => {
       "PUSH_NOTIFICATION_NOT_SUPPORTED",
       "UNSUPPORTED_OPERATION",
     ])
+  })
+
+  it("validates and reports the ListTasks page size", async () => {
+    const headers = { "A2A-Version": A2A_PROTOCOL_VERSION }
+    const bindings = { ASSETS: env.ASSETS, NODE_ENV: "development" }
+    const [selected, tooSmall, tooLarge, malformed] = await Promise.all([
+      app.request("https://sosumi.ai/tasks?pageSize=10", { headers }, bindings),
+      app.request("https://sosumi.ai/tasks?pageSize=0", { headers }, bindings),
+      app.request("https://sosumi.ai/tasks?pageSize=101", { headers }, bindings),
+      app.request("https://sosumi.ai/tasks?pageSize=ten", { headers }, bindings),
+    ])
+
+    await expect(selected.json()).resolves.toMatchObject({ pageSize: 10, totalSize: 0 })
+    for (const response of [tooSmall, tooLarge, malformed]) {
+      expect(response.status).toBe(400)
+      await expect(response.json()).resolves.toMatchObject({
+        error: { code: 400, status: "INVALID_ARGUMENT" },
+      })
+    }
   })
 
   it("maps unavailable capability failures to HTTP 503", () => {

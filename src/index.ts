@@ -13,6 +13,7 @@ import {
   capabilityError,
   createA2AErrorResponse,
   handleA2AMessage,
+  parseA2AListTasksQuery,
   pushNotificationsNotSupported,
   readA2ACapabilityText,
   readA2AJsonBody,
@@ -401,7 +402,8 @@ app.post("/message:stream", (c) =>
 app.get("/tasks", (c) => {
   try {
     validateA2ARequestHeaders(null, requestedA2AVersion(c.req.raw))
-    return c.json({ tasks: [], nextPageToken: "", pageSize: 50, totalSize: 0 }, 200, {
+    const pageSize = parseA2AListTasksQuery(new URL(c.req.url).searchParams)
+    return c.json({ tasks: [], nextPageToken: "", pageSize, totalSize: 0 }, 200, {
       "Content-Type": A2A_MEDIA_TYPE,
       "Cache-Control": "no-store",
     })
