@@ -1,5 +1,6 @@
 import { SELF } from "cloudflare:test"
 import { describe, expect, it } from "vitest"
+import app from "../src/index"
 
 describe("Agent discovery endpoints", () => {
   it("serves an RFC 9727 API catalog", async () => {
@@ -104,14 +105,31 @@ describe("Agent discovery endpoints", () => {
     expect(response.headers.get("Link")).toContain('</llms.txt>; rel="describedby"')
   })
 
-  it("advertises content routes as their own Markdown alternate", async () => {
-    const path = "/videos/play/invalid!/not-a-number"
-    const response = await SELF.fetch(`https://sosumi.ai${path}`)
+  it("preserves Link headers from downstream responses", async () => {
+    const canonicalLink = '<https://sosumi.ai/>; rel="canonical"'
+    const response = await app.request("https://sosumi.ai/", undefined, {
+      ASSETS: {
+        fetch: async () => new Response("Homepage", { headers: { Link: canonicalLink } }),
+      } as Fetcher,
+      NODE_ENV: "production",
+    })
 
-    expect(response.status).toBe(400)
+    expect(response.status).toBe(200)
+    expect(response.headers.get("Link")).toContain(canonicalLink)
     expect(response.headers.get("Link")).toContain('</llms.txt>; rel="describedby"')
-    expect(response.headers.get("Link")).toContain(
-      `<${path}>; rel="alternate"; type="text/markdown"`,
-    )
+  })
+
+  it("advertises content routes as their own Markdown alternate", async () => {
+    const paths = ["/videos/play/invalid!/not-a-number", "/external/not-a-url"]
+
+    for (const path of paths) {
+      const response = await SELF.fetch(`https://sosumi.ai${path}`)
+
+      expect(response.status).toBe(400)
+      expect(response.headers.get("Link")).toContain('</llms.txt>; rel="describedby"')
+      expect(response.headers.get("Link")).toContain(
+        `<${path}>; rel="alternate"; type="text/markdown"`,
+      )
+    }
   })
 })

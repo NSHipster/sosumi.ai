@@ -98,6 +98,11 @@ app.use("*", async (c, next) => {
     links.push(`<${c.req.path}>; rel="alternate"; type="text/markdown"`)
   }
 
+  const existingLink = c.res.headers.get("Link")
+  if (existingLink) {
+    links.unshift(existingLink)
+  }
+
   c.header("Link", links.join(", "))
 })
 
