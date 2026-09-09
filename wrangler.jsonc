@@ -21,7 +21,8 @@
       "/",
       "/.well-known/agent-card.json",
       "/.well-known/agent-skills/*",
-      "/.well-known/security.txt"
+      "/.well-known/security.txt",
+      "/message:send"
     ]
   },
   "observability": {

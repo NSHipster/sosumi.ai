@@ -5,7 +5,16 @@ import { cache } from "hono/cache"
 import { cors } from "hono/cors"
 import { HTTPException } from "hono/http-exception"
 import { trimTrailingSlash } from "hono/trailing-slash"
-import { buildAgentCard } from "./lib/a2a"
+import {
+  A2A_MEDIA_TYPE,
+  A2A_MESSAGE_PATH,
+  A2AError,
+  buildAgentCard,
+  capabilityError,
+  handleA2AMessage,
+  toA2AErrorResponse,
+  validateA2ARequestHeaders,
+} from "./lib/a2a"
 import { AI_CATALOG_MEDIA_TYPE, buildAiCatalog } from "./lib/ard"
 import { buildDidDocument, DID_DOCUMENT_MEDIA_TYPE } from "./lib/did"
 import {
@@ -318,6 +327,58 @@ app.get("/.well-known/agent-card.json", (c) => {
     ...discoveryHeaders,
     "Content-Type": "application/json; charset=utf-8",
   })
+})
+
+app.post(A2A_MESSAGE_PATH, async (c) => {
+  try {
+    validateA2ARequestHeaders(
+      c.req.header("Content-Type") ?? null,
+      c.req.header("A2A-Version") ?? c.req.query("A2A-Version") ?? null,
+    )
+
+    let input: unknown
+    try {
+      input = await c.req.json<unknown>()
+    } catch {
+      const failure = toA2AErrorResponse(
+        new A2AError(400, "INVALID_ARGUMENT", "REQUEST_MALFORMED", "Invalid JSON payload."),
+      )
+      return c.json(failure.body, failure.statusCode, {
+        "Content-Type": A2A_MEDIA_TYPE,
+        "Cache-Control": "no-store",
+      })
+    }
+
+    const response = await handleA2AMessage(input, async (endpoint, outputMode) => {
+      const capabilityResponse = await app.request(
+        new URL(endpoint, c.req.url).toString(),
+        { headers: { Accept: outputMode } },
+        c.env,
+      )
+      const text = await capabilityResponse.text()
+      if (!capabilityResponse.ok) {
+        throw capabilityError(
+          capabilityResponse.status,
+          text || `Sosumi capability request failed with status ${capabilityResponse.status}.`,
+        )
+      }
+      return text
+    })
+
+    return c.json(response, 200, {
+      "Content-Type": A2A_MEDIA_TYPE,
+      "Cache-Control": "no-store",
+    })
+  } catch (error) {
+    if (!(error instanceof A2AError)) {
+      console.error("A2A message execution failed", error)
+    }
+    const failure = toA2AErrorResponse(error)
+    return c.json(failure.body, failure.statusCode, {
+      "Content-Type": A2A_MEDIA_TYPE,
+      "Cache-Control": "no-store",
+    })
+  }
 })
 
 app.get("/webmcp/manifest.json", (c) =>

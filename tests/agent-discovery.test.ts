@@ -55,7 +55,7 @@ describe("Agent discovery endpoints", () => {
         identifier: PUBLISHER_DID,
       }),
     )
-    expect(catalog.entries).toHaveLength(2)
+    expect(catalog.entries).toHaveLength(3)
 
     for (const entry of catalog.entries) {
       expect(entry.identifier).toMatch(
@@ -70,10 +70,18 @@ describe("Agent discovery endpoints", () => {
 
     expect(catalog.entries.map((entry) => entry.type)).toEqual([
       "application/mcp-server-card+json",
+      "application/a2a-agent-card+json",
       'text/markdown; profile="urn:air:agent-skills"',
     ])
 
     const skillEntry = catalog.entries.find((entry) => entry.type.startsWith("text/markdown"))
+    const a2aEntry = catalog.entries.find(
+      (entry) => entry.type === "application/a2a-agent-card+json",
+    )
+    expect(a2aEntry).toMatchObject({
+      identifier: `urn:air:${PUBLISHER_DOMAIN}:agent:documentation`,
+      url: `${PUBLISHER_ORIGIN}/.well-known/agent-card.json`,
+    })
     expect(skillEntry).toMatchObject({
       identifier: `urn:air:${PUBLISHER_DOMAIN}:skill:${SKILL_NAME}`,
       url: `${PUBLISHER_ORIGIN}/.well-known/agent-skills/${SKILL_NAME}/SKILL.md`,
@@ -223,7 +231,6 @@ describe("Agent discovery endpoints", () => {
         url: string
         protocolVersion: string
         protocolBinding: string
-        transport: string
       }>
       capabilities: Record<string, unknown>
       skills: Array<{ id: string; name: string; description: string; tags: string[] }>
@@ -236,9 +243,8 @@ describe("Agent discovery endpoints", () => {
     expect(Array.isArray(card.supportedInterfaces)).toBe(true)
     expect(card.supportedInterfaces.length).toBeGreaterThan(0)
     expect(card.supportedInterfaces[0].url).toBe("https://sosumi.ai")
-    expect(card.supportedInterfaces[0].protocolVersion).toBeTruthy()
+    expect(card.supportedInterfaces[0].protocolVersion).toBe("1.0")
     expect(card.supportedInterfaces[0].protocolBinding).toBe("HTTP+JSON")
-    expect(card.supportedInterfaces[0].transport).toBe("HTTP+JSON")
 
     expect(card.capabilities).toBeTypeOf("object")
 
