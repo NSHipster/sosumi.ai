@@ -1,6 +1,7 @@
 import { env, SELF } from "cloudflare:test"
 import { describe, expect, it } from "vitest"
 import app from "../src/index"
+import { SKILL_NAME } from "../src/lib/skill"
 
 describe("Agent discovery endpoints", () => {
   it("serves a security.txt file with a rolling expiry", async () => {
@@ -29,7 +30,7 @@ describe("Agent discovery endpoints", () => {
     const response = await SELF.fetch("https://sosumi.ai/.well-known/ai-catalog.json")
 
     expect(response.status).toBe(200)
-    expect(response.headers.get("Content-Type")).toBe("application/json")
+    expect(response.headers.get("Content-Type")).toContain("application/ai-catalog+json")
     expect(response.headers.get("Access-Control-Allow-Origin")).toBe("*")
 
     const catalog = (await response.json()) as {
@@ -68,6 +69,12 @@ describe("Agent discovery endpoints", () => {
       "application/a2a-agent-card+json",
       'text/markdown; profile="urn:air:agent-skills"',
     ])
+
+    const skillEntry = catalog.entries.find((entry) => entry.type.startsWith("text/markdown"))
+    expect(skillEntry).toMatchObject({
+      identifier: `urn:air:sosumi.ai:skill:${SKILL_NAME}`,
+      url: `https://sosumi.ai/.well-known/agent-skills/${SKILL_NAME}/SKILL.md`,
+    })
   })
 
   it("serves an RFC 9727 API catalog", async () => {
@@ -219,7 +226,7 @@ describe("Agent discovery endpoints", () => {
     ])
 
     expect(await homepageResponse.text()).toContain(
-      '<link rel="ai-catalog" href="/.well-known/ai-catalog.json">',
+      '<link rel="ai-catalog" href="/.well-known/ai-catalog.json" type="application/ai-catalog+json">',
     )
     expect(await robotsResponse.text()).toContain(
       "Agentmap: https://sosumi.ai/.well-known/ai-catalog.json",

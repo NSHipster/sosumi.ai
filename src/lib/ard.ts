@@ -1,3 +1,7 @@
+import { SKILL_NAME } from "./skill"
+
+export const AI_CATALOG_MEDIA_TYPE = "application/ai-catalog+json"
+
 export interface AiCatalogEntry {
   identifier: string
   displayName: string
@@ -55,10 +59,10 @@ export function buildAiCatalog(origin: string): AiCatalog {
         ],
       },
       {
-        identifier: "urn:air:sosumi.ai:skill:sosumi",
+        identifier: `urn:air:sosumi.ai:skill:${SKILL_NAME}`,
         displayName: "Sosumi Agent Skill",
         type: 'text/markdown; profile="urn:air:agent-skills"',
-        url: `${origin}/.well-known/agent-skills/sosumi/SKILL.md`,
+        url: `${origin}/.well-known/agent-skills/${SKILL_NAME}/SKILL.md`,
         description:
           "Instructions for using Sosumi to research Apple APIs, design guidance, videos, and Swift-DocC documentation.",
         representativeQueries: [

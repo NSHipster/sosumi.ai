@@ -6,7 +6,7 @@ import { cors } from "hono/cors"
 import { HTTPException } from "hono/http-exception"
 import { trimTrailingSlash } from "hono/trailing-slash"
 import { buildAgentCard } from "./lib/a2a"
-import { buildAiCatalog } from "./lib/ard"
+import { AI_CATALOG_MEDIA_TYPE, buildAiCatalog } from "./lib/ard"
 import {
   decodeExternalTargetPath,
   ExternalAccessError,
@@ -89,7 +89,7 @@ app.use("*", async (c, next) => {
   if (c.req.path === "/") {
     links.unshift(
       '</.well-known/api-catalog>; rel="api-catalog"',
-      '</.well-known/ai-catalog.json>; rel="ai-catalog"; type="application/json"',
+      `</.well-known/ai-catalog.json>; rel="ai-catalog"; type="${AI_CATALOG_MEDIA_TYPE}"`,
       '</.well-known/agent-card.json>; rel="service-desc"; type="application/json"',
       '</.well-known/mcp/server-card.json>; rel="service-desc"; type="application/json"',
       '</SKILL.md>; rel="service-doc"',
@@ -238,7 +238,7 @@ app.get("/.well-known/ai-catalog.json", (c) => {
 
   return c.json(buildAiCatalog(origin), 200, {
     ...discoveryHeaders,
-    "Content-Type": "application/json",
+    "Content-Type": `${AI_CATALOG_MEDIA_TYPE}; charset=utf-8`,
   })
 })
 
