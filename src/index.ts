@@ -6,6 +6,8 @@ import { cors } from "hono/cors"
 import { HTTPException } from "hono/http-exception"
 import { trimTrailingSlash } from "hono/trailing-slash"
 import { buildAgentCard } from "./lib/a2a"
+import { AI_CATALOG_MEDIA_TYPE, buildAiCatalog } from "./lib/ard"
+import { buildDidDocument, DID_DOCUMENT_MEDIA_TYPE } from "./lib/did"
 import {
   decodeExternalTargetPath,
   ExternalAccessError,
@@ -88,6 +90,8 @@ app.use("*", async (c, next) => {
   if (c.req.path === "/") {
     links.unshift(
       '</.well-known/api-catalog>; rel="api-catalog"',
+      `</.well-known/ard.json>; rel="ard"; type="${AI_CATALOG_MEDIA_TYPE}"`,
+      `</.well-known/ai-catalog.json>; rel="ai-catalog"; type="${AI_CATALOG_MEDIA_TYPE}"`,
       '</.well-known/agent-card.json>; rel="service-desc"; type="application/json"',
       '</.well-known/mcp/server-card.json>; rel="service-desc"; type="application/json"',
       '</SKILL.md>; rel="service-doc"',
@@ -229,6 +233,29 @@ app.get("/.well-known/security.txt", (c) => {
       "Content-Type": "text/plain; charset=utf-8",
     },
   )
+})
+
+app.on("GET", ["/.well-known/ard.json", "/.well-known/ai-catalog.json"], (c) => {
+  const origin = new URL(c.req.url).origin
+
+  return c.json(buildAiCatalog(origin), 200, {
+    ...discoveryHeaders,
+    "Content-Type": `${AI_CATALOG_MEDIA_TYPE}; charset=utf-8`,
+  })
+})
+
+app.get("/.well-known/did.json", async (c) => {
+  const document = await buildDidDocument()
+  if (!document) {
+    return c.json({ error: "DID signing key is unavailable." }, 404, {
+      "Cache-Control": "no-store",
+    })
+  }
+
+  return c.json(document, 200, {
+    ...discoveryHeaders,
+    "Content-Type": `${DID_DOCUMENT_MEDIA_TYPE}; charset=utf-8`,
+  })
 })
 
 app.get("/.well-known/api-catalog", (c) => {

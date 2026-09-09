@@ -4,13 +4,14 @@ import { z } from "zod"
 import type { ExternalPolicyEnv } from "./external"
 import { fetchExternalDocumentationMarkdown } from "./external"
 import { fetchHIGPageData, renderHIGFromJSON } from "./hig"
+import { PUBLISHER_DOMAIN } from "./identity"
 import { fetchJSONData, renderFromJSON } from "./reference"
 import { searchAppleDeveloperDocs } from "./search"
 import { generateAppleDocUrl, normalizeDocumentationPath } from "./url"
 import { fetchVideoTranscriptMarkdown } from "./video"
 
 export const MCP_SERVER_INFO = {
-  name: "sosumi.ai",
+  name: PUBLISHER_DOMAIN,
   version: "1.0.0",
 } as const
 

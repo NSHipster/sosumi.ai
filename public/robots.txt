@@ -8,3 +8,4 @@ Disallow: /design/human-interface-guidelines
 Disallow: /videos/play/
 
 Sitemap: https://sosumi.ai/sitemap.xml
+Agentmap: https://sosumi.ai/.well-known/ard.json
