@@ -4,14 +4,16 @@ import { describe, expect, it } from "vitest"
 describe("Agent discovery endpoints", () => {
   it("serves a security.txt file with a rolling expiry", async () => {
     const requestedAt = Date.now()
-    const response = await SELF.fetch("https://sosumi.ai/.well-known/security.txt")
+    const response = await SELF.fetch("https://preview.sosumi.ai/.well-known/security.txt")
 
     expect(response.status).toBe(200)
     expect(response.headers.get("Content-Type")).toContain("text/plain")
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBe("*")
+    expect(response.headers.get("Cache-Control")).toBe("public, max-age=300, s-maxage=600")
 
     const body = await response.text()
     expect(body).toContain("Contact: mailto:info@sosumi.ai")
-    expect(body).toContain("Canonical: https://sosumi.ai/.well-known/security.txt")
+    expect(body).toContain("Canonical: https://preview.sosumi.ai/.well-known/security.txt")
     expect(body).toContain("Preferred-Languages: en")
 
     const expires = body.match(/^Expires: (.+)$/m)?.[1]

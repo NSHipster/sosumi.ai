@@ -192,18 +192,19 @@ const SECURITY_TXT_EXPIRY_MS = 364 * 24 * 60 * 60 * 1000 // 364 days
 
 app.get("/.well-known/security.txt", (c) => {
   const expires = new Date(Date.now() + SECURITY_TXT_EXPIRY_MS).toISOString()
+  const origin = new URL(c.req.url).origin
 
   return c.text(
     [
       "Contact: mailto:info@sosumi.ai",
       `Expires: ${expires}`,
-      "Canonical: https://sosumi.ai/.well-known/security.txt",
+      `Canonical: ${origin}/.well-known/security.txt`,
       "Preferred-Languages: en",
       "",
     ].join("\n"),
     200,
     {
-      "Cache-Control": "public, max-age=86400",
+      ...discoveryHeaders,
       "Content-Type": "text/plain; charset=utf-8",
     },
   )
