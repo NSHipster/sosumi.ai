@@ -1,5 +1,5 @@
 import { env, SELF } from "cloudflare:test"
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import app from "../src/index"
 import { buildAiCatalog } from "../src/lib/ard"
 import { PUBLISHER_DID, PUBLISHER_DOMAIN, PUBLISHER_ORIGIN } from "../src/lib/identity"
@@ -29,7 +29,7 @@ describe("Agent discovery endpoints", () => {
   })
 
   it("serves an ARD capability manifest", async () => {
-    const response = await SELF.fetch("https://sosumi.ai/.well-known/ai-catalog.json")
+    const response = await SELF.fetch("https://sosumi.ai/.well-known/ard.json")
 
     expect(response.status).toBe(200)
     expect(response.headers.get("Content-Type")).toContain("application/ai-catalog+json")
@@ -79,6 +79,16 @@ describe("Agent discovery endpoints", () => {
       identifier: `urn:air:${PUBLISHER_DOMAIN}:skill:${SKILL_NAME}`,
       url: `${PUBLISHER_ORIGIN}/.well-known/agent-skills/${SKILL_NAME}/SKILL.md`,
     })
+  })
+
+  it("keeps the predecessor AI catalog path as an alias", async () => {
+    const [ardResponse, legacyResponse] = await Promise.all([
+      SELF.fetch("https://sosumi.ai/.well-known/ard.json"),
+      SELF.fetch("https://sosumi.ai/.well-known/ai-catalog.json"),
+    ])
+
+    expect(legacyResponse.status).toBe(200)
+    expect(await legacyResponse.json()).toEqual(await ardResponse.json())
   })
 
   it("keeps publisher identity stable across catalog locations", () => {
@@ -137,6 +147,31 @@ describe("Agent discovery endpoints", () => {
     expect(verificationMethod.publicKeyJwk).not.toHaveProperty("d")
     expect(did.authentication).toContain(verificationMethod.id)
     expect(did.assertionMethod).toContain(verificationMethod.id)
+  })
+
+  it("does not publish a DID document without a valid signing key", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {})
+
+    try {
+      const bindings = {
+        ASSETS: env.ASSETS,
+        NODE_ENV: "production",
+      }
+      const [missingKeyResponse, invalidKeyResponse] = await Promise.all([
+        app.request(`${PUBLISHER_ORIGIN}/.well-known/did.json`, undefined, bindings),
+        app.request(`${PUBLISHER_ORIGIN}/.well-known/did.json`, undefined, {
+          ...bindings,
+          WEB_BOT_AUTH_KEY: "not-json",
+        }),
+      ])
+
+      expect(missingKeyResponse.status).toBe(404)
+      expect(invalidKeyResponse.status).toBe(404)
+      expect(missingKeyResponse.headers.get("Cache-Control")).toBe("no-store")
+      expect(invalidKeyResponse.headers.get("Cache-Control")).toBe("no-store")
+    } finally {
+      consoleError.mockRestore()
+    }
   })
 
   it("serves an RFC 9727 API catalog", async () => {
@@ -230,6 +265,7 @@ describe("Agent discovery endpoints", () => {
     const link = response.headers.get("Link")
     expect(link).toContain('rel="api-catalog"')
     expect(link).toContain("/.well-known/api-catalog")
+    expect(link).toContain('</.well-known/ard.json>; rel="ard"')
     expect(link).toContain("/.well-known/ai-catalog.json")
     expect(link).toContain("/.well-known/agent-card.json")
     expect(link).toContain('</llms.txt>; rel="alternate"; type="text/markdown"')
@@ -287,11 +323,11 @@ describe("Agent discovery endpoints", () => {
       env.ASSETS.fetch(new Request("https://sosumi.ai/robots.txt")),
     ])
 
-    expect(await homepageResponse.text()).toContain(
-      '<link rel="ai-catalog" href="/.well-known/ai-catalog.json" type="application/ai-catalog+json">',
-    )
+    const homepage = await homepageResponse.text()
+    expect(homepage).toContain('<link rel="ard" href="/.well-known/ard.json"')
+    expect(homepage).toContain('<link rel="ai-catalog" href="/.well-known/ai-catalog.json"')
     expect(await robotsResponse.text()).toContain(
-      "Agentmap: https://sosumi.ai/.well-known/ai-catalog.json",
+      "Agentmap: https://sosumi.ai/.well-known/ard.json",
     )
   })
 })
