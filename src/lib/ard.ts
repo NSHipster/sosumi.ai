@@ -1,3 +1,4 @@
+import { PUBLISHER_DID, PUBLISHER_DOMAIN } from "./identity"
 import { SKILL_NAME } from "./skill"
 
 export const AI_CATALOG_MEDIA_TYPE = "application/ai-catalog+json"
@@ -26,13 +27,13 @@ export function buildAiCatalog(origin: string): AiCatalog {
   return {
     specVersion: "1.0",
     host: {
-      displayName: "sosumi.ai",
-      identifier: "did:web:sosumi.ai",
+      displayName: PUBLISHER_DOMAIN,
+      identifier: PUBLISHER_DID,
       documentationUrl: `${origin}/`,
     },
     entries: [
       {
-        identifier: "urn:air:sosumi.ai:server:mcp",
+        identifier: `urn:air:${PUBLISHER_DOMAIN}:server:mcp`,
         displayName: "Sosumi MCP Server",
         type: "application/mcp-server-card+json",
         url: `${origin}/.well-known/mcp/server-card.json`,
@@ -46,7 +47,7 @@ export function buildAiCatalog(origin: string): AiCatalog {
         ],
       },
       {
-        identifier: "urn:air:sosumi.ai:agent:documentation",
+        identifier: `urn:air:${PUBLISHER_DOMAIN}:agent:documentation`,
         displayName: "Sosumi Documentation Agent",
         type: "application/a2a-agent-card+json",
         url: `${origin}/.well-known/agent-card.json`,
@@ -59,7 +60,7 @@ export function buildAiCatalog(origin: string): AiCatalog {
         ],
       },
       {
-        identifier: `urn:air:sosumi.ai:skill:${SKILL_NAME}`,
+        identifier: `urn:air:${PUBLISHER_DOMAIN}:skill:${SKILL_NAME}`,
         displayName: "Sosumi Agent Skill",
         type: 'text/markdown; profile="urn:air:agent-skills"',
         url: `${origin}/.well-known/agent-skills/${SKILL_NAME}/SKILL.md`,

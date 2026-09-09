@@ -58,9 +58,9 @@ const DIRECTORY_SIGNATURE_TTL_MS = 60 * 60 * 1000
 
 /** A public JSON Web Key as published in the directory (RFC 8037 Ed25519). */
 export interface DirectoryKey {
-  kty?: string
-  crv?: string
-  x?: string
+  kty: "OKP"
+  crv: "Ed25519"
+  x: string
   kid: string
   use: string
 }
@@ -171,6 +171,12 @@ async function currentConfig(): Promise<WebBotAuthConfig | null> {
     }
     return null
   }
+}
+
+/** Return a copy of the configured public signing key, if available. */
+export async function webBotAuthPublicKey(): Promise<DirectoryKey | null> {
+  const config = await currentConfig()
+  return config ? { ...config.publicKey } : null
 }
 
 /** Serialize a value as an RFC 8941 structured-field string (a quoted string). */

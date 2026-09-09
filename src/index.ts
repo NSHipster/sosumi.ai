@@ -7,6 +7,7 @@ import { HTTPException } from "hono/http-exception"
 import { trimTrailingSlash } from "hono/trailing-slash"
 import { buildAgentCard } from "./lib/a2a"
 import { AI_CATALOG_MEDIA_TYPE, buildAiCatalog } from "./lib/ard"
+import { buildDidDocument, DID_DOCUMENT_MEDIA_TYPE } from "./lib/did"
 import {
   decodeExternalTargetPath,
   ExternalAccessError,
@@ -241,6 +242,13 @@ app.get("/.well-known/ai-catalog.json", (c) => {
     "Content-Type": `${AI_CATALOG_MEDIA_TYPE}; charset=utf-8`,
   })
 })
+
+app.get("/.well-known/did.json", async (c) =>
+  c.json(await buildDidDocument(), 200, {
+    ...discoveryHeaders,
+    "Content-Type": `${DID_DOCUMENT_MEDIA_TYPE}; charset=utf-8`,
+  }),
+)
 
 app.get("/.well-known/api-catalog", (c) => {
   const origin = new URL(c.req.url).origin

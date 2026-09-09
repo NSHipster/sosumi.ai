@@ -1,6 +1,8 @@
 import { env, SELF } from "cloudflare:test"
 import { describe, expect, it } from "vitest"
 import app from "../src/index"
+import { buildAiCatalog } from "../src/lib/ard"
+import { PUBLISHER_DID, PUBLISHER_DOMAIN, PUBLISHER_ORIGIN } from "../src/lib/identity"
 import { SKILL_NAME } from "../src/lib/skill"
 
 describe("Agent discovery endpoints", () => {
@@ -49,14 +51,16 @@ describe("Agent discovery endpoints", () => {
     expect(catalog.specVersion).toBeTruthy()
     expect(catalog.host).toEqual(
       expect.objectContaining({
-        displayName: "sosumi.ai",
-        identifier: "did:web:sosumi.ai",
+        displayName: PUBLISHER_DOMAIN,
+        identifier: PUBLISHER_DID,
       }),
     )
     expect(catalog.entries).toHaveLength(3)
 
     for (const entry of catalog.entries) {
-      expect(entry.identifier).toMatch(/^urn:air:sosumi\.ai:[a-z0-9-]+:[a-z0-9-]+$/)
+      expect(entry.identifier).toMatch(
+        new RegExp(`^urn:air:${PUBLISHER_DOMAIN.replaceAll(".", "\\.")}:[a-z0-9-]+:[a-z0-9-]+$`),
+      )
       expect(entry.displayName).toBeTruthy()
       expect(entry.type).toMatch(/^[a-z]+\/[a-z0-9.+-]+(?:; .+)?$/i)
       expect(Number("url" in entry) + Number("data" in entry)).toBe(1)
@@ -72,9 +76,67 @@ describe("Agent discovery endpoints", () => {
 
     const skillEntry = catalog.entries.find((entry) => entry.type.startsWith("text/markdown"))
     expect(skillEntry).toMatchObject({
-      identifier: `urn:air:sosumi.ai:skill:${SKILL_NAME}`,
-      url: `https://sosumi.ai/.well-known/agent-skills/${SKILL_NAME}/SKILL.md`,
+      identifier: `urn:air:${PUBLISHER_DOMAIN}:skill:${SKILL_NAME}`,
+      url: `${PUBLISHER_ORIGIN}/.well-known/agent-skills/${SKILL_NAME}/SKILL.md`,
     })
+  })
+
+  it("keeps publisher identity stable across catalog locations", () => {
+    const catalog = buildAiCatalog("https://preview.example.com")
+
+    expect(catalog.host.identifier).toBe(PUBLISHER_DID)
+    for (const entry of catalog.entries) {
+      expect(entry.identifier.startsWith(`urn:air:${PUBLISHER_DOMAIN}:`)).toBe(true)
+      expect(entry.url).toMatch(/^https:\/\/preview\.example\.com\//)
+    }
+  })
+
+  it("serves a verifiable did:web document", async () => {
+    const [didResponse, directoryResponse] = await Promise.all([
+      SELF.fetch(`${PUBLISHER_ORIGIN}/.well-known/did.json`),
+      SELF.fetch(`${PUBLISHER_ORIGIN}/.well-known/http-message-signatures-directory`),
+    ])
+
+    expect(didResponse.status).toBe(200)
+    expect(didResponse.headers.get("Content-Type")).toContain("application/did+ld+json")
+    expect(didResponse.headers.get("Access-Control-Allow-Origin")).toBe("*")
+
+    const did = (await didResponse.json()) as {
+      "@context": string[]
+      id: string
+      alsoKnownAs: string[]
+      verificationMethod: Array<{
+        id: string
+        type: string
+        controller: string
+        publicKeyJwk: Record<string, string>
+      }>
+      authentication: string[]
+      assertionMethod: string[]
+    }
+    const directory = (await directoryResponse.json()) as {
+      keys: Array<Record<string, string>>
+    }
+    const verificationMethod = did.verificationMethod[0]
+    const publishedKey = directory.keys[0]
+
+    expect(did["@context"]).toContain("https://www.w3.org/ns/did/v1")
+    expect(did.id).toBe(PUBLISHER_DID)
+    expect(did.alsoKnownAs).toContain(PUBLISHER_ORIGIN)
+    expect(verificationMethod).toMatchObject({
+      id: `${PUBLISHER_DID}#${publishedKey.kid}`,
+      type: "JsonWebKey2020",
+      controller: PUBLISHER_DID,
+      publicKeyJwk: {
+        kty: publishedKey.kty,
+        crv: publishedKey.crv,
+        x: publishedKey.x,
+        kid: publishedKey.kid,
+      },
+    })
+    expect(verificationMethod.publicKeyJwk).not.toHaveProperty("d")
+    expect(did.authentication).toContain(verificationMethod.id)
+    expect(did.assertionMethod).toContain(verificationMethod.id)
   })
 
   it("serves an RFC 9727 API catalog", async () => {
