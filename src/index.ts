@@ -188,6 +188,27 @@ const discoveryHeaders = {
   "Cache-Control": "public, max-age=300, s-maxage=600",
 } as const
 
+const SECURITY_TXT_EXPIRY_MS = 364 * 24 * 60 * 60 * 1000 // 364 days
+
+app.get("/.well-known/security.txt", (c) => {
+  const expires = new Date(Date.now() + SECURITY_TXT_EXPIRY_MS).toISOString()
+
+  return c.text(
+    [
+      "Contact: mailto:info@sosumi.ai",
+      `Expires: ${expires}`,
+      "Canonical: https://sosumi.ai/.well-known/security.txt",
+      "Preferred-Languages: en",
+      "",
+    ].join("\n"),
+    200,
+    {
+      "Cache-Control": "public, max-age=86400",
+      "Content-Type": "text/plain; charset=utf-8",
+    },
+  )
+})
+
 app.get("/.well-known/api-catalog", (c) => {
   const origin = new URL(c.req.url).origin
 
