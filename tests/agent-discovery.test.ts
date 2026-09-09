@@ -25,6 +25,51 @@ describe("Agent discovery endpoints", () => {
     expect(expiresAt).toBeLessThan(requestedAt + 365 * 24 * 60 * 60 * 1000)
   })
 
+  it("serves an ARD capability manifest", async () => {
+    const response = await SELF.fetch("https://sosumi.ai/.well-known/ai-catalog.json")
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get("Content-Type")).toBe("application/json")
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBe("*")
+
+    const catalog = (await response.json()) as {
+      specVersion: string
+      host: { displayName: string; identifier: string }
+      entries: Array<{
+        identifier: string
+        displayName: string
+        type: string
+        url?: string
+        data?: unknown
+        representativeQueries: string[]
+      }>
+    }
+
+    expect(catalog.specVersion).toBeTruthy()
+    expect(catalog.host).toEqual(
+      expect.objectContaining({
+        displayName: "sosumi.ai",
+        identifier: "did:web:sosumi.ai",
+      }),
+    )
+    expect(catalog.entries).toHaveLength(3)
+
+    for (const entry of catalog.entries) {
+      expect(entry.identifier).toMatch(/^urn:air:sosumi\.ai:[a-z0-9-]+:[a-z0-9-]+$/)
+      expect(entry.displayName).toBeTruthy()
+      expect(entry.type).toMatch(/^[a-z]+\/[a-z0-9.+-]+(?:; .+)?$/i)
+      expect(Number("url" in entry) + Number("data" in entry)).toBe(1)
+      expect(entry.representativeQueries.length).toBeGreaterThanOrEqual(2)
+      expect(entry.representativeQueries.length).toBeLessThanOrEqual(5)
+    }
+
+    expect(catalog.entries.map((entry) => entry.type)).toEqual([
+      "application/mcp-server-card+json",
+      "application/a2a-agent-card+json",
+      'text/markdown; profile="urn:air:agent-skills"',
+    ])
+  })
+
   it("serves an RFC 9727 API catalog", async () => {
     const response = await SELF.fetch("https://sosumi.ai/.well-known/api-catalog")
 
@@ -116,6 +161,7 @@ describe("Agent discovery endpoints", () => {
     const link = response.headers.get("Link")
     expect(link).toContain('rel="api-catalog"')
     expect(link).toContain("/.well-known/api-catalog")
+    expect(link).toContain("/.well-known/ai-catalog.json")
     expect(link).toContain("/.well-known/agent-card.json")
     expect(link).toContain('</llms.txt>; rel="alternate"; type="text/markdown"')
     expect(link).toContain('</llms.txt>; rel="describedby"')
@@ -164,5 +210,19 @@ describe("Agent discovery endpoints", () => {
     const robots = await response.text()
     expect(robots).toContain("Content-Signal: search=yes, ai-input=yes, ai-train=no")
     expect(robots).toContain("Content-Usage: train-ai=n, search=y")
+  })
+
+  it("advertises the ARD manifest in HTML and robots.txt", async () => {
+    const [homepageResponse, robotsResponse] = await Promise.all([
+      SELF.fetch("https://sosumi.ai/"),
+      env.ASSETS.fetch(new Request("https://sosumi.ai/robots.txt")),
+    ])
+
+    expect(await homepageResponse.text()).toContain(
+      '<link rel="ai-catalog" href="/.well-known/ai-catalog.json">',
+    )
+    expect(await robotsResponse.text()).toContain(
+      "Agentmap: https://sosumi.ai/.well-known/ai-catalog.json",
+    )
   })
 })

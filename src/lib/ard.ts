@@ -1,0 +1,72 @@
+export interface AiCatalogEntry {
+  identifier: string
+  displayName: string
+  type: string
+  url: string
+  description: string
+  representativeQueries: string[]
+}
+
+export interface AiCatalog {
+  specVersion: string
+  host: {
+    displayName: string
+    identifier: string
+    documentationUrl: string
+  }
+  entries: AiCatalogEntry[]
+}
+
+/** Build the ARD capability manifest for the origin serving the request. */
+export function buildAiCatalog(origin: string): AiCatalog {
+  return {
+    specVersion: "1.0",
+    host: {
+      displayName: "sosumi.ai",
+      identifier: "did:web:sosumi.ai",
+      documentationUrl: `${origin}/`,
+    },
+    entries: [
+      {
+        identifier: "urn:air:sosumi.ai:server:mcp",
+        displayName: "Sosumi MCP Server",
+        type: "application/mcp-server-card+json",
+        url: `${origin}/.well-known/mcp/server-card.json`,
+        description:
+          "Searches and fetches Apple Developer documentation, Human Interface Guidelines, WWDC transcripts, and public Swift-DocC pages.",
+        representativeQueries: [
+          "Search Apple Developer documentation for URLSession",
+          "Fetch the SwiftUI View documentation as Markdown",
+          "Get the transcript for a WWDC session",
+          "Read a public Swift-DocC documentation page",
+        ],
+      },
+      {
+        identifier: "urn:air:sosumi.ai:agent:documentation",
+        displayName: "Sosumi Documentation Agent",
+        type: "application/a2a-agent-card+json",
+        url: `${origin}/.well-known/agent-card.json`,
+        description:
+          "An A2A agent for discovering and converting Apple and Swift-DocC documentation into clean Markdown.",
+        representativeQueries: [
+          "Find Apple documentation about Swift actors",
+          "Explain the Human Interface Guidelines for color",
+          "How do I make a custom Swift type conform to Sendable?",
+        ],
+      },
+      {
+        identifier: "urn:air:sosumi.ai:skill:sosumi",
+        displayName: "Sosumi Agent Skill",
+        type: 'text/markdown; profile="urn:air:agent-skills"',
+        url: `${origin}/.well-known/agent-skills/sosumi/SKILL.md`,
+        description:
+          "Instructions for using Sosumi to research Apple APIs, design guidance, videos, and Swift-DocC documentation.",
+        representativeQueries: [
+          "Research an Apple framework API before writing code",
+          "Look up current SwiftUI documentation",
+          "Find Apple's design guidance for an interface",
+        ],
+      },
+    ],
+  }
+}
