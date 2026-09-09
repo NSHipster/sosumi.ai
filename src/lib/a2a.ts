@@ -105,7 +105,15 @@ export function buildAgentCard(origin: string) {
 
 type A2AHttpStatus = 400 | 403 | 404 | 413 | 500 | 503
 
+const INT32_MAX = 2_147_483_647
 const metadataSchema = z.record(z.unknown())
+
+const nonNegativeInt32Schema = z.preprocess((value) => {
+  if (typeof value === "string" && /^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?$/.test(value)) {
+    return Number(value)
+  }
+  return value
+}, z.number().int().nonnegative().max(INT32_MAX))
 
 const authenticationInfoSchema = z
   .object({
@@ -129,7 +137,7 @@ const sendMessageConfigurationSchema = z
   .object({
     acceptedOutputModes: z.array(z.string()).optional(),
     taskPushNotificationConfig: taskPushNotificationConfigSchema.optional(),
-    historyLength: z.number().int().nonnegative().optional(),
+    historyLength: nonNegativeInt32Schema.optional(),
     returnImmediately: z.boolean().optional(),
   })
   .strict()
@@ -417,15 +425,11 @@ export function parseA2AListTasksQuery(query: URLSearchParams): number {
     throw malformed(`Invalid task status "${status}".`)
   }
 
-  parseIntegerQuery(query.get("historyLength"), "historyLength", 0)
+  parseIntegerQuery(query.get("historyLength"), "historyLength", 0, INT32_MAX)
 
   const timestamp = query.get("statusTimestampAfter")
-  if (
-    timestamp !== null &&
-    (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/.test(timestamp) ||
-      Number.isNaN(Date.parse(timestamp)))
-  ) {
-    throw malformed("statusTimestampAfter must be an ISO 8601 UTC timestamp.")
+  if (timestamp !== null && !isValidProtobufTimestamp(timestamp)) {
+    throw malformed("statusTimestampAfter must be a valid RFC 3339 protobuf Timestamp.")
   }
 
   const includeArtifacts = query.get("includeArtifacts")
@@ -647,6 +651,58 @@ function parseIntegerQuery(
     throw malformed(`${name} must be between ${minimum} and ${maximum}.`)
   }
   return parsed
+}
+
+function isValidProtobufTimestamp(value: string): boolean {
+  const match =
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?(Z|([+-])(\d{2}):(\d{2}))$/.exec(
+      value,
+    )
+  if (!match) {
+    return false
+  }
+
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  const hour = Number(match[4])
+  const minute = Number(match[5])
+  const second = Number(match[6])
+  const fraction = match[7] ?? ""
+  const offsetHour = Number(match[10] ?? 0)
+  const offsetMinute = Number(match[11] ?? 0)
+
+  if (
+    year < 1 ||
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > daysInMonth(year, month) ||
+    hour > 23 ||
+    minute > 59 ||
+    second > 59 ||
+    offsetHour > 23 ||
+    offsetMinute > 59
+  ) {
+    return false
+  }
+
+  const localTime = new Date(0)
+  localTime.setUTCFullYear(year, month - 1, day)
+  localTime.setUTCHours(hour, minute, second, Number(fraction.padEnd(3, "0").slice(0, 3)))
+
+  const offsetSign = match[9] === "-" ? -1 : 1
+  const offsetMilliseconds = offsetSign * (offsetHour * 60 + offsetMinute) * 60_000
+  const instant = localTime.getTime() - offsetMilliseconds
+  return instant >= -62_135_596_800_000 && instant <= 253_402_300_799_999
+}
+
+function daysInMonth(year: number, month: number): number {
+  if (month === 2) {
+    const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)
+    return leapYear ? 29 : 28
+  }
+  return [4, 6, 9, 11].includes(month) ? 30 : 31
 }
 
 function capabilityResponseTooLarge(): A2AError {

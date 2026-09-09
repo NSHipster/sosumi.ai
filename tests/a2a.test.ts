@@ -230,6 +230,28 @@ describe("A2A HTTP+JSON service", () => {
     expect(invoke).not.toHaveBeenCalled()
   })
 
+  it("enforces the protobuf int32 range for SendMessage history length", async () => {
+    await expect(
+      handleA2AMessage(
+        {
+          ...userMessage("Search for SwiftUI"),
+          configuration: { historyLength: "2147483647" },
+        },
+        async () => "Results",
+      ),
+    ).resolves.toBeTruthy()
+
+    await expect(
+      handleA2AMessage(
+        {
+          ...userMessage("Search for SwiftUI"),
+          configuration: { historyLength: 2_147_483_648 },
+        },
+        async () => "Unexpected",
+      ),
+    ).rejects.toMatchObject({ statusCode: 400, status: "INVALID_ARGUMENT" })
+  })
+
   it("rejects oversized request bodies before parsing them", async () => {
     const response = await app.request(
       "https://sosumi.ai/message:send",
@@ -305,15 +327,28 @@ describe("A2A HTTP+JSON service", () => {
   it("validates and reports the ListTasks page size", async () => {
     const headers = { "A2A-Version": A2A_PROTOCOL_VERSION }
     const bindings = { ASSETS: env.ASSETS, NODE_ENV: "development" }
-    const [selected, tooSmall, tooLarge, malformed] = await Promise.all([
-      app.request("https://sosumi.ai/tasks?pageSize=10", { headers }, bindings),
-      app.request("https://sosumi.ai/tasks?pageSize=0", { headers }, bindings),
-      app.request("https://sosumi.ai/tasks?pageSize=101", { headers }, bindings),
-      app.request("https://sosumi.ai/tasks?pageSize=ten", { headers }, bindings),
-    ])
+    const [selected, validTimestamp, tooSmall, tooLarge, malformed, historyOverflow, invalidDate] =
+      await Promise.all([
+        app.request("https://sosumi.ai/tasks?pageSize=10", { headers }, bindings),
+        app.request(
+          "https://sosumi.ai/tasks?historyLength=2147483647&statusTimestampAfter=2025-01-01T01%3A00%3A00%2B01%3A00",
+          { headers },
+          bindings,
+        ),
+        app.request("https://sosumi.ai/tasks?pageSize=0", { headers }, bindings),
+        app.request("https://sosumi.ai/tasks?pageSize=101", { headers }, bindings),
+        app.request("https://sosumi.ai/tasks?pageSize=ten", { headers }, bindings),
+        app.request("https://sosumi.ai/tasks?historyLength=2147483648", { headers }, bindings),
+        app.request(
+          "https://sosumi.ai/tasks?statusTimestampAfter=2025-02-30T00%3A00%3A00Z",
+          { headers },
+          bindings,
+        ),
+      ])
 
     await expect(selected.json()).resolves.toMatchObject({ pageSize: 10, totalSize: 0 })
-    for (const response of [tooSmall, tooLarge, malformed]) {
+    expect(validTimestamp.status).toBe(200)
+    for (const response of [tooSmall, tooLarge, malformed, historyOverflow, invalidDate]) {
       expect(response.status).toBe(400)
       await expect(response.json()).resolves.toMatchObject({
         error: { code: 400, status: "INVALID_ARGUMENT" },
