@@ -49,19 +49,43 @@ describe("A2A HTTP+JSON service", () => {
     expect(result.message.contextId).toBeTruthy()
   })
 
-  it("preserves context and honors text/plain output negotiation", async () => {
+  it("preserves context for Markdown responses", async () => {
     const result = await handleA2AMessage(
       {
         ...userMessage("Find Apple documentation about Swift actors", {
           contextId: "conversation-1",
         }),
-        configuration: { acceptedOutputModes: ["text/plain"] },
+        configuration: { acceptedOutputModes: ["text/markdown"] },
       },
       async () => "Search results",
     )
 
     expect(result.message.contextId).toBe("conversation-1")
-    expect(result.message.parts[0]?.mediaType).toBe("text/plain")
+    expect(result.message.parts[0]?.mediaType).toBe("text/markdown")
+  })
+
+  it("rejects plain-only output negotiation instead of mislabeling Markdown", async () => {
+    const response = await app.request(
+      "https://sosumi.ai/message:send",
+      {
+        method: "POST",
+        headers: {
+          "A2A-Version": A2A_PROTOCOL_VERSION,
+          "Content-Type": A2A_MEDIA_TYPE,
+        },
+        body: JSON.stringify({
+          ...userMessage("Fetch /documentation/swiftui/view"),
+          configuration: { acceptedOutputModes: ["text/plain"] },
+        }),
+      },
+      { ASSETS: env.ASSETS, NODE_ENV: "development" },
+    )
+
+    expect(response.status).toBe(400)
+    const body = (await response.json()) as {
+      error: { details: Array<{ reason: string }> }
+    }
+    expect(body.error.details[0]?.reason).toBe("CONTENT_TYPE_NOT_SUPPORTED")
   })
 
   it("normalizes natural-language searches and supported fetch targets", () => {

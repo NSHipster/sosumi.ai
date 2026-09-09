@@ -13,6 +13,9 @@ export const A2A_MEDIA_TYPE = "application/a2a+json"
 /** The synchronous HTTP+JSON operation exposed by Sosumi. */
 export const A2A_MESSAGE_PATH = "/message:send"
 
+/** The media type returned by every Sosumi A2A skill. */
+export const A2A_OUTPUT_MEDIA_TYPE = "text/markdown"
+
 /**
  * The transport binding advertised for the agent's interface.
  * Sosumi exposes its documentation service over plain HTTP requests,
@@ -88,7 +91,7 @@ export function buildAgentCard(origin: string) {
       pushNotifications: false,
     },
     defaultInputModes: ["text/plain"],
-    defaultOutputModes: ["text/markdown", "text/plain"],
+    defaultOutputModes: [A2A_OUTPUT_MEDIA_TYPE],
     skills,
   }
 }
@@ -100,7 +103,7 @@ type JsonRecord = Record<string, unknown>
 interface ParsedA2AMessage {
   contextId?: string
   prompt: string
-  outputMode: "text/markdown" | "text/plain"
+  outputMode: typeof A2A_OUTPUT_MEDIA_TYPE
 }
 
 export interface A2AMessageResponse {
@@ -110,7 +113,7 @@ export interface A2AMessageResponse {
     role: "ROLE_AGENT"
     parts: Array<{
       text: string
-      mediaType: "text/markdown" | "text/plain"
+      mediaType: typeof A2A_OUTPUT_MEDIA_TYPE
     }>
   }
 }
@@ -211,7 +214,7 @@ export function toA2AErrorResponse(error: unknown): {
  */
 export async function handleA2AMessage(
   input: unknown,
-  invoke: (endpoint: string, outputMode: "text/markdown" | "text/plain") => Promise<string>,
+  invoke: (endpoint: string, outputMode: typeof A2A_OUTPUT_MEDIA_TYPE) => Promise<string>,
 ): Promise<A2AMessageResponse> {
   const request = parseA2AMessage(input)
   const endpoint = resolveA2AEndpoint(request.prompt)
@@ -339,9 +342,9 @@ function parseTextPart(part: unknown, index: number): string {
   return part.text
 }
 
-function selectOutputMode(configuration: unknown): "text/markdown" | "text/plain" {
+function selectOutputMode(configuration: unknown): typeof A2A_OUTPUT_MEDIA_TYPE {
   if (configuration === undefined) {
-    return "text/markdown"
+    return A2A_OUTPUT_MEDIA_TYPE
   }
   if (!isJsonRecord(configuration)) {
     throw malformed("configuration must be an object when provided.")
@@ -357,23 +360,20 @@ function selectOutputMode(configuration: unknown): "text/markdown" | "text/plain
 
   const modes = configuration.acceptedOutputModes
   if (modes === undefined || (Array.isArray(modes) && modes.length === 0)) {
-    return "text/markdown"
+    return A2A_OUTPUT_MEDIA_TYPE
   }
   if (!Array.isArray(modes) || !modes.every((mode) => typeof mode === "string")) {
     throw malformed("configuration.acceptedOutputModes must be an array of media types.")
   }
-  if (modes.includes("text/markdown")) {
-    return "text/markdown"
-  }
-  if (modes.includes("text/plain")) {
-    return "text/plain"
+  if (modes.includes(A2A_OUTPUT_MEDIA_TYPE)) {
+    return A2A_OUTPUT_MEDIA_TYPE
   }
 
   throw new A2AError(
     400,
     "INVALID_ARGUMENT",
     "CONTENT_TYPE_NOT_SUPPORTED",
-    "Sosumi can return text/markdown or text/plain only.",
+    `Sosumi returns ${A2A_OUTPUT_MEDIA_TYPE} only.`,
   )
 }
 

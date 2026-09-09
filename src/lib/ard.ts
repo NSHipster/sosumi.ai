@@ -52,10 +52,10 @@ export function buildAiCatalog(origin: string): AiCatalog {
         type: "application/a2a-agent-card+json",
         url: `${origin}/.well-known/agent-card.json`,
         description:
-          "An A2A agent for searching and fetching Apple and Swift-DocC documentation as text or Markdown.",
+          "An A2A agent for searching and fetching Apple and Swift-DocC documentation as Markdown.",
         representativeQueries: [
           "Find Apple documentation about Swift actors",
-          "Fetch the SwiftUI View documentation as Markdown",
+          "Fetch /documentation/swiftui/view as Markdown",
           "Fetch the transcript for /videos/play/wwdc2021/10133",
         ],
       },

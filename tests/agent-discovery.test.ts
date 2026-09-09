@@ -247,6 +247,7 @@ describe("Agent discovery endpoints", () => {
     expect(card.supportedInterfaces[0].protocolBinding).toBe("HTTP+JSON")
 
     expect(card.capabilities).toBeTypeOf("object")
+    expect(card.defaultOutputModes).toEqual(["text/markdown"])
 
     expect(Array.isArray(card.skills)).toBe(true)
     expect(card.skills.length).toBeGreaterThan(0)
