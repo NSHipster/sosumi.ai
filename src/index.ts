@@ -5,7 +5,22 @@ import { cache } from "hono/cache"
 import { cors } from "hono/cors"
 import { HTTPException } from "hono/http-exception"
 import { trimTrailingSlash } from "hono/trailing-slash"
-import { buildAgentCard } from "./lib/a2a"
+import {
+  A2A_MEDIA_TYPE,
+  A2A_MESSAGE_PATH,
+  A2AError,
+  buildAgentCard,
+  capabilityError,
+  createA2AErrorResponse,
+  handleA2AMessage,
+  parseA2AListTasksQuery,
+  pushNotificationsNotSupported,
+  readA2ACapabilityText,
+  readA2AJsonBody,
+  taskNotFound,
+  unsupportedOperation,
+  validateA2ARequestHeaders,
+} from "./lib/a2a"
 import { AI_CATALOG_MEDIA_TYPE, buildAiCatalog } from "./lib/ard"
 import { buildDidDocument, DID_DOCUMENT_MEDIA_TYPE } from "./lib/did"
 import {
@@ -52,6 +67,32 @@ interface Env {
 }
 
 const app = new Hono<{ Bindings: Env }>()
+
+function requestedA2AVersion(request: Request): string | null {
+  return request.headers.get("A2A-Version") ?? new URL(request.url).searchParams.get("A2A-Version")
+}
+
+function fixedA2AError(request: Request, error: A2AError): Response {
+  try {
+    validateA2ARequestHeaders(
+      request.method === "POST" ? request.headers.get("Content-Type") : null,
+      requestedA2AVersion(request),
+    )
+    return createA2AErrorResponse(error)
+  } catch (headerError) {
+    return createA2AErrorResponse(headerError)
+  }
+}
+
+function taskIdFromPath(path: string): string {
+  const taskPath = path.slice("/tasks/".length)
+  const encodedTaskId = taskPath.split(/[:/]/, 1)[0] ?? ""
+  try {
+    return decodeURIComponent(encodedTaskId) || "unknown"
+  } catch {
+    return encodedTaskId || "unknown"
+  }
+}
 
 function isMarkdownContentRoute(path: string): boolean {
   return (
@@ -319,6 +360,73 @@ app.get("/.well-known/agent-card.json", (c) => {
     "Content-Type": "application/json; charset=utf-8",
   })
 })
+
+app.post(A2A_MESSAGE_PATH, async (c) => {
+  try {
+    validateA2ARequestHeaders(c.req.header("Content-Type") ?? null, requestedA2AVersion(c.req.raw))
+
+    const input = await readA2AJsonBody(c.req.raw)
+
+    const response = await handleA2AMessage(input, async (endpoint, outputMode) => {
+      const capabilityResponse = await app.request(
+        new URL(endpoint, c.req.url).toString(),
+        { headers: { Accept: outputMode } },
+        c.env,
+      )
+      const text = await readA2ACapabilityText(capabilityResponse)
+      if (!capabilityResponse.ok) {
+        throw capabilityError(
+          capabilityResponse.status,
+          text || `Sosumi capability request failed with status ${capabilityResponse.status}.`,
+        )
+      }
+      return text
+    })
+
+    return c.json(response, 200, {
+      "Content-Type": A2A_MEDIA_TYPE,
+      "Cache-Control": "no-store",
+    })
+  } catch (error) {
+    if (!(error instanceof A2AError)) {
+      console.error("A2A message execution failed", error)
+    }
+    return createA2AErrorResponse(error)
+  }
+})
+
+app.post("/message:stream", (c) =>
+  fixedA2AError(c.req.raw, unsupportedOperation("Streaming messages")),
+)
+
+app.get("/tasks", (c) => {
+  try {
+    validateA2ARequestHeaders(null, requestedA2AVersion(c.req.raw))
+    const pageSize = parseA2AListTasksQuery(new URL(c.req.url).searchParams)
+    return c.json({ tasks: [], nextPageToken: "", pageSize, totalSize: 0 }, 200, {
+      "Content-Type": A2A_MEDIA_TYPE,
+      "Cache-Control": "no-store",
+    })
+  } catch (error) {
+    return createA2AErrorResponse(error)
+  }
+})
+
+app.all("/tasks", (c) => fixedA2AError(c.req.raw, unsupportedOperation("This task operation")))
+
+app.all("/tasks/*", (c) => {
+  if (c.req.path.includes("/pushNotificationConfigs")) {
+    return fixedA2AError(c.req.raw, pushNotificationsNotSupported())
+  }
+  if (c.req.path.endsWith(":subscribe")) {
+    return fixedA2AError(c.req.raw, unsupportedOperation("Task subscriptions"))
+  }
+  return fixedA2AError(c.req.raw, taskNotFound(taskIdFromPath(c.req.path)))
+})
+
+app.get("/extendedAgentCard", (c) =>
+  fixedA2AError(c.req.raw, unsupportedOperation("Extended Agent Cards")),
+)
 
 app.get("/webmcp/manifest.json", (c) =>
   c.json(buildWebMcpManifest(), 200, {
