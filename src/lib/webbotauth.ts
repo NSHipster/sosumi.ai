@@ -28,6 +28,7 @@ import {
   signatureHeaders,
 } from "web-bot-auth"
 import { helpers, signerFromJWK } from "web-bot-auth/crypto"
+import { PUBLISHER_ORIGIN } from "./identity"
 
 export interface WebBotAuthEnv {
   /**
@@ -45,7 +46,7 @@ export const DIRECTORY_PATH = HTTP_MESSAGE_SIGNATURES_DIRECTORY
 /** Content type for the key directory response. */
 export const DIRECTORY_MEDIA_TYPE = MediaType.HTTP_MESSAGE_SIGNATURES_DIRECTORY
 
-const DEFAULT_SIGNATURE_AGENT = "https://sosumi.ai"
+const DEFAULT_SIGNATURE_AGENT = PUBLISHER_ORIGIN
 
 /**
  * How long an outbound request signature stays valid.
