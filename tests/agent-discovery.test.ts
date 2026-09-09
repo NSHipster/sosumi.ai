@@ -55,7 +55,7 @@ describe("Agent discovery endpoints", () => {
         identifier: PUBLISHER_DID,
       }),
     )
-    expect(catalog.entries).toHaveLength(3)
+    expect(catalog.entries).toHaveLength(2)
 
     for (const entry of catalog.entries) {
       expect(entry.identifier).toMatch(
@@ -70,7 +70,6 @@ describe("Agent discovery endpoints", () => {
 
     expect(catalog.entries.map((entry) => entry.type)).toEqual([
       "application/mcp-server-card+json",
-      "application/a2a-agent-card+json",
       'text/markdown; profile="urn:air:agent-skills"',
     ])
 

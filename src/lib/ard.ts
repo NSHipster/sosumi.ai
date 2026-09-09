@@ -47,19 +47,6 @@ export function buildAiCatalog(origin: string): AiCatalog {
         ],
       },
       {
-        identifier: `urn:air:${PUBLISHER_DOMAIN}:agent:documentation`,
-        displayName: "Sosumi Documentation Agent",
-        type: "application/a2a-agent-card+json",
-        url: `${origin}/.well-known/agent-card.json`,
-        description:
-          "An A2A agent for discovering and converting Apple and Swift-DocC documentation into clean Markdown.",
-        representativeQueries: [
-          "Find Apple documentation about Swift actors",
-          "Explain the Human Interface Guidelines for color",
-          "How do I make a custom Swift type conform to Sendable?",
-        ],
-      },
-      {
         identifier: `urn:air:${PUBLISHER_DOMAIN}:skill:${SKILL_NAME}`,
         displayName: "Sosumi Agent Skill",
         type: 'text/markdown; profile="urn:air:agent-skills"',
