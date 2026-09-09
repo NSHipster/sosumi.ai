@@ -1,15 +1,15 @@
+import { currentPublicSigningKey } from "./auth"
 import { PUBLISHER_DID, PUBLISHER_ORIGIN } from "./identity"
-import { webBotAuthPublicKey } from "./webbotauth"
 
 export const DID_DOCUMENT_MEDIA_TYPE = "application/did+ld+json"
 
 /**
  * Build the did:web document for Sosumi's stable publisher identity.
- * The verification method reuses the public half of the Web Bot Auth
- * signing key, which is configured out of band and never committed.
+ * The verification method reuses the public half of the application signing
+ * key, which is configured out of band and never committed.
  */
 export async function buildDidDocument() {
-  const publicKey = await webBotAuthPublicKey()
+  const publicKey = await currentPublicSigningKey()
   const document = {
     "@context": ["https://www.w3.org/ns/did/v1", "https://w3id.org/security/suites/jws-2020/v1"],
     id: PUBLISHER_DID,
