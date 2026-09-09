@@ -1,4 +1,4 @@
-import { SELF } from "cloudflare:test"
+import { env, SELF } from "cloudflare:test"
 import { describe, expect, it } from "vitest"
 
 describe("Agent discovery endpoints", () => {
@@ -88,10 +88,21 @@ describe("Agent discovery endpoints", () => {
     const response = await SELF.fetch("https://sosumi.ai/")
 
     expect(response.status).toBe(200)
+    expect(response.headers.get("Content-Usage")).toBe("train-ai=n, search=y")
 
     const link = response.headers.get("Link")
     expect(link).toContain('rel="api-catalog"')
     expect(link).toContain("/.well-known/api-catalog")
     expect(link).toContain("/.well-known/agent-card.json")
+  })
+
+  it("publishes AI content usage preferences in robots.txt", async () => {
+    const response = await env.ASSETS.fetch(new Request("https://sosumi.ai/robots.txt"))
+
+    expect(response.status).toBe(200)
+
+    const robots = await response.text()
+    expect(robots).toContain("Content-Signal: search=yes, ai-input=yes, ai-train=no")
+    expect(robots).toContain("Content-Usage: train-ai=n, search=y")
   })
 })

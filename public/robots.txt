@@ -1,5 +1,6 @@
 User-agent: *
 Content-Signal: search=yes, ai-input=yes, ai-train=no
+Content-Usage: train-ai=n, search=y
 Allow: /
 Disallow: /documentation/
 Disallow: /external/
