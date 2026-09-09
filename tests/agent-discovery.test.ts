@@ -233,6 +233,7 @@ describe("Agent discovery endpoints", () => {
         protocolBinding: string
       }>
       capabilities: Record<string, unknown>
+      defaultOutputModes: string[]
       skills: Array<{ id: string; name: string; description: string; tags: string[] }>
     }
 

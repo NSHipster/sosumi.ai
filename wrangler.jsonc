@@ -22,7 +22,11 @@
       "/.well-known/agent-card.json",
       "/.well-known/agent-skills/*",
       "/.well-known/security.txt",
-      "/message:send"
+      "/message:send",
+      "/message:stream",
+      "/tasks",
+      "/tasks/*",
+      "/extendedAgentCard"
     ]
   },
   "observability": {

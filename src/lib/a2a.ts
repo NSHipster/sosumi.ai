@@ -1,3 +1,4 @@
+import { z } from "zod"
 import { resolveFetchEndpoint, resolveSearchEndpoint } from "./cli-endpoints"
 import { MCP_SERVER_INFO, TOOL_DEFINITIONS } from "./mcp"
 
@@ -15,6 +16,12 @@ export const A2A_MESSAGE_PATH = "/message:send"
 
 /** The media type returned by every Sosumi A2A skill. */
 export const A2A_OUTPUT_MEDIA_TYPE = "text/markdown"
+
+/** Maximum wire size accepted for an unauthenticated A2A request body. */
+export const A2A_MAX_REQUEST_BYTES = 32 * 1024
+
+/** Maximum capability output that can be safely wrapped in an A2A JSON response. */
+export const A2A_MAX_RESPONSE_BYTES = 8 * 1024 * 1024
 
 /**
  * The transport binding advertised for the agent's interface.
@@ -96,9 +103,70 @@ export function buildAgentCard(origin: string) {
   }
 }
 
-type A2AHttpStatus = 400 | 403 | 404 | 500 | 502
+type A2AHttpStatus = 400 | 403 | 404 | 413 | 500 | 503
 
-type JsonRecord = Record<string, unknown>
+const metadataSchema = z.record(z.unknown())
+
+const authenticationInfoSchema = z
+  .object({
+    scheme: z.string().min(1),
+    credentials: z.string().optional(),
+  })
+  .strict()
+
+const taskPushNotificationConfigSchema = z
+  .object({
+    tenant: z.string().optional(),
+    id: z.string().optional(),
+    taskId: z.string().optional(),
+    url: z.string().url(),
+    token: z.string().optional(),
+    authentication: authenticationInfoSchema.optional(),
+  })
+  .strict()
+
+const sendMessageConfigurationSchema = z
+  .object({
+    acceptedOutputModes: z.array(z.string()).optional(),
+    taskPushNotificationConfig: taskPushNotificationConfigSchema.optional(),
+    historyLength: z.number().int().nonnegative().optional(),
+    returnImmediately: z.boolean().optional(),
+  })
+  .strict()
+
+const partSchema = z
+  .object({
+    text: z.string().optional(),
+    raw: z.string().optional(),
+    url: z.string().optional(),
+    data: z.unknown().optional(),
+    metadata: metadataSchema.optional(),
+    filename: z.string().optional(),
+    mediaType: z.string().min(1).optional(),
+  })
+  .strict()
+
+const messageSchema = z
+  .object({
+    messageId: z.string().min(1),
+    contextId: z.string().min(1).optional(),
+    taskId: z.string().min(1).optional(),
+    role: z.enum(["ROLE_UNSPECIFIED", "ROLE_USER", "ROLE_AGENT"]),
+    parts: z.array(partSchema).min(1),
+    metadata: metadataSchema.optional(),
+    extensions: z.array(z.string().min(1)).optional(),
+    referenceTaskIds: z.array(z.string().min(1)).optional(),
+  })
+  .strict()
+
+const sendMessageRequestSchema = z
+  .object({
+    tenant: z.string().optional(),
+    message: messageSchema,
+    configuration: sendMessageConfigurationSchema.optional(),
+    metadata: metadataSchema.optional(),
+  })
+  .strict()
 
 interface ParsedA2AMessage {
   contextId?: string
@@ -208,6 +276,104 @@ export function toA2AErrorResponse(error: unknown): {
   }
 }
 
+/** Serialize a failure with the response headers required by the HTTP+JSON binding. */
+export function createA2AErrorResponse(error: unknown): Response {
+  const failure = toA2AErrorResponse(error)
+  return new Response(JSON.stringify(failure.body), {
+    status: failure.statusCode,
+    headers: {
+      "Content-Type": A2A_MEDIA_TYPE,
+      "Cache-Control": "no-store",
+    },
+  })
+}
+
+/** Read and parse a JSON request without buffering more than the A2A body limit. */
+export async function readA2AJsonBody(request: Request): Promise<unknown> {
+  const contentLength = request.headers.get("Content-Length")
+  if (contentLength !== null) {
+    const declaredBytes = Number(contentLength)
+    if (!Number.isSafeInteger(declaredBytes) || declaredBytes < 0) {
+      throw malformed("Content-Length must be a non-negative integer.")
+    }
+    if (declaredBytes > A2A_MAX_REQUEST_BYTES) {
+      throw requestTooLarge()
+    }
+  }
+
+  if (!request.body) {
+    throw malformed("A JSON payload is required.")
+  }
+
+  const bytes = await readLimitedBody(request.body, A2A_MAX_REQUEST_BYTES, requestTooLarge, () =>
+    malformed("The JSON payload could not be read."),
+  )
+
+  try {
+    return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes))
+  } catch {
+    throw malformed("Invalid JSON payload.")
+  }
+}
+
+/** Read a capability response without buffering an unbounded document. */
+export async function readA2ACapabilityText(response: Response): Promise<string> {
+  const contentLength = response.headers.get("Content-Length")
+  if (contentLength !== null) {
+    const declaredBytes = Number(contentLength)
+    if (Number.isSafeInteger(declaredBytes) && declaredBytes > A2A_MAX_RESPONSE_BYTES) {
+      throw capabilityResponseTooLarge()
+    }
+  }
+
+  if (!response.body) {
+    return ""
+  }
+
+  const bytes = await readLimitedBody(
+    response.body,
+    A2A_MAX_RESPONSE_BYTES,
+    capabilityResponseTooLarge,
+    () => new A2AError(503, "UNAVAILABLE", null, "The capability response could not be read."),
+  )
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes)
+  } catch {
+    throw new A2AError(503, "UNAVAILABLE", null, "The capability returned invalid UTF-8.")
+  }
+}
+
+/** Return the canonical error for an operation against unknown stateless task data. */
+export function taskNotFound(taskId: string): A2AError {
+  return new A2AError(
+    404,
+    "NOT_FOUND",
+    "TASK_NOT_FOUND",
+    `Task "${taskId}" was not created by this stateless agent.`,
+    { taskId },
+  )
+}
+
+/** Return the canonical error for an operation disabled by the Agent Card. */
+export function unsupportedOperation(operation: string): A2AError {
+  return new A2AError(
+    400,
+    "FAILED_PRECONDITION",
+    "UNSUPPORTED_OPERATION",
+    `${operation} is not supported by this stateless agent.`,
+  )
+}
+
+/** Return the canonical error for push operations disabled by the Agent Card. */
+export function pushNotificationsNotSupported(): A2AError {
+  return new A2AError(
+    400,
+    "FAILED_PRECONDITION",
+    "PUSH_NOTIFICATION_NOT_SUPPORTED",
+    "Sosumi does not support A2A push notifications.",
+  )
+}
+
 /**
  * Execute a synchronous A2A message using one of Sosumi's existing HTTP
  * capabilities and return a direct Message response (no persistent Task).
@@ -235,7 +401,11 @@ export function resolveA2AEndpoint(prompt: string): string {
   const fetchTarget = extractFetchTarget(prompt)
   if (fetchTarget) {
     try {
-      return resolveFetchEndpoint(fetchTarget)
+      const endpoint = resolveFetchEndpoint(fetchTarget)
+      if (endpoint.startsWith("/external/")) {
+        return `/external/${encodeURIComponent(endpoint.slice("/external/".length))}`
+      }
+      return endpoint
     } catch (error) {
       throw malformed(error instanceof Error ? error.message : "Invalid fetch target.")
     }
@@ -266,41 +436,34 @@ export function capabilityError(statusCode: number, message: string): A2AError {
   if (statusCode === 404) {
     return new A2AError(404, "NOT_FOUND", null, message)
   }
-  return new A2AError(502, "UNAVAILABLE", null, message)
+  return new A2AError(503, "UNAVAILABLE", null, message)
 }
 
 function parseA2AMessage(input: unknown): ParsedA2AMessage {
-  if (!isJsonRecord(input) || !isJsonRecord(input.message)) {
-    throw malformed("message is required.")
+  const parsed = sendMessageRequestSchema.safeParse(input)
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0]
+    const field = issue?.path.length ? issue.path.join(".") : "request"
+    throw malformed(`${field}: ${issue?.message ?? "Invalid A2A request."}`)
   }
 
-  const message = input.message
-  if (typeof message.messageId !== "string" || !message.messageId.trim()) {
-    throw malformed("message.messageId is required.")
+  const request = parsed.data
+  if (request.tenant) {
+    throw malformed("tenant is not supported by this interface.")
   }
+  const message = request.message
   if (message.role !== "ROLE_USER") {
     throw malformed('message.role must be "ROLE_USER".')
   }
-  if (message.contextId !== undefined && !isNonEmptyString(message.contextId)) {
-    throw malformed("message.contextId must be a non-empty string when provided.")
-  }
   if (message.taskId !== undefined) {
-    if (!isNonEmptyString(message.taskId)) {
-      throw malformed("message.taskId must be a non-empty string when provided.")
-    }
-    throw new A2AError(
-      404,
-      "NOT_FOUND",
-      "TASK_NOT_FOUND",
-      `Task "${message.taskId}" was not created by this stateless agent.`,
-      { taskId: message.taskId },
-    )
+    throw taskNotFound(message.taskId)
   }
-  if (!Array.isArray(message.parts) || message.parts.length === 0) {
-    throw malformed("message.parts must contain at least one text part.")
+  const referencedTaskId = message.referenceTaskIds?.[0]
+  if (referencedTaskId) {
+    throw taskNotFound(referencedTaskId)
   }
 
-  const textParts = message.parts.map((part, index) => parseTextPart(part, index))
+  const textParts = message.parts.map(parseTextPart)
   const prompt = textParts.join("\n").trim()
   if (!prompt) {
     throw malformed("message.parts must contain non-empty text.")
@@ -310,17 +473,13 @@ function parseA2AMessage(input: unknown): ParsedA2AMessage {
   }
 
   return {
-    contextId: typeof message.contextId === "string" ? message.contextId : undefined,
+    contextId: message.contextId,
     prompt,
-    outputMode: selectOutputMode(input.configuration),
+    outputMode: selectOutputMode(request.configuration),
   }
 }
 
-function parseTextPart(part: unknown, index: number): string {
-  if (!isJsonRecord(part)) {
-    throw malformed(`message.parts[${index}] must be an object.`)
-  }
-
+function parseTextPart(part: z.infer<typeof partSchema>): string {
   const contentFields = ["text", "raw", "url", "data"].filter((field) => field in part)
   if (contentFields.length !== 1 || contentFields[0] !== "text" || typeof part.text !== "string") {
     throw new A2AError(
@@ -342,20 +501,14 @@ function parseTextPart(part: unknown, index: number): string {
   return part.text
 }
 
-function selectOutputMode(configuration: unknown): typeof A2A_OUTPUT_MEDIA_TYPE {
+function selectOutputMode(
+  configuration: z.infer<typeof sendMessageConfigurationSchema> | undefined,
+): typeof A2A_OUTPUT_MEDIA_TYPE {
   if (configuration === undefined) {
     return A2A_OUTPUT_MEDIA_TYPE
   }
-  if (!isJsonRecord(configuration)) {
-    throw malformed("configuration must be an object when provided.")
-  }
   if (configuration.taskPushNotificationConfig !== undefined) {
-    throw new A2AError(
-      400,
-      "FAILED_PRECONDITION",
-      "PUSH_NOTIFICATION_NOT_SUPPORTED",
-      "Sosumi does not support A2A push notifications.",
-    )
+    throw pushNotificationsNotSupported()
   }
 
   const modes = configuration.acceptedOutputModes
@@ -400,13 +553,69 @@ function trimTargetPunctuation(target: string): string {
 }
 
 function malformed(message: string): A2AError {
-  return new A2AError(400, "INVALID_ARGUMENT", "REQUEST_MALFORMED", message)
+  return new A2AError(400, "INVALID_ARGUMENT", null, message)
 }
 
-function isJsonRecord(value: unknown): value is JsonRecord {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
+function requestTooLarge(): A2AError {
+  return new A2AError(
+    413,
+    "RESOURCE_EXHAUSTED",
+    null,
+    `Request body exceeds the ${A2A_MAX_REQUEST_BYTES}-byte limit.`,
+  )
 }
 
-function isNonEmptyString(value: unknown): value is string {
-  return typeof value === "string" && value.trim().length > 0
+function capabilityResponseTooLarge(): A2AError {
+  return new A2AError(
+    503,
+    "UNAVAILABLE",
+    null,
+    `Capability response exceeds the ${A2A_MAX_RESPONSE_BYTES}-byte A2A limit.`,
+  )
+}
+
+async function readLimitedBody(
+  body: ReadableStream<Uint8Array>,
+  maximumBytes: number,
+  tooLarge: () => A2AError,
+  readFailure: () => A2AError,
+): Promise<Uint8Array> {
+  const reader = body.getReader()
+  const chunks: Uint8Array[] = []
+  let byteLength = 0
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) {
+        break
+      }
+
+      byteLength += value.byteLength
+      if (byteLength > maximumBytes) {
+        try {
+          await reader.cancel()
+        } catch {
+          // The bounded error below is more useful than a cancellation failure.
+        }
+        throw tooLarge()
+      }
+      chunks.push(value)
+    }
+  } catch (error) {
+    if (error instanceof A2AError) {
+      throw error
+    }
+    throw readFailure()
+  } finally {
+    reader.releaseLock()
+  }
+
+  const bytes = new Uint8Array(byteLength)
+  let offset = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return bytes
 }

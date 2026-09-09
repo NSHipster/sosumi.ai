@@ -2,10 +2,14 @@ import { env } from "cloudflare:test"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import app from "../src/index"
 import {
+  A2A_MAX_REQUEST_BYTES,
+  A2A_MAX_RESPONSE_BYTES,
   A2A_MEDIA_TYPE,
   A2A_PROTOCOL_VERSION,
   type A2AMessageResponse,
+  capabilityError,
   handleA2AMessage,
+  readA2ACapabilityText,
   resolveA2AEndpoint,
   validateA2ARequestHeaders,
 } from "../src/lib/a2a"
@@ -95,6 +99,14 @@ describe("A2A HTTP+JSON service", () => {
     expect(
       resolveA2AEndpoint("Read https://developer.apple.com/videos/play/wwdc2021/10133/ for me."),
     ).toBe("/videos/play/wwdc2021/10133")
+
+    const externalTarget =
+      "https://apple.github.io/swift-argument-parser/documentation/argumentparser?language=swift#overview"
+    const externalEndpoint = resolveA2AEndpoint(`Fetch ${externalTarget}`)
+    const internalUrl = new URL(externalEndpoint, "https://sosumi.ai")
+    expect(internalUrl.search).toBe("")
+    expect(internalUrl.hash).toBe("")
+    expect(decodeURIComponent(internalUrl.pathname.slice("/external/".length))).toBe(externalTarget)
   })
 
   it("requires the protocol version advertised by the Agent Card", () => {
@@ -187,10 +199,120 @@ describe("A2A HTTP+JSON service", () => {
       error: { details: Array<{ reason: string }> }
     }
     const malformedJsonBody = (await malformedJson.json()) as {
-      error: { code: number; details: Array<{ reason: string }> }
+      error: { code: number; status: string; details: unknown[] }
     }
     expect(missingVersionBody.error.details[0]?.reason).toBe("VERSION_NOT_SUPPORTED")
     expect(malformedJsonBody.error.code).toBe(400)
-    expect(malformedJsonBody.error.details[0]?.reason).toBe("REQUEST_MALFORMED")
+    expect(malformedJsonBody.error.status).toBe("INVALID_ARGUMENT")
+    expect(malformedJsonBody.error.details).toEqual([])
+  })
+
+  it("validates the complete SendMessage request before invoking a capability", async () => {
+    const invoke = vi.fn(async () => "Unexpected")
+    const valid = userMessage("Search for SwiftUI")
+    const malformedRequests = [
+      { ...valid, tenant: 42 },
+      { ...valid, metadata: [] },
+      { ...valid, configuration: { returnImmediately: "yes" } },
+      { ...valid, message: { ...valid.message, metadata: [] } },
+      { ...valid, message: { ...valid.message, parts: [{ text: "SwiftUI", extra: true }] } },
+    ]
+
+    for (const request of malformedRequests) {
+      await expect(handleA2AMessage(request, invoke)).rejects.toMatchObject({
+        statusCode: 400,
+        status: "INVALID_ARGUMENT",
+      })
+    }
+    expect(invoke).not.toHaveBeenCalled()
+  })
+
+  it("rejects oversized request bodies before parsing them", async () => {
+    const response = await app.request(
+      "https://sosumi.ai/message:send",
+      {
+        method: "POST",
+        headers: {
+          "A2A-Version": A2A_PROTOCOL_VERSION,
+          "Content-Type": A2A_MEDIA_TYPE,
+        },
+        body: JSON.stringify(userMessage("x".repeat(A2A_MAX_REQUEST_BYTES))),
+      },
+      { ASSETS: env.ASSETS, NODE_ENV: "development" },
+    )
+
+    expect(response.status).toBe(413)
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 413, status: "RESOURCE_EXHAUSTED" },
+    })
+  })
+
+  it("serves the stateless task surface with A2A protocol responses", async () => {
+    const headers = { "A2A-Version": A2A_PROTOCOL_VERSION }
+    const bindings = { ASSETS: env.ASSETS, NODE_ENV: "development" }
+    const [list, missing, cancel, stream, subscribe, push, extended] = await Promise.all([
+      app.request("https://sosumi.ai/tasks", { headers }, bindings),
+      app.request("https://sosumi.ai/tasks/missing", { headers }, bindings),
+      app.request(
+        "https://sosumi.ai/tasks/missing:cancel",
+        { method: "POST", headers: { ...headers, "Content-Type": A2A_MEDIA_TYPE } },
+        bindings,
+      ),
+      app.request(
+        "https://sosumi.ai/message:stream",
+        { method: "POST", headers: { ...headers, "Content-Type": A2A_MEDIA_TYPE } },
+        bindings,
+      ),
+      app.request("https://sosumi.ai/tasks/missing:subscribe", { headers }, bindings),
+      app.request(
+        "https://sosumi.ai/tasks/missing/pushNotificationConfigs",
+        { method: "POST", headers: { ...headers, "Content-Type": A2A_MEDIA_TYPE } },
+        bindings,
+      ),
+      app.request("https://sosumi.ai/extendedAgentCard", { headers }, bindings),
+    ])
+
+    expect(await list.json()).toEqual({
+      tasks: [],
+      nextPageToken: "",
+      pageSize: 50,
+      totalSize: 0,
+    })
+    expect(missing.status).toBe(404)
+
+    const reasons = await Promise.all(
+      [missing, cancel, stream, subscribe, push, extended].map(async (response) => {
+        expect(response.headers.get("Content-Type")).toContain(A2A_MEDIA_TYPE)
+        const body = (await response.json()) as {
+          error: { details: Array<{ reason: string }> }
+        }
+        return body.error.details[0]?.reason
+      }),
+    )
+    expect(reasons).toEqual([
+      "TASK_NOT_FOUND",
+      "TASK_NOT_FOUND",
+      "UNSUPPORTED_OPERATION",
+      "UNSUPPORTED_OPERATION",
+      "PUSH_NOTIFICATION_NOT_SUPPORTED",
+      "UNSUPPORTED_OPERATION",
+    ])
+  })
+
+  it("maps unavailable capability failures to HTTP 503", () => {
+    expect(capabilityError(502, "upstream failed")).toMatchObject({
+      statusCode: 503,
+      status: "UNAVAILABLE",
+    })
+  })
+
+  it("rejects capability output declared above the response limit", async () => {
+    const response = new Response("small", {
+      headers: { "Content-Length": String(A2A_MAX_RESPONSE_BYTES + 1) },
+    })
+    await expect(readA2ACapabilityText(response)).rejects.toMatchObject({
+      statusCode: 503,
+      status: "UNAVAILABLE",
+    })
   })
 })
