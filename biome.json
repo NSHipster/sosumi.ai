@@ -14,7 +14,8 @@
       "wrangler.jsonc",
       "vitest.config.ts",
       "src/**/*",
-      "tests/**/*"
+      "tests/**/*",
+      "monitor/tests/**/*"
     ]
   },
   "formatter": {

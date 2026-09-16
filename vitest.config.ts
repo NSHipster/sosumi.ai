@@ -1,7 +1,7 @@
 import { cloudflareTest } from "@cloudflare/vitest-pool-workers"
 import { defineConfig } from "vitest/config"
 
-export default defineConfig({
+const appProject = {
   // Vitest 4 replaces `test.poolOptions.workers` with the `cloudflareTest` plugin.
   plugins: [
     cloudflareTest({
@@ -20,6 +20,8 @@ export default defineConfig({
     }),
   ],
   test: {
+    name: "app",
+    include: ["tests/**/*.test.ts"],
     // Handle CommonJS modules properly
     deps: {
       optimizer: {
@@ -28,5 +30,24 @@ export default defineConfig({
         },
       },
     },
+  },
+}
+
+export default defineConfig({
+  test: {
+    projects: [
+      appProject,
+      {
+        plugins: [
+          cloudflareTest({
+            wrangler: { configPath: "./monitor/wrangler.jsonc" },
+          }),
+        ],
+        test: {
+          name: "monitor",
+          include: ["monitor/tests/**/*.test.ts"],
+        },
+      },
+    ],
   },
 })
