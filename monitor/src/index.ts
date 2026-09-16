@@ -51,18 +51,80 @@ async function runMcpHealthCheck(): Promise<void> {
   }
 }
 
-type HealthTransition = "failed" | "recovered" | "none";
+type PendingAlert = {
+  id: number;
+  subject: string;
+  body: string;
+};
 
-// Persists the last known health state so alerts fire only on transitions,
-// rather than on every cron run during a sustained outage.
-export class MonitorState extends DurableObject {
-  async reportResult(healthy: boolean): Promise<HealthTransition> {
-    const previous = (await this.ctx.storage.get<boolean>("healthy")) ?? true;
-    if (healthy === previous) {
-      return "none";
+export class MonitorState extends DurableObject<Env> {
+  private sending: Promise<void> | undefined;
+
+  constructor(ctx: DurableObjectState, env: Env) {
+    super(ctx, env);
+    ctx.storage.sql.exec(`
+      CREATE TABLE IF NOT EXISTS pending_alerts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        subject TEXT NOT NULL,
+        body TEXT NOT NULL
+      )
+    `);
+  }
+
+  async reportResult(healthy: boolean, error?: string): Promise<void> {
+    // Keep the existing health key. Save each transition and its alert together.
+    this.ctx.storage.transactionSync(() => {
+      const previous = this.ctx.storage.kv.get<boolean>("healthy") ?? true;
+      if (healthy === previous) {
+        return;
+      }
+
+      const subject = healthy
+        ? "Sosumi MCP Recovered: Health check passing"
+        : "Sosumi MCP Alert: Health check failed";
+      const lines = [
+        healthy
+          ? "The MCP client health check is passing again."
+          : "The MCP client health check failed.",
+        `URL: ${TARGET_URL}`,
+        `Time: ${new Date().toISOString()}`,
+      ];
+      if (!healthy) {
+        lines.push(`Error: ${error}`);
+      }
+
+      this.ctx.storage.sql.exec(
+        "INSERT INTO pending_alerts (subject, body) VALUES (?, ?)",
+        subject,
+        lines.join("\n"),
+      );
+      this.ctx.storage.kv.put("healthy", healthy);
+    });
+
+    // Every cron run retries pending alerts, even if health has not changed.
+    // Overlapping reports share one sender while email I/O is in progress.
+    if (!this.sending) {
+      this.sending = this.sendPendingAlerts().finally(() => {
+        this.sending = undefined;
+      });
     }
-    await this.ctx.storage.put("healthy", healthy);
-    return healthy ? "recovered" : "failed";
+    await this.sending;
+  }
+
+  private async sendPendingAlerts(): Promise<void> {
+    while (true) {
+      const [alert] = this.ctx.storage.sql
+        .exec<PendingAlert>("SELECT id, subject, body FROM pending_alerts ORDER BY id LIMIT 1")
+        .toArray();
+      if (!alert) {
+        return;
+      }
+
+      await sendAlert(this.env, alert.subject, alert.body);
+      // A crash after acceptance but before deletion can cause a duplicate email.
+      // Keep the alert until acceptance so a failed send cannot discard it.
+      this.ctx.storage.sql.exec("DELETE FROM pending_alerts WHERE id = ?", alert.id);
+    }
   }
 }
 
@@ -89,29 +151,9 @@ export default {
     }
 
     const stub = env.MONITOR_STATE.get(env.MONITOR_STATE.idFromName("singleton"));
-    const transition = await stub.reportResult(error === undefined);
-
-    if (transition === "failed") {
-      await sendAlert(
-        env,
-        "Sosumi MCP Alert: Health check failed",
-        [
-          "The MCP client health check failed.",
-          `URL: ${TARGET_URL}`,
-          `Time: ${new Date().toISOString()}`,
-          `Error: ${error instanceof Error ? error.message : String(error)}`,
-        ].join("\n"),
-      );
-    } else if (transition === "recovered") {
-      await sendAlert(
-        env,
-        "Sosumi MCP Recovered: Health check passing",
-        [
-          "The MCP client health check is passing again.",
-          `URL: ${TARGET_URL}`,
-          `Time: ${new Date().toISOString()}`,
-        ].join("\n"),
-      );
-    }
+    await stub.reportResult(
+      error === undefined,
+      error instanceof Error ? error.message : String(error),
+    );
   },
 } satisfies ExportedHandler<Env>;
