@@ -516,7 +516,7 @@ function renderHIGTocItems(items: HIGTocItem[], headingLevel: number): string {
   let markdown = ""
 
   for (const item of items) {
-    if (item.type === "module" || item.type === "symbol") {
+    if (item.type === "module" || item.type === "symbol" || item.type === "collection") {
       // Ensure blank line before heading when preceding content was a list
       if (markdown && !markdown.endsWith("\n\n")) {
         markdown += "\n"

@@ -229,6 +229,49 @@ describe("HIG Module", () => {
       expect(result).toMatch(/\n\n### Foundations/)
     })
 
+    it("should render collection groups and their nested articles", async () => {
+      const toc: HIGTableOfContents = {
+        ...higTocData,
+        interfaceLanguages: {
+          swift: [
+            {
+              path: "/design/human-interface-guidelines",
+              title: "Human Interface Guidelines",
+              type: "module",
+              children: [
+                {
+                  path: "/design/human-interface-guidelines/components",
+                  title: "Components",
+                  type: "collection",
+                  children: [
+                    {
+                      path: "/design/human-interface-guidelines/menus-and-actions",
+                      title: "Menus and actions",
+                      type: "collection",
+                      children: [
+                        {
+                          path: "/design/human-interface-guidelines/buttons",
+                          title: "Buttons",
+                          type: "article",
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      }
+
+      const result = await renderHIGTableOfContents(toc)
+
+      expect(result).toContain(
+        "### Components\n\n#### Menus and actions\n\n" +
+          "- [Buttons](/design/human-interface-guidelines/buttons)\n",
+      )
+    })
+
     it("should render HIG page with proper front matter", async () => {
       const result = await renderHIGFromJSON(
         higGettingStartedData as HIGPageJSON,
