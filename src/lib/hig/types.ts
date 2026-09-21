@@ -29,7 +29,7 @@ export interface HIGTocItem {
   icon?: string
   path: string
   title: string
-  type: "module" | "symbol" | "article"
+  type: "module" | "symbol" | "collection" | "article"
 }
 
 /**
