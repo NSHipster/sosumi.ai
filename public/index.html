@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>sosumi.ai - Apple Docs for LLMs</title>
     <meta name="description"
         content="sosumi.ai provides Apple Developer documentation in an AI-readable format by converting JavaScript-rendered pages into Markdown.">
@@ -64,6 +64,11 @@
             --code-key-color: oklch(60% 0.15 70);
             --code-string-color: oklch(55% 0.2 70);
             --code-punctuation-color: var(--text-tertiary);
+
+            --edge-top-background: var(--surface);
+            --edge-bottom-background: var(--surface);
+            --edge-top-height: max(12px, env(safe-area-inset-top));
+            --edge-bottom-height: max(12px, env(safe-area-inset-bottom));
         }
 
         @media (prefers-color-scheme: dark) {
@@ -87,16 +92,54 @@
 
         html {
             font-size: 100%;
+            background-color: var(--edge-top-background);
+            scroll-padding-top: var(--edge-top-height);
+            scroll-padding-bottom: var(--edge-bottom-height);
         }
 
         body {
             font-family: var(--font-sans);
             color: var(--text);
-            background-color: var(--surface);
+            background-color: var(--edge-bottom-background);
             max-width: 52rem;
             margin: 3rem auto;
-            padding: 1.5rem;
+            padding: 1.5rem max(1.5rem, env(safe-area-inset-right)) 1.5rem max(1.5rem, env(safe-area-inset-left));
             line-height: 1.6;
+        }
+
+        /* Fixed strips that mobile Safari samples to tint its status bar and toolbar */
+        .edge-top,
+        .edge-bottom {
+            position: fixed;
+            left: 0;
+            right: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .edge-top {
+            top: 0;
+            height: var(--edge-top-height);
+        }
+
+        .edge-bottom {
+            bottom: 0;
+            height: var(--edge-bottom-height);
+        }
+
+        .edge-top::after,
+        .edge-bottom::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+        }
+
+        .edge-top::after {
+            background-color: var(--edge-top-background);
+        }
+
+        .edge-bottom::after {
+            background-color: var(--edge-bottom-background);
         }
 
         h1 {
@@ -582,6 +625,9 @@
 </head>
 
 <body>
+    <div class="edge-top" aria-hidden="true"></div>
+    <div class="edge-bottom" aria-hidden="true"></div>
+
     <header>
         <h1>
             <a href="/" accesskey="1">sosumi.ai</a>
