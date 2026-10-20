@@ -92,8 +92,9 @@ export interface ContentItem {
   deprecated?: boolean
 
   /**
-   * Present on reference entries for conditional conformances
-   * (e.g. "Conforms when `Element` conforms to `Hashable`.").
+   * Present on reference entries for conditional conformances and members
+   * (e.g. "Conforms when `Element` conforms to `Hashable`."
+   * or "Available when `Element` conforms to `Hashable`.").
    */
   conformance?: {
     conformancePrefix?: ContentItem[]
