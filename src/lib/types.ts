@@ -90,6 +90,17 @@ export interface ContentItem {
 
   /** Present on reference entries for deprecated symbols. */
   deprecated?: boolean
+
+  /**
+   * Present on reference entries for conditional conformances and members
+   * (e.g. "Conforms when `Element` conforms to `Hashable`."
+   * or "Available when `Element` conforms to `Hashable`.").
+   */
+  conformance?: {
+    conformancePrefix?: ContentItem[]
+    availabilityPrefix?: ContentItem[]
+    constraints?: ContentItem[]
+  }
 }
 
 // ============================================================================

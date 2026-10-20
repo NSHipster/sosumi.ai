@@ -614,13 +614,43 @@ function renderRelationships(
       markdown += `## ${rel.title}\n\n`
       for (const id of rel.identifiers) {
         const { title, url } = resolveLink(id, variants, references, externalOrigin)
-        markdown += `- [${title}](${url})\n`
+        const condition = renderCondition(
+          references?.[id],
+          "conformancePrefix",
+          references,
+          externalOrigin,
+        )
+        markdown += `- [${title}](${url})${condition ? ` ${condition}` : ""}\n`
       }
       markdown += "\n"
     }
   }
 
   return markdown
+}
+
+/**
+ * Render the condition on a reference, or an empty string when it has none.
+ * Relationship sections use the conformance prefix
+ * ("Conforms when `Element` conforms to `Hashable`."),
+ * and topic and see also sections use the availability prefix
+ * ("Available when `Element` conforms to `Hashable`.").
+ */
+function renderCondition(
+  reference: ContentItem | undefined,
+  prefixKey: "conformancePrefix" | "availabilityPrefix",
+  references?: Record<string, ContentItem>,
+  externalOrigin?: string,
+): string {
+  const constraints = reference?.conformance?.constraints
+  if (!constraints?.length) {
+    return ""
+  }
+  const prefix = reference?.conformance?.[prefixKey] ?? []
+  const inlineContent = prefix.length
+    ? [...prefix, { type: "text", text: " " }, ...constraints]
+    : constraints
+  return renderInlineContent(inlineContent, references, 0, externalOrigin).trim()
 }
 
 /**
@@ -651,6 +681,15 @@ function renderTopicSections(
         markdown += `- [${title}](${url})${deprecatedLabel}`
         if (abstract) {
           markdown += ` ${abstract}`
+        }
+        const condition = renderCondition(
+          references?.[id],
+          "availabilityPrefix",
+          references,
+          externalOrigin,
+        )
+        if (condition) {
+          markdown += ` ${condition}`
         }
         markdown += "\n"
       }
@@ -730,7 +769,13 @@ function renderSeeAlso(
       markdown += `## ${section.title}\n\n`
       for (const id of section.identifiers) {
         const { title, url } = resolveLink(id, variants, references, externalOrigin)
-        markdown += `- [${title}](${url})\n`
+        const condition = renderCondition(
+          references?.[id],
+          "availabilityPrefix",
+          references,
+          externalOrigin,
+        )
+        markdown += `- [${title}](${url})${condition ? ` ${condition}` : ""}\n`
       }
       markdown += "\n"
     }
