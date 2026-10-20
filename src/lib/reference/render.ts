@@ -614,13 +614,35 @@ function renderRelationships(
       markdown += `## ${rel.title}\n\n`
       for (const id of rel.identifiers) {
         const { title, url } = resolveLink(id, variants, references, externalOrigin)
-        markdown += `- [${title}](${url})\n`
+        const condition = renderConformanceCondition(references?.[id], references, externalOrigin)
+        markdown += `- [${title}](${url})${condition ? ` ${condition}` : ""}\n`
       }
       markdown += "\n"
     }
   }
 
   return markdown
+}
+
+/**
+ * Render the condition of a conditional conformance, such as
+ * "Conforms when `Element` conforms to `Hashable`.", or an empty string
+ * when the conformance is unconditional.
+ */
+function renderConformanceCondition(
+  reference: ContentItem | undefined,
+  references?: Record<string, ContentItem>,
+  externalOrigin?: string,
+): string {
+  const constraints = reference?.conformance?.constraints
+  if (!constraints?.length) {
+    return ""
+  }
+  const prefix = reference?.conformance?.conformancePrefix ?? []
+  const inlineContent = prefix.length
+    ? [...prefix, { type: "text", text: " " }, ...constraints]
+    : constraints
+  return renderInlineContent(inlineContent, references, 0, externalOrigin).trim()
 }
 
 /**

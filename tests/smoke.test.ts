@@ -50,6 +50,11 @@ if (process.env.CI === "1") {
         expect(result).toContain("[`isEmpty`](/documentation/swift/array/isempty)") // Note: actual output
         expect(result).toContain("[`count`](/documentation/swift/array/count)")
 
+        // Conditional conformances keep their conditions
+        expect(result).toContain(
+          "[`Decodable`](/documentation/swift/decodable) Conforms when `Element` conforms to `Decodable`.",
+        )
+
         // Footer validation
         expect(result).toContain("*Extracted by [sosumi.ai](https://sosumi.ai)")
         expect(result).toContain(

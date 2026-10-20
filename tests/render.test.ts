@@ -1488,6 +1488,53 @@ describe("Render Function", () => {
     })
   })
 
+  describe("Relationships", () => {
+    it("should render the conditions of a conditional conformance", async () => {
+      const data = {
+        metadata: { title: "LanguageModelSession.SessionProperty" },
+        relationshipsSections: [
+          {
+            title: "Conforms To",
+            type: "conformsTo",
+            kind: "relationships",
+            identifiers: ["doc://test/Sendable", "doc://test/SendableMetatype"],
+          },
+        ],
+        references: {
+          "doc://test/Sendable": {
+            type: "topic",
+            role: "symbol",
+            title: "Sendable",
+            url: "/documentation/swift/sendable",
+            conformance: {
+              conformancePrefix: [{ type: "text", text: "Conforms when" }],
+              constraints: [
+                { type: "codeVoice", code: "Value" },
+                { type: "text", text: " conforms to " },
+                { type: "codeVoice", code: "Sendable" },
+                { type: "text", text: "." },
+              ],
+              availabilityPrefix: [{ type: "text", text: "Available when" }],
+            },
+          },
+          "doc://test/SendableMetatype": {
+            type: "topic",
+            role: "symbol",
+            title: "SendableMetatype",
+            url: "/documentation/swift/sendablemetatype",
+          },
+        },
+      }
+
+      const result = await renderFromJSON(data as any, "https://test.com")
+
+      expect(result).toContain(
+        "- [`Sendable`](/documentation/swift/sendable) Conforms when `Value` conforms to `Sendable`.\n",
+      )
+      expect(result).toContain("- [`SendableMetatype`](/documentation/swift/sendablemetatype)\n")
+    })
+  })
+
   describe("Platform Information Rendering", () => {
     it("should render platform availability information", async () => {
       const data = {
