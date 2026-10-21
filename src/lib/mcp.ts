@@ -15,6 +15,16 @@ export const MCP_SERVER_INFO = {
   version: "1.0.0",
 } as const
 
+/**
+ * Guidance for clients, kept out of the documentation itself
+ * so that fetched pages stay 1:1 with Apple's content.
+ */
+export const MCP_SERVER_INSTRUCTIONS =
+  "Sosumi returns Apple's documentation as Markdown. " +
+  'The conformance conditions in Apple\'s data, such as "Conforms when `Element` conforms to `Hashable`.", ' +
+  "can be missing or wrong. " +
+  "When a condition matters, read the declaration in the module's `.swiftinterface` file in the SDK."
+
 export interface ToolHttpBinding {
   path?: string
   pathFrom?: string
@@ -115,7 +125,7 @@ export const TOOL_DEFINITIONS = {
 } satisfies Record<string, ToolMeta>
 
 export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
-  const server = new McpServer(MCP_SERVER_INFO)
+  const server = new McpServer(MCP_SERVER_INFO, { instructions: MCP_SERVER_INSTRUCTIONS })
 
   const search = TOOL_DEFINITIONS.searchAppleDocumentation
   server.registerTool(

@@ -1,11 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const toolHandlers = new Map<string, (input: unknown) => Promise<unknown>>()
+let serverOptions: { instructions?: string } | undefined
 const fetchVideoTranscriptMarkdown = vi.fn()
 const searchAppleDeveloperDocs = vi.fn()
 
 vi.mock("@modelcontextprotocol/sdk/server/mcp.js", () => {
   class McpServerMock {
+    constructor(_serverInfo: unknown, options?: { instructions?: string }) {
+      serverOptions = options
+    }
+
     registerTool(
       name: string,
       _config: unknown,
@@ -31,8 +36,17 @@ vi.mock("../src/lib/search", () => ({
 describe("MCP tools registration", () => {
   beforeEach(() => {
     toolHandlers.clear()
+    serverOptions = undefined
     fetchVideoTranscriptMarkdown.mockReset()
     searchAppleDeveloperDocs.mockReset()
+  })
+
+  it("gives instructions about conformance conditions", async () => {
+    const { createMcpServer } = await import("../src/lib/mcp")
+    createMcpServer()
+
+    expect(serverOptions?.instructions).toContain("conformance conditions")
+    expect(serverOptions?.instructions).toContain(".swiftinterface")
   })
 
   it("registers and runs fetchAppleVideoTranscript with path input", async () => {
