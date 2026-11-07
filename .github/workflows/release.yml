@@ -37,3 +37,47 @@ jobs:
             gh release create "$TAG_NAME" --generate-notes
           fi
       - run: npm publish --provenance --access public
+
+      # MCP Registry publishing uses HTTP authentication for the sosumi.ai namespace.
+      # The Worker must serve the matching public key at /.well-known/mcp-registry-auth.
+      - name: Check for MCP Registry key
+        id: mcp-registry
+        env:
+          MCP_REGISTRY_PRIVATE_KEY: ${{ secrets.MCP_REGISTRY_PRIVATE_KEY }}
+        run: |
+          if [ -n "$MCP_REGISTRY_PRIVATE_KEY" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice title=MCP Registry::Skipped MCP Registry publishing because the MCP_REGISTRY_PRIVATE_KEY secret is not set."
+          fi
+      - name: Install cosign
+        if: steps.mcp-registry.outputs.enabled == 'true'
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - name: Install mcp-publisher
+        if: steps.mcp-registry.outputs.enabled == 'true'
+        env:
+          MCP_PUBLISHER_VERSION: v1.8.8
+        run: |
+          set -euo pipefail
+          os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+          arch="$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')"
+          archive="mcp-publisher_${os}_${arch}.tar.gz"
+          base_url="https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}"
+          cd "$RUNNER_TEMP"
+          curl --fail --location --silent --show-error --output "$archive" "$base_url/$archive"
+          curl --fail --location --silent --show-error --output "$archive.sigstore.json" "$base_url/$archive.sigstore.json"
+          cosign verify-blob \
+            --bundle "$archive.sigstore.json" \
+            --certificate-identity "https://github.com/modelcontextprotocol/registry/.github/workflows/release.yml@refs/tags/${MCP_PUBLISHER_VERSION}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            "$archive"
+          tar xzf "$archive" mcp-publisher
+          rm -f "$archive" "$archive.sigstore.json"
+      - name: Publish to the MCP Registry
+        if: steps.mcp-registry.outputs.enabled == 'true'
+        env:
+          MCP_REGISTRY_PRIVATE_KEY: ${{ secrets.MCP_REGISTRY_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/mcp-publisher" login http --domain sosumi.ai --private-key "$MCP_REGISTRY_PRIVATE_KEY"
+          "$RUNNER_TEMP/mcp-publisher" publish

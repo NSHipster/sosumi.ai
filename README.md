@@ -334,6 +334,32 @@ Publishing is handled by `.github/workflows/release.yml`.
 - Release step: `gh release create "$TAG_NAME" --generate-notes`
 - Publish auth: npm trusted publishing via OIDC (`id-token: write`)
 - Publish command: `npm publish --provenance --access public`
+- MCP Registry: after `npm publish`, the workflow publishes `server.json`
+  to the [MCP Registry](https://registry.modelcontextprotocol.io)
+  as `ai.sosumi/sosumi`.
+
+Keep `version` in `server.json` equal to `version` in `package.json`;
+a test fails when they differ.
+
+The registry step uses
+[HTTP authentication](https://github.com/modelcontextprotocol/registry/blob/main/docs/modelcontextprotocol-io/authentication.mdx#http-authentication)
+for the `sosumi.ai` domain.
+It skips with a notice until the `MCP_REGISTRY_PRIVATE_KEY` secret is set.
+To set it up, generate an Ed25519 key pair with OpenSSL 3
+(macOS's LibreSSL does not support Ed25519):
+
+```bash
+openssl genpkey -algorithm Ed25519 -out key.pem
+# Public key: add to "vars" in wrangler.jsonc as MCP_REGISTRY_PUBLIC_KEY, then deploy
+openssl pkey -in key.pem -pubout -outform DER | tail -c 32 | base64
+# Private key (hex): save as the MCP_REGISTRY_PRIVATE_KEY repository secret
+openssl pkey -in key.pem -noout -text | grep -A3 "priv:" | tail -n +2 | tr -d ' :\n'
+```
+
+The Worker then serves `v=MCPv1; k=ed25519; p=<public key>`
+at `/.well-known/mcp-registry-auth`.
+Without the variable, that path returns 404.
+Delete `key.pem` after you save both values.
 
 ## License
 
