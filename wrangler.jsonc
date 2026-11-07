@@ -34,6 +34,7 @@
     "enabled": true
   },
   "vars": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "MCP_REGISTRY_PUBLIC_KEY": "sL6l9eXq+RN7+VuAVWZGnSacjsgix0TVW5FDLYlBUpg="
   }
 }

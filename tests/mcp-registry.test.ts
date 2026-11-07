@@ -30,11 +30,18 @@ describe("MCP Registry server.json", () => {
 })
 
 describe("MCP Registry HTTP authentication", () => {
-  it("returns 404 when no public key is configured", async () => {
+  it("serves the configured public key without a redirect", async () => {
     const response = await SELF.fetch(AUTH_URL, { redirect: "manual" })
 
-    expect(response.status).toBe(404)
+    expect(response.status).toBe(200)
     expect(response.headers.get("Location")).toBeNull()
+    expect(await response.text()).toMatch(/^v=MCPv1; k=ed25519; p=[A-Za-z0-9+/]{43}=$/)
+  })
+
+  it("returns 404 when no public key is configured", async () => {
+    const response = await app.request(AUTH_URL, undefined, bindings())
+
+    expect(response.status).toBe(404)
   })
 
   it("returns 404 when the public key is blank", async () => {
