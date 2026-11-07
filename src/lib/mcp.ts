@@ -102,7 +102,7 @@ export const TOOL_DEFINITIONS = {
       url: z
         .string()
         .describe(
-          "External Swift-DocC URL (e.g., 'https://apple.github.io/swift-argument-parser/documentation/argumentparser')",
+          "External Swift-DocC URL (e.g., 'https://swiftlang.github.io/swift-docc-plugin/documentation/swiftdoccplugin')",
         ),
     },
     annotations: readOnlyAnnotations,
@@ -256,6 +256,7 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error"
 
         return {
+          isError: true,
           content: [
             {
               type: "text" as const,
@@ -296,6 +297,7 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error"
 
         return {
+          isError: true,
           content: [
             {
               type: "text" as const,
@@ -346,6 +348,7 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error"
         return {
+          isError: true,
           content: [
             {
               type: "text" as const,
