@@ -65,7 +65,7 @@ Replace `developer.apple.com` with `sosumi.ai`:
 
 - Pattern: `https://sosumi.ai/external/{full-https-url}`
 - Examples:
-  - `https://sosumi.ai/external/https://apple.github.io/swift-argument-parser/documentation/argumentparser/`
+  - `https://sosumi.ai/external/https://swiftlang.github.io/swift-docc-plugin/documentation/swiftdoccplugin/`
   - `https://sosumi.ai/external/https://swiftpackageindex.com/pointfreeco/swift-composable-architecture/1.23.1/documentation/composablearchitecture`
 
 ## MCP Tools Quick Reference

@@ -47,13 +47,13 @@ Sosumi can also proxy public non-Apple Swift-DocC pages using:
 **Original:**
 
 ```
-https://apple.github.io/swift-argument-parser/documentation/argumentparser
+https://swiftlang.github.io/swift-docc-plugin/documentation/swiftdoccplugin
 ```
 
 **AI-readable:**
 
 ```
-https://sosumi.ai/external/https://apple.github.io/swift-argument-parser/documentation/argumentparser
+https://sosumi.ai/external/https://swiftlang.github.io/swift-docc-plugin/documentation/swiftdoccplugin
 ```
 
 > [!NOTE]
@@ -123,7 +123,7 @@ A test fails when the two files differ.
   - Returns transcript content as Markdown
 
 - `fetchExternalDocumentation` - Fetches external Swift-DocC documentation by absolute HTTPS URL
-  - Parameters: `url` (string) - External URL (e.g., `https://apple.github.io/swift-argument-parser/documentation/argumentparser`)
+  - Parameters: `url` (string) - External URL (e.g., `https://swiftlang.github.io/swift-docc-plugin/documentation/swiftdoccplugin`)
   - Returns content as Markdown
 
 ### CLI
@@ -155,7 +155,7 @@ sosumi fetch /design/human-interface-guidelines/color
 sosumi fetch /videos/play/wwdc2021/10133
 
 # External Swift-DocC pages
-sosumi fetch https://apple.github.io/swift-argument-parser/documentation/argumentparser
+sosumi fetch https://swiftlang.github.io/swift-docc-plugin/documentation/swiftdoccplugin
 
 # Apple documentation search
 sosumi search "SwiftData"
