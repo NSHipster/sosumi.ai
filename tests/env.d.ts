@@ -7,3 +7,8 @@ declare module "cloudflare:test" {
   export function createExecutionContext(): ExecutionContext
   export function waitOnExecutionContext(ctx: ExecutionContext): Promise<void>
 }
+
+declare module "*?raw" {
+  const content: string
+  export default content
+}

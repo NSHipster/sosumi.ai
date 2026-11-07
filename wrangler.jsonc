@@ -21,6 +21,7 @@
       "/",
       "/.well-known/agent-card.json",
       "/.well-known/agent-skills/*",
+      "/.well-known/mcp-registry-auth",
       "/.well-known/security.txt",
       "/message:send",
       "/message:stream",

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "ai.sosumi/sosumi",
+  "title": "Sosumi",
+  "description": "Search and read Apple developer documentation, HIG, and WWDC transcripts as Markdown.",
+  "repository": {
+    "url": "https://github.com/NSHipster/sosumi.ai",
+    "source": "github",
+    "id": "1048436880"
+  },
+  "websiteUrl": "https://sosumi.ai",
+  "version": "1.0.9",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://sosumi.ai/mcp"
+    }
+  ]
+}

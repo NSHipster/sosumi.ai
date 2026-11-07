@@ -12,6 +12,18 @@
 WEB_BOT_AUTH_KEY='{"kty":"OKP","crv":"Ed25519","x":"...","d":"..."}'
 
 # Optional.
+# MCP Registry namespace proof (base64 Ed25519 public key).
+# When set, /.well-known/mcp-registry-auth serves
+# "v=MCPv1; k=ed25519; p=<this value>" so that
+# `mcp-publisher login http --domain sosumi.ai` can verify the domain.
+# When unset, that path returns 404.
+# The value is public. In production, add it to "vars" in wrangler.jsonc,
+# because `wrangler deploy` replaces vars set only in the dashboard
+# unless "keep_vars" is true.
+# Keep the matching private key in the MCP_REGISTRY_PRIVATE_KEY GitHub secret.
+# MCP_REGISTRY_PUBLIC_KEY=...
+
+# Optional.
 # Origin advertised in the Signature-Agent header
 # and hosting the key directory.
 # Defaults to https://sosumi.ai.
