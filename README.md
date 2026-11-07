@@ -86,6 +86,28 @@ you can run this command to proxy over stdio:
 
 See [the website](https://sosumi.ai/#clients) for client-specific instructions.
 
+#### Plugin
+
+The [`plugin`](plugin) folder packages the MCP server and the [agent skill](#ai-agent-skill)
+for Claude Code, Cursor, and [Agent Plugins](https://agent-plugins.org) clients
+such as ChatGPT and Codex.
+
+In Claude Code, run:
+
+```text
+/plugin marketplace add NSHipster/sosumi.ai
+/plugin install sosumi@sosumi-ai
+```
+
+`public/SKILL.md` is the source of the skill.
+After you edit it, copy it into the plugin:
+
+```bash
+cp public/SKILL.md plugin/skills/sosumi/SKILL.md
+```
+
+A test fails when the two files differ.
+
 #### Available Tools
 
 - `searchAppleDocumentation` - Searches Apple Developer documentation

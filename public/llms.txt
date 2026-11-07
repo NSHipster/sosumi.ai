@@ -64,7 +64,12 @@ Open this deep link to automatically install the sosumi MCP server:
 
 ### VSCode
 
-Create a `.vscode/mcp.json` file in your workspace and enter the following configuration:
+Open one of these links to install the sosumi MCP server:
+
+- [Install in VS Code](https://vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522sosumi%2522%252C%2522type%2522%253A%2522http%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fsosumi.ai%252Fmcp%2522%257D)
+- [Install in VS Code Insiders](https://vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522sosumi%2522%252C%2522type%2522%253A%2522http%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fsosumi.ai%252Fmcp%2522%257D)
+
+Or create a `.vscode/mcp.json` file in your workspace and enter the following configuration:
 
 ```json
 {
@@ -88,7 +93,15 @@ Create a `.vscode/mcp.json` file in your workspace and enter the following confi
 
 ### Claude Code
 
-Run the following command in your terminal:
+Install the sosumi plugin, which adds the MCP server and the Sosumi skill.
+Run these commands in Claude Code:
+
+```text
+/plugin marketplace add NSHipster/sosumi.ai
+/plugin install sosumi@sosumi-ai
+```
+
+To add only the MCP server, run this command in your terminal:
 
 ```shell
 claude mcp add --transport http sosumi https://sosumi.ai/mcp
@@ -336,3 +349,5 @@ For external Swift-DocC hosts, sosumi honors `robots.txt` rules
 and opt-out response directives such as `X-Robots-Tag: noai`.
 
 **Contact:** <info@sosumi.ai>
+
+[Privacy](https://sosumi.ai/privacy) · [Terms](https://sosumi.ai/terms) · [Support](https://sosumi.ai/support)
