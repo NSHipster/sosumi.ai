@@ -38,12 +38,14 @@
         <p>
             Sosumi runs on Cloudflare Workers.
             It doesn't log each request.
-            It logs only the errors that it reports, such as a page that it couldn't fetch,
+            It logs the errors that it reports, such as a page that it couldn't fetch,
             in Cloudflare's
             <a href="https://developers.cloudflare.com/workers/observability/logs/workers-logs/" rel="noopener noreferrer">Workers Logs</a>.
-            An error log can include what you asked for, such as a documentation path or a search query.
+            Cloudflare also logs some requests that don't finish normally,
+            with the request's IP address and headers.
+            A log can include what you asked for, such as a documentation path or a search query.
             Cloudflare keeps these logs for up to 7 days.
-            Sosumi's maintainers can read them to find and fix problems.
+            Sosumi's maintainers use them, with Cloudflare's traffic analytics, to find and fix problems.
         </p>
 
         <h2>Who receives your requests</h2>
