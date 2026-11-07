@@ -1,7 +1,7 @@
 {
   "name": "sosumi",
   "displayName": "Sosumi",
-  "version": "1.0.9",
+  "version": "1.1.0",
   "description": "Search and read Apple Developer documentation, Human Interface Guidelines, WWDC transcripts, and Swift-DocC pages as Markdown.",
   "author": {
     "name": "NSHipster",
