@@ -39,6 +39,7 @@ export interface ToolMeta {
   inputSchema: z.ZodRawShape
   outputSchema?: z.ZodRawShape
   annotations: {
+    title: string
     readOnlyHint: boolean
     destructiveHint: boolean
     idempotentHint: boolean
@@ -56,18 +57,22 @@ const searchResultSchema = z.object({
   type: z.string().describe("Type of result (documentation, general, etc.)"),
 })
 
-const readOnlyAnnotations = {
-  readOnlyHint: true,
-  destructiveHint: false,
-  idempotentHint: true,
-  openWorldHint: true,
-} as const
+function readOnlyAnnotations(title: string) {
+  return {
+    title,
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: true,
+  } as const
+}
 
 export const TOOL_DEFINITIONS = {
   searchAppleDocumentation: {
     name: "searchAppleDocumentation",
     title: "Search Apple Documentation",
-    description: "Search Apple Developer documentation and return structured results",
+    description:
+      "Search Apple Developer documentation (https://developer.apple.com/documentation) and return structured results",
     inputSchema: {
       query: z.string().describe("Search query for Apple documentation"),
     },
@@ -75,14 +80,14 @@ export const TOOL_DEFINITIONS = {
       query: z.string().describe("The search query that was executed"),
       results: z.array(searchResultSchema).describe("Array of search results"),
     },
-    annotations: readOnlyAnnotations,
+    annotations: readOnlyAnnotations("Search Apple Documentation"),
     http: { path: "/search", query: { q: "query" } },
   },
   fetchAppleDocumentation: {
     name: "fetchAppleDocumentation",
     title: "Fetch Apple Documentation",
     description:
-      "Fetch Apple Developer documentation and Human Interface Guidelines by path and return as markdown",
+      "Fetch a page of Apple Developer documentation (https://developer.apple.com/documentation) or the Human Interface Guidelines (https://developer.apple.com/design/human-interface-guidelines) by path and return it as Markdown",
     inputSchema: {
       path: z
         .string()
@@ -90,14 +95,14 @@ export const TOOL_DEFINITIONS = {
           "Documentation path (e.g., '/documentation/swift', '/documentation/swiftui/view', '/design/human-interface-guidelines/foundations/color')",
         ),
     },
-    annotations: readOnlyAnnotations,
+    annotations: readOnlyAnnotations("Fetch Apple Documentation"),
     http: { pathFrom: "path" },
   },
   fetchExternalDocumentation: {
     name: "fetchExternalDocumentation",
     title: "Fetch External Documentation",
     description:
-      "Fetch external Swift-DocC documentation by absolute https URL and return as markdown",
+      "Fetch a page from a public Swift-DocC documentation site (https://www.swift.org/documentation/docc/) by absolute HTTPS URL and return it as Markdown",
     inputSchema: {
       url: z
         .string()
@@ -105,13 +110,14 @@ export const TOOL_DEFINITIONS = {
           "External Swift-DocC URL (e.g., 'https://swiftlang.github.io/swift-docc-plugin/documentation/swiftdoccplugin')",
         ),
     },
-    annotations: readOnlyAnnotations,
+    annotations: readOnlyAnnotations("Fetch External Documentation"),
     http: { pathFrom: "url", pathPrefix: "/external/" },
   },
   fetchAppleVideoTranscript: {
     name: "fetchAppleVideoTranscript",
     title: "Fetch Apple Video Transcript",
-    description: "Fetch transcript for an Apple Developer video path and return as markdown",
+    description:
+      "Fetch the transcript of an Apple Developer video (https://developer.apple.com/videos) by path and return it as Markdown",
     inputSchema: {
       path: z
         .string()
@@ -119,7 +125,7 @@ export const TOOL_DEFINITIONS = {
           "Apple video path (e.g., '/videos/play/wwdc2021/10133' or '/videos/play/meet-with-apple/208')",
         ),
     },
-    annotations: readOnlyAnnotations,
+    annotations: readOnlyAnnotations("Fetch Apple Video Transcript"),
     http: { pathFrom: "path" },
   },
 } satisfies Record<string, ToolMeta>
