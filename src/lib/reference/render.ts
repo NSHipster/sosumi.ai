@@ -176,7 +176,8 @@ export async function renderFromJSON(
   // Add footer
   markdown += `\n\n---\n\n`
   markdown += `*Extracted by [sosumi.ai](https://sosumi.ai) - Making Apple docs AI-readable.*\n`
-  markdown += `*This is unofficial content. All documentation belongs to Apple Inc.*\n`
+  const owner = options.externalOrigin ? `the owners of ${new URL(sourceUrl).host}.` : "Apple Inc."
+  markdown += `*This is unofficial content. All documentation belongs to ${owner}*\n`
 
   return markdown
 }

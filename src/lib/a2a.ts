@@ -49,7 +49,7 @@ const SKILL_EXAMPLES: Record<string, string[]> = {
   searchAppleDocumentation: ["Search Apple documentation for URLSession"],
   fetchAppleDocumentation: ["Fetch /documentation/swiftui/view as Markdown"],
   fetchExternalDocumentation: [
-    "Fetch https://apple.github.io/swift-argument-parser/documentation/argumentparser",
+    "Fetch https://swiftlang.github.io/swift-docc-plugin/documentation/swiftdoccplugin",
   ],
   fetchAppleVideoTranscript: ["Fetch the transcript for /videos/play/wwdc2021/10133"],
 }

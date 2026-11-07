@@ -461,4 +461,15 @@ Sitemap: https://docs.daily.co/sitemap.xml
       "**Navigation:** [Argumentparser](/external/https://apple.github.io/swift-argument-parser/documentation/argumentparser)",
     )
   })
+
+  it("credits an external page to its own site, not to Apple", async () => {
+    const result = await renderFromJSON(
+      { metadata: { title: "SwiftDocCPlugin" } },
+      "https://swiftlang.github.io/swift-docc-plugin/documentation/swiftdoccplugin",
+      { externalOrigin: "https://swiftlang.github.io/swift-docc-plugin" },
+    )
+
+    expect(result).toContain("All documentation belongs to the owners of swiftlang.github.io.")
+    expect(result).not.toContain("Apple Inc.")
+  })
 })

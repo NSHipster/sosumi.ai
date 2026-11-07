@@ -31,7 +31,7 @@ Replace `developer.apple.com` with `sosumi.ai`:
 - SwiftUI: <https://sosumi.ai/documentation/swiftui>
 - Human Interface Guidelines: <https://sosumi.ai/design/human-interface-guidelines>
 - WWDC21 — Protect mutable state with Swift actors: <https://sosumi.ai/videos/play/wwdc2021/10133>
-- Swift Argument Parser (GitHub Pages): <https://sosumi.ai/external/https://apple.github.io/swift-argument-parser/documentation/argumentparser/>
+- Swift-DocC Plugin (GitHub Pages): <https://sosumi.ai/external/https://swiftlang.github.io/swift-docc-plugin/documentation/swiftdoccplugin/>
 - The Composable Architecture (Swift Package Index): <https://sosumi.ai/external/https://swiftpackageindex.com/pointfreeco/swift-composable-architecture/1.23.1/documentation/composablearchitecture>
 
 ## MCP Usage
@@ -142,7 +142,7 @@ you can run this command to proxy over stdio:
   - Returns content as Markdown
 
 - `fetchExternalDocumentation` - Fetches external Swift-DocC documentation by absolute HTTPS URL
-  - Parameters: `url` (string) - External URL (e.g., '<https://apple.github.io/swift-argument-parser/documentation/argumentparser>')
+  - Parameters: `url` (string) - External URL (e.g., '<https://swiftlang.github.io/swift-docc-plugin/documentation/swiftdoccplugin>')
   - Returns content as Markdown
 
 ### Troubleshooting
@@ -230,7 +230,7 @@ API docs, Human Interface Guidelines, WWDC sessions, and external Swift-DocC pag
 sosumi fetch /documentation/swift/array
 sosumi fetch /design/human-interface-guidelines/color
 sosumi fetch /videos/play/wwdc2021/10133
-sosumi fetch https://apple.github.io/swift-argument-parser/documentation/argumentparser
+sosumi fetch https://swiftlang.github.io/swift-docc-plugin/documentation/swiftdoccplugin
 ```
 
 ### Searching

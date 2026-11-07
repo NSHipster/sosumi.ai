@@ -4,6 +4,8 @@ const toolHandlers = new Map<string, (input: unknown) => Promise<unknown>>()
 let serverOptions: { instructions?: string } | undefined
 const fetchVideoTranscriptMarkdown = vi.fn()
 const searchAppleDeveloperDocs = vi.fn()
+const fetchJSONData = vi.fn()
+const fetchExternalDocumentationMarkdown = vi.fn()
 
 vi.mock("@modelcontextprotocol/sdk/server/mcp.js", () => {
   class McpServerMock {
@@ -33,12 +35,23 @@ vi.mock("../src/lib/search", () => ({
   searchAppleDeveloperDocs,
 }))
 
+vi.mock("../src/lib/reference", () => ({
+  fetchJSONData,
+  renderFromJSON: vi.fn(),
+}))
+
+vi.mock("../src/lib/external", () => ({
+  fetchExternalDocumentationMarkdown,
+}))
+
 describe("MCP tools registration", () => {
   beforeEach(() => {
     toolHandlers.clear()
     serverOptions = undefined
     fetchVideoTranscriptMarkdown.mockReset()
     searchAppleDeveloperDocs.mockReset()
+    fetchJSONData.mockReset()
+    fetchExternalDocumentationMarkdown.mockReset()
   })
 
   it("gives instructions about conformance conditions", async () => {
@@ -158,5 +171,39 @@ describe("MCP tools registration", () => {
     // An empty `results` array would read as "no such documentation exists",
     // which is exactly the answer the caller must not trust here.
     expect(result.structuredContent).toBeUndefined()
+  })
+
+  it.each([
+    {
+      tool: "fetchAppleDocumentation",
+      input: { path: "/documentation/notarealframework" },
+      fail: () => fetchJSONData.mockRejectedValue(new Error("Apple documentation page not found")),
+    },
+    {
+      tool: "fetchExternalDocumentation",
+      input: { url: "https://example.com/documentation/missing" },
+      fail: () =>
+        fetchExternalDocumentationMarkdown.mockRejectedValue(
+          new Error("External documentation page not found"),
+        ),
+    },
+    {
+      tool: "fetchAppleVideoTranscript",
+      input: { path: "/videos/play/wwdc2099/1" },
+      fail: () => fetchVideoTranscriptMarkdown.mockRejectedValue(new Error("Video not found")),
+    },
+  ])("reports a $tool failure as a tool error", async ({ tool, input, fail }) => {
+    fail()
+
+    const { createMcpServer } = await import("../src/lib/mcp")
+    createMcpServer()
+
+    const result = (await toolHandlers.get(tool)?.(input)) as {
+      isError?: boolean
+      content: Array<{ text: string }>
+    }
+
+    expect(result.isError).toBe(true)
+    expect(result.content[0].text).toContain("not found")
   })
 })
