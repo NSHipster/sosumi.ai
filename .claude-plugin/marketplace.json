@@ -1,0 +1,15 @@
+{
+  "name": "sosumi-ai",
+  "description": "Plugins from sosumi.ai",
+  "owner": {
+    "name": "NSHipster",
+    "url": "https://nshipster.com"
+  },
+  "plugins": [
+    {
+      "name": "sosumi",
+      "source": "./plugin",
+      "description": "Search and read Apple Developer documentation, Human Interface Guidelines, WWDC transcripts, and Swift-DocC pages as Markdown."
+    }
+  ]
+}

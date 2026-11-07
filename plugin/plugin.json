@@ -1,0 +1,46 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "sosumi",
+  "version": "1.0.9",
+  "description": "Search and read Apple Developer documentation, Human Interface Guidelines, WWDC transcripts, and Swift-DocC pages as Markdown.",
+  "author": {
+    "name": "NSHipster",
+    "url": "https://nshipster.com"
+  },
+  "homepage": "https://sosumi.ai",
+  "repository": "https://github.com/NSHipster/sosumi.ai",
+  "license": "MIT",
+  "keywords": ["apple", "swift", "swiftui", "documentation", "docc", "wwdc", "mcp"],
+  "extensions": {
+    "com.openai": {
+      "auth": {
+        "type": "none"
+      },
+      "interface": {
+        "displayName": "Sosumi",
+        "shortDescription": "Apple docs as Markdown",
+        "longDescription": "Sosumi gives ChatGPT and Codex current Apple Developer documentation. It searches Apple's documentation and reads API reference pages, Human Interface Guidelines, WWDC session transcripts, and public Swift-DocC sites as Markdown, with a link to each source page. Use it when you write Swift, SwiftUI, UIKit, or AppKit code and need exact signatures, availability, or guidance. Sosumi is free, needs no account, and only reads public documentation. It is not affiliated with Apple, and it can't read pages that need a sign-in.",
+        "developerName": "NSHipster",
+        "category": "Developer Tools",
+        "capabilities": [
+          "Search Apple Developer documentation",
+          "Read API reference and Human Interface Guidelines pages",
+          "Read WWDC session transcripts",
+          "Read public Swift-DocC documentation"
+        ],
+        "websiteURL": "https://sosumi.ai",
+        "supportURL": "https://sosumi.ai/support",
+        "privacyPolicyURL": "https://sosumi.ai/privacy",
+        "termsOfServiceURL": "https://sosumi.ai/terms",
+        "defaultPrompt": [
+          "How do I use NavigationStack in SwiftUI? Check Apple's documentation.",
+          "What do the Human Interface Guidelines say about color?",
+          "Summarize the WWDC21 session about protecting mutable state with Swift actors."
+        ],
+        "brandColor": "#D68D6E",
+        "composerIcon": "./assets/logo.svg",
+        "logo": "./assets/logo.svg"
+      }
+    }
+  }
+}

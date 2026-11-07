@@ -1,0 +1,25 @@
+{
+  "name": "sosumi",
+  "displayName": "Sosumi",
+  "version": "1.0.9",
+  "description": "Search and read Apple Developer documentation, Human Interface Guidelines, WWDC transcripts, and Swift-DocC pages as Markdown.",
+  "author": {
+    "name": "NSHipster",
+    "url": "https://nshipster.com"
+  },
+  "homepage": "https://sosumi.ai",
+  "repository": "https://github.com/NSHipster/sosumi.ai",
+  "license": "MIT",
+  "keywords": ["apple", "swift", "swiftui", "documentation", "docc", "wwdc", "mcp"],
+  "icon": "./assets/logo.svg",
+  "documentationUrl": "https://github.com/NSHipster/sosumi.ai/tree/main/plugin#readme",
+  "supportUrl": "https://sosumi.ai/support",
+  "privacyPolicyUrl": "https://sosumi.ai/privacy",
+  "termsOfServiceUrl": "https://sosumi.ai/terms",
+  "mcpServers": {
+    "sosumi": {
+      "type": "http",
+      "url": "https://sosumi.ai/mcp"
+    }
+  }
+}
