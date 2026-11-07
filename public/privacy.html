@@ -36,12 +36,12 @@
             and it doesn't save the requests it receives or the pages it returns.
         </p>
         <p>
-            Sosumi runs on Cloudflare Workers with
-            <a href="https://developers.cloudflare.com/workers/observability/logs/workers-logs/" rel="noopener noreferrer">Workers Logs</a>
-            turned on.
-            For each request, Cloudflare logs the request's URL and other request and response details,
-            and it logs any errors that Sosumi reports.
-            A URL can include what you asked for, such as a documentation path or a search query.
+            Sosumi runs on Cloudflare Workers.
+            It doesn't log each request.
+            It logs only the errors that it reports, such as a page that it couldn't fetch,
+            in Cloudflare's
+            <a href="https://developers.cloudflare.com/workers/observability/logs/workers-logs/" rel="noopener noreferrer">Workers Logs</a>.
+            An error log can include what you asked for, such as a documentation path or a search query.
             Cloudflare keeps these logs for up to 7 days.
             Sosumi's maintainers can read them to find and fix problems.
         </p>
