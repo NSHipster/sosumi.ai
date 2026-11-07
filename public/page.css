@@ -1,0 +1,104 @@
+/* Shared styles for the policy pages. Colors and type match index.html. */
+:root {
+    color-scheme: light dark;
+
+    --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+    --font-mono: 'SF Mono', monospace;
+
+    --text: oklch(15% 0 0);
+    --text-secondary: oklch(35% 0 0);
+    --text-tertiary: oklch(55% 0 0);
+
+    --surface: oklch(98% 0 0);
+    --surface-inset: oklch(95% 0.02 70);
+
+    --border: oklch(20% 0.1 70);
+
+    --link: oklch(65% 0.15 70);
+    --accent: oklch(78% 0.18 70);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --text: oklch(92% 0.02 70);
+        --text-secondary: oklch(75% 0.05 70);
+        --text-tertiary: oklch(55% 0.08 70);
+
+        --surface: oklch(18% 0 0);
+        --surface-inset: oklch(12% 0.02 70);
+
+        --border: oklch(25% 0.1 70);
+        --accent: oklch(85% 0.2 70);
+    }
+}
+
+body {
+    font-family: var(--font-sans);
+    color: var(--text);
+    background-color: var(--surface);
+    max-width: 52rem;
+    margin: 3rem auto;
+    padding: 1.5rem;
+    line-height: 1.6;
+}
+
+body > header {
+    margin-bottom: 2rem;
+}
+
+body > header p {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+body > header a {
+    color: var(--text);
+}
+
+h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.25rem;
+}
+
+h2 {
+    margin-top: 2rem;
+    margin-bottom: 0.625rem;
+    color: var(--text-secondary);
+}
+
+.updated {
+    color: var(--text-tertiary);
+    margin-top: 0;
+}
+
+code {
+    background: var(--surface-inset);
+    padding: 0.125rem;
+    font-family: var(--font-mono);
+    overflow-wrap: break-word;
+}
+
+a {
+    color: var(--link);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    color: var(--accent);
+    text-decoration: underline;
+}
+
+footer {
+    margin-top: 3.75rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+    color: var(--text-tertiary);
+    font-size: 0.875rem;
+}
+
+::selection {
+    background-color: var(--accent);
+    color: var(--surface);
+}

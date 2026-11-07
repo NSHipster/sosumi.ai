@@ -21,6 +21,7 @@
       "/",
       "/.well-known/agent-card.json",
       "/.well-known/agent-skills/*",
+      "/.well-known/mcp-registry-auth",
       "/.well-known/security.txt",
       "/message:send",
       "/message:stream",
@@ -33,6 +34,7 @@
     "enabled": true
   },
   "vars": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "MCP_REGISTRY_PUBLIC_KEY": "sL6l9eXq+RN7+VuAVWZGnSacjsgix0TVW5FDLYlBUpg="
   }
 }

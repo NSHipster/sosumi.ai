@@ -64,6 +64,7 @@ interface Env {
   EXTERNAL_DOC_HOST_BLOCKLIST?: string
   WEB_BOT_AUTH_KEY?: string
   SIGNATURE_AGENT?: string
+  MCP_REGISTRY_PUBLIC_KEY?: string
 }
 
 const app = new Hono<{ Bindings: Env }>()
@@ -274,6 +275,22 @@ app.get("/.well-known/security.txt", (c) => {
       "Content-Type": "text/plain; charset=utf-8",
     },
   )
+})
+
+// Proves control of the sosumi.ai namespace to the MCP Registry
+// (`mcp-publisher login http`). The registry doesn't follow redirects.
+app.get("/.well-known/mcp-registry-auth", (c) => {
+  const publicKey = c.env.MCP_REGISTRY_PUBLIC_KEY?.trim()
+  const headers = {
+    "Content-Type": "text/plain; charset=utf-8",
+    "Cache-Control": "no-store",
+  }
+
+  if (!publicKey) {
+    return c.text("Not Found", 404, headers)
+  }
+
+  return c.text(`v=MCPv1; k=ed25519; p=${publicKey}`, 200, headers)
 })
 
 app.on("GET", ["/.well-known/ard.json", "/.well-known/ai-catalog.json"], (c) => {

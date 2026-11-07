@@ -181,6 +181,29 @@
             border: 1px solid var(--accent);
         }
 
+        .install-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        a.link-button {
+            display: inline-block;
+            padding: 0.375rem 0.875rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
+            font-weight: 500;
+            transition: border 0.2s;
+        }
+
+        a.link-button:hover {
+            color: var(--text);
+            text-decoration: none;
+            border-color: var(--accent);
+        }
+
         figure {
             margin: 0;
         }
@@ -726,7 +749,18 @@
 
                             <div class="tab-pane" id="vscode-tab">
                                 <h3>VSCode</h3>
-                                <p>Create a <code>.vscode/mcp.json</code> file in your workspace and enter the following
+                                <p>Click a button below to install the sosumi MCP server:</p>
+
+                                <p class="install-buttons">
+                                    <a class="link-button"
+                                        href="https://vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522sosumi%2522%252C%2522type%2522%253A%2522http%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fsosumi.ai%252Fmcp%2522%257D">Install
+                                        in VS Code</a>
+                                    <a class="link-button"
+                                        href="https://vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522sosumi%2522%252C%2522type%2522%253A%2522http%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fsosumi.ai%252Fmcp%2522%257D">Install
+                                        in VS Code Insiders</a>
+                                </p>
+
+                                <p>Or create a <code>.vscode/mcp.json</code> file in your workspace and enter the following
                                     configuration:</p>
 
                                 <pre><code class="mcp-config"><span class="dimmed"><span class="punctuation">{</span></span>
@@ -761,11 +795,17 @@
 
                             <div class="tab-pane" id="claude-code-tab">
                                 <h3>Claude Code</h3>
-                                <p>Run the following command in your terminal:</p>
+                                <p>Install the sosumi plugin, which adds the MCP server and the Sosumi skill.
+                                    Run these commands in Claude Code:</p>
+                                <pre><code>/plugin marketplace add NSHipster/sosumi.ai
+/plugin install sosumi@sosumi-ai</code></pre>
+                                <p>To add only the MCP server, run this command in your terminal:</p>
                                 <pre><code>claude mcp add --transport http sosumi https://sosumi.ai/mcp</code></pre>
-                                <p>For more information, see the
+                                <p>For more information, see the Claude Code documentation for
+                                    <a href="https://code.claude.com/docs/en/plugins/install"
+                                        rel="noopener noreferrer">plugins</a> and
                                     <a href="https://docs.anthropic.com/en/docs/claude-code/mcp"
-                                        rel="noopener noreferrer">Claude Code MCP documentation</a>.
+                                        rel="noopener noreferrer">MCP</a>.
                                 </p>
                             </div>
 
@@ -1042,6 +1082,11 @@ curl -o ~/.agents/skills/sosumi/SKILL.md https://sosumi.ai/SKILL.md</code></pre>
             </p>
             <p>
                 <strong>Contact:</strong> <a href="mailto:info@sosumi.ai">info@sosumi.ai</a>
+            </p>
+            <p>
+                <a href="/privacy">Privacy</a> ·
+                <a href="/terms">Terms</a> ·
+                <a href="/support">Support</a>
             </p>
         </div>
 
