@@ -32,3 +32,6 @@ lerna-debug.log*
 !.dev.vars.example
 .env*
 !.env.example
+
+# demo recording
+docs/demo.mp4

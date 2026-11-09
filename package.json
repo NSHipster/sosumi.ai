@@ -52,7 +52,8 @@
     "format": "biome check --write --linter-enabled=false .",
     "lint": "biome check --formatter-enabled=false .",
     "check": "biome check --write .",
-    "check:ci": "biome check ."
+    "check:ci": "biome check .",
+    "demo": "vhs docs/demo.tape"
   },
   "dependencies": {
     "@hono/mcp": "^0.1.2",
