@@ -9,7 +9,15 @@
     "id": "1048436880"
   },
   "websiteUrl": "https://sosumi.ai",
-  "version": "1.1.0",
+  "icons": [
+    {
+      "src": "https://sosumi.ai/favicon.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": ["any"],
+      "theme": "light"
+    }
+  ],
+  "version": "1.1.1",
   "remotes": [
     {
       "type": "streamable-http",
