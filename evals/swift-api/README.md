@@ -10,6 +10,10 @@ The difference between the two scores shows what Sosumi adds.
 
 The agent has no compiler, shell, or file access.
 It ends a case by calling `submit_answer` with one complete Swift file.
+It can make 12 tool calls.
+An agent that reaches the limit without submitting gets one final turn
+in which `submit_answer` is the only tool,
+and the row records `final_turn: true`.
 
 ## Layout
 
@@ -58,6 +62,8 @@ that already has a result and attempts failed ones again.
 - `passes` (the headline): the answer type-checks, uses no `fatalError`,
   `preconditionFailure`, `unsafeBitCast`, or force cast,
   and contains every required symbol.
+  A required symbol is one that every correct answer must contain;
+  whitespace does not matter, and some cases have none.
 - `typechecks`: the answer and the check file type-check together.
   A stub with `fatalError()` bodies type-checks, so this metric alone overstates success.
 - `deprecations`: the number of deprecation warnings in the answer.
@@ -67,5 +73,6 @@ that already has a result and attempts failed ones again.
 ```bash
 npm run test:mock     # every case, both conditions, through the local server
 npm run regrade -- runs/<model>/<condition>/baseline
+npm run regrade -- --write regrade.jsonl runs/<model>/<condition>/baseline
 npm run typecheck
 ```
