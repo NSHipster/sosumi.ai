@@ -1,0 +1,21 @@
+{
+  "id": "fm-token-budget",
+  "framework": "FoundationModels",
+  "source": "failure",
+  "tags": [
+    "FoundationModels",
+    "availability",
+    "back-deployment"
+  ],
+  "target": "arm64-apple-macos26.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "contextSize",
+    "tokenCount"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/foundationmodels/systemlanguagemodel/contextsize",
+    "https://sosumi.ai/documentation/foundationmodels/systemlanguagemodel/tokencount(for:)"
+  ],
+  "notes": "SystemLanguageModel.contextSize is @backDeployed(before: macOS 26.4) from macOS 26.0, so it needs no availability check at a macOS 26.0 deployment target. SystemLanguageModel.tokenCount(for:) is available from macOS 26.4 only and needs #available. Both are unavailable on tvOS and watchOS; this macOS case cannot test that part of the claim. Sosumi's tokenCount(for:) page documents only the Instructions overload, with macOS 26.4 availability; the overload that takes transcript entries has no page of its own."
+}

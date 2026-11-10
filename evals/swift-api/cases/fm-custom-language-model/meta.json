@@ -1,0 +1,23 @@
+{
+  "id": "fm-custom-language-model",
+  "framework": "FoundationModels",
+  "source": "failure",
+  "tags": [
+    "FoundationModels",
+    "protocol-conformance",
+    "associated-types"
+  ],
+  "target": "arm64-apple-macos27.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "LanguageModelExecutor",
+    "LanguageModelCapabilities",
+    "channel.send"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/foundationmodels/languagemodel",
+    "https://sosumi.ai/documentation/foundationmodels/languagemodelexecutor",
+    "https://sosumi.ai/documentation/foundationmodels/languagemodelexecutorgenerationchannel"
+  ],
+  "notes": "FoundationModels 27 adds a public LanguageModel protocol. A conforming type names an Executor (LanguageModelExecutor) and supplies capabilities and executorConfiguration; the executor streams events into a LanguageModelExecutorGenerationChannel. Models without knowledge of OS 27 invent a request/response method."
+}
