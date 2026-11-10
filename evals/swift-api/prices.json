@@ -1,0 +1,10 @@
+{
+  "description": "USD per million tokens. Cache writes cost cache_write_multiplier times the input price. The runner refuses to run a model whose price is missing or null.",
+  "cache_write_multiplier": 1.25,
+  "anthropic": {
+    "claude-opus-5-5": { "input": 4, "output": 20, "cache_read": 0.2 },
+    "claude-sonnet-5-5": { "input": 2, "output": 10, "cache_read": 0.1 },
+    "claude-haiku-5-5": { "input": 0.1, "output": 0.5, "cache_read": 0.01 }
+  },
+  "openai": {}
+}

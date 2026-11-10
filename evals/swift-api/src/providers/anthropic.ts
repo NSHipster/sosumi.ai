@@ -1,0 +1,141 @@
+// Runs one case with a Claude model through the Messages API, with a manual tool loop.
+
+import Anthropic from "@anthropic-ai/sdk"
+import {
+  type AgentContext,
+  type AgentOutcome,
+  assertModel,
+  type EndReason,
+  retryAfterFromHeaders,
+  withRetries,
+} from "../agent.ts"
+
+export interface AnthropicOptions {
+  model: string
+  effort: "low" | "medium" | "high" | "xhigh" | "max"
+  maxTokens: number
+}
+
+export function anthropicClient(): Anthropic {
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) throw new Error("Set ANTHROPIC_API_KEY to run an Anthropic model.")
+  // The runner retries by itself, so that it can count and record each retry.
+  return new Anthropic({ apiKey, maxRetries: 0 })
+}
+
+const retryPolicy = {
+  isRetryable(error: unknown): boolean {
+    if (error instanceof Anthropic.RateLimitError) return true
+    if (error instanceof Anthropic.APIError) {
+      const type = (error as { type?: string }).type
+      return error.status === 529 || type === "overloaded_error"
+    }
+    return false
+  },
+  retryAfterMs: retryAfterFromHeaders,
+}
+
+export async function runAnthropic(
+  client: Anthropic,
+  options: AnthropicOptions,
+  context: AgentContext,
+): Promise<AgentOutcome> {
+  const { progress, session, trace, signal } = context
+  const tools: Anthropic.Tool[] = context.tools.map((tool, index) => ({
+    name: tool.name,
+    description: tool.description,
+    input_schema: tool.inputSchema as Anthropic.Tool.InputSchema,
+    ...(index === context.tools.length - 1
+      ? { cache_control: { type: "ephemeral" as const } }
+      : {}),
+  }))
+  const system: Anthropic.TextBlockParam[] = [
+    { type: "text", text: context.system, cache_control: { type: "ephemeral" } },
+  ]
+  const messages: Anthropic.MessageParam[] = [{ role: "user", content: context.task }]
+
+  while (true) {
+    const response = await withRetries(
+      () =>
+        client.messages
+          .stream(
+            {
+              model: options.model,
+              max_tokens: options.maxTokens,
+              system,
+              tools,
+              messages,
+              thinking: { type: "adaptive", display: "summarized" },
+              output_config: { effort: options.effort },
+            },
+            { signal },
+          )
+          .finalMessage(),
+      retryPolicy,
+      progress,
+      signal,
+    )
+
+    progress.model = response.model
+    const usage = response.usage
+    progress.usage.input_tokens += usage.input_tokens
+    progress.usage.output_tokens += usage.output_tokens
+    progress.usage.cache_read_input_tokens += usage.cache_read_input_tokens ?? 0
+    progress.usage.cache_creation_input_tokens += usage.cache_creation_input_tokens ?? 0
+    assertModel(options.model, response.model)
+
+    let thinking = ""
+    const calls: Anthropic.ToolUseBlock[] = []
+    for (const block of response.content) {
+      if (block.type === "thinking") {
+        thinking += block.thinking
+      } else if (block.type === "text" && block.text.trim()) {
+        trace.push({ role: "assistant", content: block.text, ...(thinking ? { thinking } : {}) })
+        thinking = ""
+      } else if (block.type === "tool_use") {
+        trace.push({
+          role: "tool_call",
+          name: block.name,
+          content: JSON.stringify(block.input, null, 2),
+          ...(thinking ? { thinking } : {}),
+        })
+        thinking = ""
+        calls.push(block)
+      }
+    }
+    if (thinking) trace.push({ role: "assistant", content: "", thinking })
+    messages.push({ role: "assistant", content: response.content })
+
+    const stopReason = response.stop_reason ?? "unknown"
+    const finish = (endReason: EndReason): AgentOutcome => ({
+      answer: session.answer,
+      endReason,
+      stopReason,
+      model: response.model,
+      usage: progress.usage,
+      toolCalls: progress.toolCalls,
+      sosumiCalls: progress.sosumiCalls,
+      retries: progress.retries,
+    })
+
+    if (stopReason === "refusal") return finish("refusal")
+    if (stopReason === "max_tokens") return finish("max_tokens")
+    if (stopReason === "pause_turn") continue
+    if (calls.length === 0) return finish("end_turn")
+
+    const results: Anthropic.ToolResultBlockParam[] = []
+    for (const call of calls) {
+      const output = await session.handle(call.name, call.input, signal, trace)
+      results.push({
+        type: "tool_result",
+        tool_use_id: call.id,
+        content: output.text,
+        ...(output.isError ? { is_error: true } : {}),
+      })
+      if (session.done) break
+    }
+    if (session.answer !== null) return finish("submitted")
+    if (session.limitReached) return finish("tool_limit")
+    messages.push({ role: "user", content: results })
+  }
+}
