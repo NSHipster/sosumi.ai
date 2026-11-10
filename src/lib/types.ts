@@ -250,33 +250,6 @@ export interface SymbolVariant extends BaseVariant {
 export type Variant = LanguageVariant | ImageVariant | SymbolVariant
 
 // ============================================================================
-// INTERFACE & INDEX TYPES
-// ============================================================================
-
-/**
- * Represents a Swift interface item in the documentation index
- */
-export interface SwiftInterfaceItem {
-  path: string
-  title: string
-  type: string
-  children?: SwiftInterfaceItem[]
-  external?: boolean
-  beta?: boolean
-}
-
-/**
- * Represents an item in the documentation index
- */
-export interface IndexContentItem {
-  type?: string
-  title?: string
-  path?: string
-  beta?: boolean
-  children?: IndexContentItem[]
-}
-
-// ============================================================================
 // METADATA TYPES
 // ============================================================================
 
@@ -344,11 +317,6 @@ export interface AppleDocJSON {
 
   // References
   references?: Record<string, ContentItem>
-
-  // Index-specific fields
-  interfaceLanguages?: {
-    swift?: SwiftInterfaceItem[]
-  }
 }
 
 // ============================================================================

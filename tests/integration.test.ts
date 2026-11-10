@@ -72,28 +72,42 @@ describe("Integration Tests with Mocked Apple API", () => {
     expect(global.fetch).toHaveBeenCalledTimes(1)
   })
 
-  it("should handle framework index requests", async () => {
+  it("should fetch framework pages from the page JSON, not the navigator index", async () => {
     const mockFrameworkData = {
-      metadata: { title: "Swift" },
-      references: {},
+      metadata: { title: "Observation", roleHeading: "Framework" },
+      references: {
+        "doc://com.apple.documentation/documentation/Observation/Observable": {
+          title: "Observable",
+          url: "/documentation/observation/observable",
+          abstract: [{ type: "text", text: "A type that emits notifications." }],
+        },
+      },
       primaryContentSections: [],
+      topicSections: [
+        {
+          title: "Observable conformance",
+          identifiers: ["doc://com.apple.documentation/documentation/Observation/Observable"],
+        },
+      ],
     }
 
     global.fetch = vi
       .fn()
       .mockResolvedValue(new Response(JSON.stringify(mockFrameworkData), { status: 200 }))
 
-    const jsonData = await fetchJSONData("/documentation/swift")
+    const jsonData = await fetchJSONData("/documentation/observation")
     const markdown = await renderFromJSON(
       jsonData,
-      "https://developer.apple.com/documentation/swift",
+      "https://developer.apple.com/documentation/observation",
     )
 
-    expect(markdown).toContain("# Swift")
+    expect(markdown).toContain("# Observation")
+    expect(markdown).toContain("## Observable conformance")
+    expect(markdown).toContain("[Observable](/documentation/observation/observable)")
 
-    // Should call the framework index endpoint
+    expect(global.fetch).toHaveBeenCalledTimes(1)
     expect(global.fetch).toHaveBeenCalledWith(
-      "https://developer.apple.com/tutorials/data/index/swift",
+      "https://developer.apple.com/tutorials/data/documentation/observation.json",
       expect.any(Object),
     )
   })

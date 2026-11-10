@@ -18,7 +18,6 @@ import type {
   AppleDocJSON,
   ContentItem,
   Declaration,
-  IndexContentItem,
   Platform,
   PossibleValueItem,
   PropertyItem,
@@ -152,14 +151,6 @@ export async function renderFromJSON(
     )
   }
 
-  // Add index content for framework pages
-  if (jsonData.interfaceLanguages?.swift) {
-    const swiftContent = jsonData.interfaceLanguages.swift[0]
-    if (swiftContent.children) {
-      markdown += renderIndexContent(swiftContent.children, options.externalOrigin)
-    }
-  }
-
   // Add see also sections
   if (jsonData.seeAlsoSections) {
     markdown += renderSeeAlso(
@@ -191,8 +182,6 @@ function generateFrontMatterFromJSON(jsonData: AppleDocJSON, sourceUrl: string):
   if (jsonData.metadata?.title) {
     const cleanTitle = jsonData.metadata.title.replace("| Apple Developer Documentation", "").trim()
     frontMatter.title = cleanTitle
-  } else if (jsonData.interfaceLanguages?.swift?.[0]?.title) {
-    frontMatter.title = jsonData.interfaceLanguages.swift[0].title
   }
 
   if (jsonData.abstract && Array.isArray(jsonData.abstract)) {
@@ -695,59 +684,6 @@ function renderTopicSections(
         markdown += "\n"
       }
       markdown += "\n"
-    }
-  }
-
-  return markdown
-}
-
-/**
- * Render index content for framework pages
- */
-function renderIndexContent(children: IndexContentItem[], externalOrigin?: string): string {
-  return renderIndexContentWithIndent(children, 2, externalOrigin)
-}
-
-/**
- * Render index content with proper indentation and spacing
- */
-function renderIndexContentWithIndent(
-  children: IndexContentItem[],
-  headingLevel: number,
-  externalOrigin?: string,
-): string {
-  let markdown = ""
-
-  for (let i = 0; i < children.length; i++) {
-    const child = children[i]
-
-    if (child.type === "groupMarker") {
-      // Add spacing before group markers (except the first one)
-      if (i > 0) {
-        markdown += "\n"
-      }
-
-      // Group markers are headings at the current level
-      const hashes = "#".repeat(Math.min(headingLevel, 6))
-      markdown += `${hashes} ${child.title}\n\n`
-    } else if (child.path && child.title) {
-      const beta = child.beta ? " **Beta**" : ""
-
-      // List items are always unindented under their heading
-      const rewrittenPath = rewriteDocumentationPath(child.path, externalOrigin)
-      markdown += `- [${child.title}](${rewrittenPath})${beta}\n`
-
-      if (child.children) {
-        // Add spacing before nested content
-        markdown += "\n"
-        // Nested content gets a deeper heading level
-        const nestedContent = renderIndexContentWithIndent(
-          child.children,
-          headingLevel + 1,
-          externalOrigin,
-        )
-        markdown += nestedContent
-      }
     }
   }
 
