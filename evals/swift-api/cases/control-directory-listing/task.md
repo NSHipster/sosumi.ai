@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: Foundation
+- Language mode: Swift 6
 
 A code formatter lists the Swift source files directly inside a folder.
 It does not look into subfolders, and it skips hidden files.

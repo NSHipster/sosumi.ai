@@ -3,6 +3,7 @@
 - Platform: iOS
 - Deployment target: iOS 27.0 (`arm64-apple-ios27.0`)
 - Framework: AppIntents
+- Language mode: Swift 6
 
 A news app offers a Shortcuts action that refreshes the feed.
 The refresh needs the app's in-memory caches,

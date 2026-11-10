@@ -54,7 +54,7 @@ These 8 cases have `"round": 2` in `meta.json`.
 | [storekit-store-type](#storekit-store-type) | StoreKit | sdk-diff | `arm64-apple-macos27.0` | `AppTransaction`, `storeType`, `education` |
 | [swift-array-sendable](#swift-array-sendable) | Swift | failure | `arm64-apple-macos27.0` | `Sendable` |
 | [swift-cancellation-shield](#swift-cancellation-shield) | Swift | sdk-diff | `arm64-apple-macos27.0` | `withTaskCancellationShield`, `hasActiveCancellationShield` |
-| [swift-span-byte-order](#swift-span-byte-order) | Swift | sdk-diff | `arm64-apple-macos26.0` | `bigEndian`, `load` |
+| [swift-span-byte-order](#swift-span-byte-order) | Swift | sdk-diff | `arm64-apple-macos26.0` | `, .bigEndian)` or `ByteOrder`, `load` |
 | [swift-unique-array](#swift-unique-array) | Swift | sdk-diff | `arm64-apple-macos27.0` | `UniqueArray`, `append` |
 | [swiftdata-sectioned-results](#swiftdata-sectioned-results) | SwiftData | sdk-diff | `arm64-apple-macos27.0` | `sectionBy` |
 | [swiftui-tabs-picker](#swiftui-tabs-picker) | SwiftUI | sdk-diff | `arm64-apple-macos26.0` | `pickerStyle` |
@@ -68,6 +68,7 @@ These 8 cases have `"round": 2` in `meta.json`.
 - Framework: AppKit
 - Source: sdk-diff
 - Target: `arm64-apple-macos27.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/appkit/nswindow/didbecomekeymessage>, <https://sosumi.ai/documentation/foundation/notificationcenter/addobserver(of:for:using:)-4d19x>
 
 The macOS 27 SDK adds typed AppKit messages such as NSWindow.DidBecomeKeyMessage (a NotificationCenter.MainActorMessage) with the identifier .didBecomeKey; MacOSX26.5.sdk has none of these NSWindow messages. NotificationCenter.addObserver(of:for:using:) returns an ObservationToken; the name-based addObserver(forName:object:queue:using:) returns NSObjectProtocol.
@@ -80,6 +81,7 @@ The macOS 27 SDK adds typed AppKit messages such as NSWindow.DidBecomeKeyMessage
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: AppKit
+- Language mode: Swift 6
 
 A document window refreshes its inspector whenever it becomes the key window.
 The app uses Foundation's typed, concurrency-safe notification messages
@@ -123,6 +125,7 @@ func observeBecomingKey(
 - Framework: AVFoundation
 - Source: sdk-diff
 - Target: `arm64-apple-macos27.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/avfoundation/avassetexportsession/configureforresumableexport()>, <https://sosumi.ai/documentation/avfoundation/avassetexportsession/resumptionstate>
 
 The macOS 27 SDK adds AVAssetExportSession.configureForResumableExport() async -> ResumptionState, an enum with resumable(isResumingFromPreviousState:) and notResumable(failureReason:).
@@ -135,6 +138,7 @@ The macOS 27 SDK adds AVAssetExportSession.configureForResumableExport() async -
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: AVFoundation
+- Language mode: Swift 6
 
 A video editor exports long projects.
 Before it starts an export, it asks the export session to prepare
@@ -178,6 +182,7 @@ func prepareResumableExport(_ session: AVAssetExportSession) async -> String? {
 - Framework: Foundation
 - Source: control
 - Target: `arm64-apple-macos27.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/foundation/filemanager/contentsofdirectory(at:includingpropertiesforkeys:options:)>, <https://sosumi.ai/documentation/foundation/filemanager/directoryenumerationoptions/skipshiddenfiles>
 
 Control case. FileManager.contentsOfDirectory(at:includingPropertiesForKeys:options:) has been available since macOS 10.6; its includingPropertiesForKeys parameter has no default value.
@@ -190,6 +195,7 @@ Control case. FileManager.contentsOfDirectory(at:includingPropertiesForKeys:opti
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: Foundation
+- Language mode: Swift 6
 
 A code formatter lists the Swift source files directly inside a folder.
 It does not look into subfolders, and it skips hidden files.
@@ -227,6 +233,7 @@ func swiftFiles(in directory: URL) throws -> [URL] {
 - Framework: Foundation
 - Source: control
 - Target: `arm64-apple-macos27.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/foundation/iso8601dateformatter>, <https://sosumi.ai/documentation/foundation/iso8601dateformatter/options/withfractionalseconds>
 
 Control case. ISO8601DateFormatter.Options.withFractionalSeconds has been available since macOS 10.13. Date.ISO8601FormatStyle(includingFractionalSeconds: true) is an equally valid answer, so the required symbol is only ISO8601.
@@ -239,6 +246,7 @@ Control case. ISO8601DateFormatter.Options.withFractionalSeconds has been availa
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: Foundation
+- Language mode: Swift 6
 
 A server sends timestamps such as `2026-03-14T15:09:26.535Z`:
 ISO 8601 internet date-time strings with fractional seconds.
@@ -272,6 +280,7 @@ func parseTimestamp(_ string: String) -> Date? {
 - Framework: os
 - Source: control
 - Target: `arm64-apple-macos27.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/os/logger>, <https://sosumi.ai/documentation/os/oslogprivacy/private>
 
 Control case. Logger and OSLogPrivacy have been available since macOS 11. os_log(_:log:type:_:) takes an OSLog, not a Logger.
@@ -284,6 +293,7 @@ Control case. Logger and OSLogPrivacy have been available since macOS 11. os_log
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: os (unified logging)
+- Language mode: Swift 6
 
 An app logs each sign-in at the informational level
 with the message `Signed in: ` followed by the user name.
@@ -315,6 +325,7 @@ func logSignIn(user: String, to logger: Logger) {
 - Framework: CryptoKit
 - Source: control
 - Target: `arm64-apple-macos27.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/cryptokit/sha256>, <https://sosumi.ai/documentation/cryptokit/hashfunction/hash(data:)>
 
 Control case. SHA256.hash(data:) has been available since macOS 10.15. SHA256Digest is a Sequence of UInt8 and has no hexadecimal string property.
@@ -327,6 +338,7 @@ Control case. SHA256.hash(data:) has been available since macOS 10.15. SHA256Dig
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: CryptoKit
+- Language mode: Swift 6
 
 A download manager verifies files against published SHA-256 checksums,
 which are lowercase hexadecimal strings of 64 characters.
@@ -361,6 +373,7 @@ func sha256Hex(of data: Data) -> String {
 - Framework: Foundation
 - Source: control
 - Target: `arm64-apple-macos27.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/foundation/urlsession/data(from:delegate:)>, <https://sosumi.ai/documentation/foundation/httpurlresponse/statuscode>
 
 Control case. URLSession.data(from:delegate:) has been available since macOS 12. data(for:delegate:) takes a URLRequest, not a URL.
@@ -373,6 +386,7 @@ Control case. URLSession.data(from:delegate:) has been available since macOS 12.
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: Foundation
+- Language mode: Swift 6
 
 A link checker loads each URL with the shared URL session,
 using Swift concurrency, and records the HTTP status code.
@@ -404,6 +418,7 @@ func statusCode(of url: URL) async throws -> Int? {
 - Framework: CoreData
 - Source: sdk-diff
 - Target: `arm64-apple-macos27.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/coredata/nspersistentstorecoordinator/remotechangemessage>, <https://sosumi.ai/documentation/foundation/notificationcenter/messages(of:for:buffersize:)-4tof0>
 
 The macOS 27 SDK adds NSPersistentStoreCoordinator.RemoteChangeMessage (a NotificationCenter.AsyncMessage) and the MessageIdentifier .remoteChange. NotificationCenter.messages(of:for:bufferSize:) is available from macOS 26. The older notifications(named:object:) yields Notification values.
@@ -416,6 +431,7 @@ The macOS 27 SDK adds NSPersistentStoreCoordinator.RemoteChangeMessage (a Notifi
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: Core Data
+- Language mode: Swift 6
 
 An app that syncs a Core Data store merges history
 whenever another process changes the store.
@@ -452,6 +468,7 @@ func remoteChanges(
 - Framework: CryptoKit
 - Source: sdk-diff
 - Target: `arm64-apple-macos26.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/cryptokit/mlkem768/onetimeprivatekey>, <https://sosumi.ai/documentation/cryptokit/mlkem768/privatekey>
 
 The macOS 27 SDK adds MLKEM768.OneTimePrivateKey, a noncopyable key with a consuming decapsulate(_:). MLKEM768.PrivateKey is available from macOS 26.0. At a macOS 26.0 deployment target, the one-time key needs #available(macOS 27.0, *).
@@ -464,6 +481,7 @@ The macOS 27 SDK adds MLKEM768.OneTimePrivateKey, a noncopyable key with a consu
 - Platform: macOS
 - Deployment target: macOS 26.0 (`arm64-apple-macos26.0`)
 - Framework: CryptoKit
+- Language mode: Swift 6
 
 A messaging app sets up a session key with ML-KEM-768.
 It generates a private key, gives the public key to a peer,
@@ -512,6 +530,7 @@ func establishSessionKey(
 - Framework: FoundationModels
 - Source: sdk-diff
 - Target: `arm64-apple-macos27.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/foundationmodels/languagemodelerror>, <https://sosumi.ai/documentation/foundationmodels/languagemodelerror/contextsizeexceeded>
 
 OS 27 adds LanguageModelError.contextSizeExceeded(ContextSizeExceeded), whose payload has contextSize and tokenCount. LanguageModelSession.GenerationError.exceededContextWindowSize is deprecated in 27.0 and its Context has no size.
@@ -524,6 +543,7 @@ OS 27 adds LanguageModelError.contextSizeExceeded(ContextSizeExceeded), whose pa
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: FoundationModels
+- Language mode: Swift 6
 
 When a FoundationModels request fails because the prompt and transcript
 no longer fit in the model's context, an app wants to trim the conversation.
@@ -561,9 +581,10 @@ func exceededContextSize(_ error: any Error) -> Int? {
 - Framework: FoundationModels
 - Source: failure
 - Target: `arm64-apple-macos27.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/foundationmodels/languagemodel>, <https://sosumi.ai/documentation/foundationmodels/languagemodelexecutor>, <https://sosumi.ai/documentation/foundationmodels/languagemodelexecutorgenerationchannel>
 
-FoundationModels 27 adds a public LanguageModel protocol. A conforming type names an Executor (LanguageModelExecutor) and supplies capabilities and executorConfiguration; the executor streams events into a LanguageModelExecutorGenerationChannel. Models without knowledge of OS 27 invent a request/response method.
+FoundationModels 27 adds a public LanguageModel protocol. A conforming type names an Executor (LanguageModelExecutor) and supplies capabilities and executorConfiguration; the executor streams events into a LanguageModelExecutorGenerationChannel. Models without knowledge of OS 27 invent a request/response method. The API spans several new types (LanguageModel, LanguageModelExecutor, LanguageModelCapabilities, LanguageModelExecutorGenerationChannel and its Event and Response.Action), so an agent needs about six documentation pages within the 12-call limit. The case therefore also measures how an agent budgets its calls.
 
 ### task.md
 
@@ -573,6 +594,7 @@ FoundationModels 27 adds a public LanguageModel protocol. A conforming type name
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: FoundationModels
+- Language mode: Swift 6
 
 A test suite needs a fake language model that it can pass to
 `LanguageModelSession(model:)` in place of the system model.
@@ -637,6 +659,7 @@ struct EchoExecutor: LanguageModelExecutor {
 - Framework: FoundationModels
 - Source: failure
 - Target: `arm64-apple-macos27.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/foundationmodels/transcript/segment/attachment(_:)>, <https://sosumi.ai/documentation/foundationmodels/transcript/attachmentsegment>, <https://sosumi.ai/documentation/foundationmodels/transcript/imageattachment>, <https://sosumi.ai/documentation/foundationmodels/languagemodelcapabilities/capability/vision>
 
 On OS 27, Transcript.Segment has case attachment(Transcript.AttachmentSegment), whose content is Transcript.Attachment.image(Transcript.ImageAttachment). The recorded claim said the model reports supportsImageInput; the SDK has no such symbol. A model reports image support through capabilities.contains(.vision), so the case uses that instead.
@@ -649,6 +672,7 @@ On OS 27, Transcript.Segment has case attachment(Transcript.AttachmentSegment), 
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: FoundationModels
+- Language mode: Swift 6
 
 An app builds transcript entries by hand.
 When the user adds a picture, the app wants a transcript segment
@@ -752,6 +776,7 @@ extension SessionSetting: Sendable where Value: Sendable {}
 - Framework: FoundationModels
 - Source: failure
 - Target: `arm64-apple-macos26.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/foundationmodels/systemlanguagemodel/contextsize>, <https://sosumi.ai/documentation/foundationmodels/systemlanguagemodel/tokencount(for:)>
 
 SystemLanguageModel.contextSize is @backDeployed(before: macOS 26.4) from macOS 26.0, so it needs no availability check at a macOS 26.0 deployment target. SystemLanguageModel.tokenCount(for:) is available from macOS 26.4 only and needs #available. Both are unavailable on tvOS and watchOS; this macOS case cannot test that part of the claim. Sosumi's tokenCount(for:) page documents only the Instructions overload, with macOS 26.4 availability; the overload that takes transcript entries has no page of its own.
@@ -764,6 +789,7 @@ SystemLanguageModel.contextSize is @backDeployed(before: macOS 26.4) from macOS 
 - Platform: macOS
 - Deployment target: macOS 26.0 (`arm64-apple-macos26.0`)
 - Framework: FoundationModels
+- Language mode: Swift 6
 
 Before it sends a long prompt, an app checks how many tokens remain
 in the on-device model's context window
@@ -809,6 +835,7 @@ func remainingContext(
 - Framework: Foundation
 - Source: sdk-diff
 - Target: `arm64-apple-macos27.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/foundation/predicate/init(all:)>
 
 The macOS 27 SDK adds Predicate.init(all:) and Predicate.init(any:), which combine a collection of predicates. Before that, an answer can fold the filters with #Predicate and evaluate(_:), which also passes. The #Predicate macro rejects closures and try? inside its body.
@@ -821,6 +848,7 @@ The macOS 27 SDK adds Predicate.init(all:) and Predicate.init(any:), which combi
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: Foundation
+- Language mode: Swift 6
 
 A product search screen lets the user add any number of filters.
 Each filter is a Foundation `Predicate`.
@@ -860,6 +888,7 @@ func matchingAll(_ filters: [Predicate<Product>]) -> Predicate<Product> {
 - Framework: Foundation
 - Source: sdk-diff
 - Target: `arm64-apple-macos27.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/foundation/subprogress>, <https://sosumi.ai/documentation/foundation/progressmanager>
 
 The macOS 27 SDK adds ProgressManager, ProgressReporter, and the noncopyable Subprogress. A function receives a Subprogress, calls start(totalCount:) to get a ProgressManager, and reports work with complete(count:). Subprogress has none of NSProgress's unit-count properties.
@@ -872,6 +901,7 @@ The macOS 27 SDK adds ProgressManager, ProgressReporter, and the noncopyable Sub
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: Foundation
+- Language mode: Swift 6
 
 An importer processes a list of files, one at a time.
 The caller hands the importer its share of a parent progress
@@ -919,6 +949,7 @@ func importFiles(
 - Framework: HealthKit
 - Source: sdk-diff
 - Target: `arm64-apple-macos26.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/healthkit/hkhealthstore/getearliestauthorizedsampledate(for:completion:)>, <https://sosumi.ai/documentation/healthkit/hkhealthstore/earliestpermittedsampledate()>
 
 The macOS 27 SDK adds HKHealthStore.earliestAuthorizedSampleDate(for:), which returns [HKObjectType: Date]. At a macOS 26.0 deployment target it needs #available(macOS 27.0, *); the fallback is earliestPermittedSampleDate().
@@ -931,6 +962,7 @@ The macOS 27 SDK adds HKHealthStore.earliestAuthorizedSampleDate(for:), which re
 - Platform: macOS
 - Deployment target: macOS 26.0 (`arm64-apple-macos26.0`)
 - Framework: HealthKit
+- Language mode: Swift 6
 
 A health dashboard limits its date picker
 to the range of samples that the app is allowed to read.
@@ -971,6 +1003,7 @@ func earliestReadableDate(for type: HKObjectType, in store: HKHealthStore) async
 - Framework: ImagePlayground
 - Source: sdk-diff
 - Target: `arm64-apple-macos26.4`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/imageplayground/imageplaygroundoptions>, <https://sosumi.ai/documentation/imageplayground/imageplaygroundoptions/creationstrategy-swift.property>
 
 ImagePlaygroundOptions is available from macOS 26.4. The macOS 27 SDK adds its creationStrategy property and the CreationStrategy enum (automatic, editExisting, generateNew). At a macOS 26.4 deployment target the property needs #available(macOS 27.0, *).
@@ -983,6 +1016,7 @@ ImagePlaygroundOptions is available from macOS 26.4. The macOS 27 SDK adds its c
 - Platform: macOS
 - Deployment target: macOS 26.4 (`arm64-apple-macos26.4`)
 - Framework: ImagePlayground
+- Language mode: Swift 6
 
 A photo app opens Image Playground with a source image
 and passes it a set of Image Playground options.
@@ -1020,6 +1054,7 @@ func editingOptions() -> ImagePlaygroundOptions {
 - Source: sdk-diff
 - Target: `arm64-apple-ios27.0`
 - Round: 2
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/appintents/appintent/allowedexecutiontargets>, <https://sosumi.ai/documentation/appintents/intentexecutiontargets>
 
 The iOS 27 SDK adds AppIntent.allowedExecutionTargets and the IntentExecutionTargets option set (default, main, appIntentsExtension, widgetKitExtension). The check cannot see which targets an answer allows, because the protocol supplies a default; the required_symbols check rejects an answer that never sets allowedExecutionTargets.
@@ -1032,6 +1067,7 @@ The iOS 27 SDK adds AppIntent.allowedExecutionTargets and the IntentExecutionTar
 - Platform: iOS
 - Deployment target: iOS 27.0 (`arm64-apple-ios27.0`)
 - Framework: AppIntents
+- Language mode: Swift 6
 
 A news app offers a Shortcuts action that refreshes the feed.
 The refresh needs the app's in-memory caches,
@@ -1086,6 +1122,7 @@ struct RefreshFeedIntent: AppIntent {
 - Source: sdk-diff
 - Target: `arm64-apple-ios27.0`
 - Round: 2
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/nowplaying/mediacommand>, <https://sosumi.ai/documentation/nowplaying/mediacommand/skipforward(preferredintervals:_:)>
 
 NowPlaying is a new framework in the iOS 27 SDK. MediaCommand has static factories such as play(_:), pause(_:), skipForward(preferredIntervals:_:), and skipBackward(preferredIntervals:_:). Before it, apps registered handlers on MPRemoteCommandCenter, whose commands are MPRemoteCommand objects.
@@ -1098,6 +1135,7 @@ NowPlaying is a new framework in the iOS 27 SDK. MediaCommand has static factori
 - Platform: iOS
 - Deployment target: iOS 27.0 (`arm64-apple-ios27.0`)
 - Framework: NowPlaying
+- Language mode: Swift 6
 
 A podcast app publishes its playback controls to the system
 (Lock Screen, Control Center, headphones) with the NowPlaying framework.
@@ -1153,6 +1191,7 @@ func transportCommands(for player: any AudioPlayer) -> [MediaCommand] {
 - Source: sdk-diff
 - Target: `arm64-apple-ios27.0`
 - Round: 2
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/photosui/phpickerconfiguration-swift.struct/searchtext>, <https://sosumi.ai/documentation/photosui/phpickersearchtext-swift.struct>
 
 The iOS 27 SDK adds PHPickerConfiguration.searchText of type PHPickerSearchText?, created from a string or a UIPhotoSearchSuggestion.
@@ -1165,6 +1204,7 @@ The iOS 27 SDK adds PHPickerConfiguration.searchText of type PHPickerSearchText?
 - Platform: iOS
 - Deployment target: iOS 27.0 (`arm64-apple-ios27.0`)
 - Framework: PhotosUI
+- Language mode: Swift 6
 
 A travel journal app lets the user add photos to a trip.
 It opens the system photo picker showing only images,
@@ -1200,6 +1240,7 @@ func photoPickerConfiguration(searchingFor destination: String) -> PHPickerConfi
 - Source: sdk-diff
 - Target: `arm64-apple-ios27.0`
 - Round: 2
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/uikit/uinavigationitem/navigationbarminimization-1kj9z>, <https://sosumi.ai/documentation/uikit/uibarminimization-swift.struct>
 
 The iOS 27 SDK adds UIBarMinimization (a Swift struct refined from the Objective-C class) with minimizationBehavior, safeAreaAdjustment, and restorationBehavior, and UINavigationItem.navigationBarMinimization. iOS 26 has UITabBarController.tabBarMinimizeBehavior but no navigation bar equivalent.
@@ -1212,6 +1253,7 @@ The iOS 27 SDK adds UIBarMinimization (a Swift struct refined from the Objective
 - Platform: iOS
 - Deployment target: iOS 27.0 (`arm64-apple-ios27.0`)
 - Framework: UIKit
+- Language mode: Swift 6
 
 A reading app shows long articles in a navigation controller.
 As the reader scrolls down through an article, the navigation bar minimizes
@@ -1250,6 +1292,7 @@ func configureReadingNavigationBar(for item: UINavigationItem) {
 - Source: sdk-diff
 - Target: `arm64-apple-ios27.0`
 - Round: 2
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/uikit/uitextinputtraits/grammarcheckingtype>, <https://sosumi.ai/documentation/uikit/uitextgrammarcheckingtype>
 
 The iOS 27 SDK adds UITextGrammarCheckingType (default, no, yes) and the grammarCheckingType text input trait. NSTextView on macOS uses isGrammarCheckingEnabled, which UITextView does not have.
@@ -1262,6 +1305,7 @@ The iOS 27 SDK adds UITextGrammarCheckingType (default, no, yes) and the grammar
 - Platform: iOS
 - Deployment target: iOS 27.0 (`arm64-apple-ios27.0`)
 - Framework: UIKit
+- Language mode: Swift 6
 
 A code snippet app edits source code in a text view.
 Writing aids that help with prose get in the way of code,
@@ -1301,6 +1345,7 @@ func makeCodeTextView() -> UITextView {
 - Source: sdk-diff
 - Target: `arm64-apple-ios26.0`
 - Round: 2
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/uikit/uiapplication/systemprefersreducedresourceusage>, <https://sosumi.ai/documentation/foundation/processinfo/islowpowermodeenabled>
 
 The iOS 27 SDK adds UIApplication.systemPrefersReducedResourceUsage, a matching trait, and a change notification. At an iOS 26.0 deployment target the property needs #available(iOS 27.0, *); the fallback is ProcessInfo.isLowPowerModeEnabled.
@@ -1313,6 +1358,7 @@ The iOS 27 SDK adds UIApplication.systemPrefersReducedResourceUsage, a matching 
 - Platform: iOS
 - Deployment target: iOS 26.0 (`arm64-apple-ios26.0`)
 - Framework: UIKit
+- Language mode: Swift 6
 
 A photo app runs optional background work, such as generating thumbnails ahead of time.
 On iOS versions where the system reports that it prefers apps to reduce their resource usage,
@@ -1350,6 +1396,7 @@ func shouldReduceBackgroundWork() -> Bool {
 - Source: sdk-diff
 - Target: `arm64-apple-ios27.0`
 - Round: 2
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/uikit/uiwindowscene/closureconfirmation>, <https://sosumi.ai/documentation/uikit/uisceneclosureconfirmation>
 
 The iOS 27 SDK adds UISceneClosureConfirmation, created with init(title:message:actions:) from UIAlertAction values, and UIWindowScene.closureConfirmation. Both are unavailable on tvOS, watchOS, and visionOS.
@@ -1362,6 +1409,7 @@ The iOS 27 SDK adds UISceneClosureConfirmation, created with init(title:message:
 - Platform: iOS
 - Deployment target: iOS 27.0 (`arm64-apple-ios27.0`)
 - Framework: UIKit
+- Language mode: Swift 6
 
 On iPad, a document editor runs in several windows.
 When a window has unsaved changes, closing it must first ask the user to confirm.
@@ -1405,6 +1453,7 @@ func requireClosureConfirmation(for scene: UIWindowScene, discard: @escaping () 
 - Source: sdk-diff
 - Target: `arm64-apple-ios26.0`
 - Round: 2
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/uikit/uisheetpresentationcontroller/preferredplacement>, <https://sosumi.ai/documentation/uikit/uisheetpresentationcontroller/placement>
 
 The iOS 27 SDK adds UISheetPresentationController.Placement (automatic, leading, center, trailing) and preferredPlacement. At an iOS 26.0 deployment target the property needs #available(iOS 27.0, *).
@@ -1417,6 +1466,7 @@ The iOS 27 SDK adds UISheetPresentationController.Placement (automatic, leading,
 - Platform: iOS
 - Deployment target: iOS 26.0 (`arm64-apple-ios26.0`)
 - Framework: UIKit
+- Language mode: Swift 6
 
 A drawing app shows its inspector as a sheet over the canvas.
 On iOS versions that let an app choose where a sheet appears,
@@ -1454,6 +1504,7 @@ func presentInspector(_ inspector: UIViewController, from presenter: UIViewContr
 - Framework: MetricKit
 - Source: sdk-diff
 - Target: `arm64-apple-macos27.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/metrickit/metricmanager>, <https://sosumi.ai/documentation/metrickit/metricmanager/diagnosticreports>, <https://sosumi.ai/documentation/metrickit/diagnosticresult>
 
 The macOS 27 SDK adds a Swift MetricManager whose diagnosticReports property is an AsyncSequence of DiagnosticReport. Each report's result is a DiagnosticResult enum with crash(CrashDiagnostic), whose signal is Int?. The Objective-C MXMetricManager delivers MXDiagnosticPayload objects to subscribers.
@@ -1466,6 +1517,7 @@ The macOS 27 SDK adds a Swift MetricManager whose diagnosticReports property is 
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: MetricKit
+- Language mode: Swift 6
 
 An app's support screen shows the signal of the most recent crash
 that the system reports for the app.
@@ -1506,6 +1558,7 @@ func nextCrashSignal(from manager: MetricManager) async -> Int? {
 - Framework: Network
 - Source: sdk-diff
 - Target: `arm64-apple-macos27.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/network/dtls>, <https://sosumi.ai/documentation/network/networkconnection>
 
 NetworkConnection and its protocol stack builder arrived in macOS 26.0 with TLS, TCP, and UDP. The macOS 27 SDK adds the DTLS protocol for it, with init(_:) taking a UDP builder and version(min:max:). The older NWConnection API returns a different type.
@@ -1518,6 +1571,7 @@ NetworkConnection and its protocol stack builder arrived in macOS 26.0 with TLS,
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: Network
+- Language mode: Swift 6
 
 A game client sends encrypted datagrams to its server.
 It uses the Network framework's Swift-native connection type
@@ -1553,6 +1607,7 @@ func makeGameConnection(host: String, port: NWEndpoint.Port) -> NetworkConnectio
 - Framework: Observation
 - Source: sdk-diff
 - Target: `arm64-apple-macos27.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/observation/withcontinuousobservation(options:apply:)>, <https://sosumi.ai/documentation/observation/observationtracking/token>
 
 The macOS 27 SDK adds withContinuousObservation(options:apply:), which returns a noncopyable ObservationTracking.Token, with ObservationTracking.Options and ObservationTracking.Event. The older withObservationTracking(_:onChange:) fires once and returns the apply closure's result, not a token.
@@ -1565,6 +1620,7 @@ The macOS 27 SDK adds withContinuousObservation(options:apply:), which returns a
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: Observation
+- Language mode: Swift 6
 
 An app shows a counter in several places.
 A component outside SwiftUI wants a callback every time the counter's value changes,
@@ -1620,6 +1676,7 @@ func observeValue(
 - Framework: Speech
 - Source: sdk-diff
 - Target: `arm64-apple-macos26.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/speech/analyzerinputconverter>, <https://sosumi.ai/documentation/speech/analyzerinputconverter/converter(compatiblewith:)>, <https://sosumi.ai/documentation/speech/speechanalyzer/bestavailableaudioformat(compatiblewith:)>
 
 The macOS 27 SDK adds AnalyzerInputConverter, created with converter(compatibleWith:) and used with convert(_:at:), which returns [AnalyzerInput]. At a macOS 26.0 deployment target it needs #available(macOS 27.0, *); the fallback converts with AVAudioConverter to SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith:).
@@ -1632,6 +1689,7 @@ The macOS 27 SDK adds AnalyzerInputConverter, created with converter(compatibleW
 - Platform: macOS
 - Deployment target: macOS 26.0 (`arm64-apple-macos26.0`)
 - Framework: Speech
+- Language mode: Swift 6
 
 A dictation feature records audio buffers in the microphone's native format
 and feeds them to a `SpeechTranscriber`.
@@ -1689,6 +1747,7 @@ func analyzerInputs(
 - Framework: StoreKit
 - Source: sdk-diff
 - Target: `arm64-apple-macos27.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/storekit/apptransaction/storetype-swift.property>, <https://sosumi.ai/documentation/storekit/apptransaction/storetype-swift.struct>
 
 The macOS 27 SDK adds AppTransaction.storeType of type AppTransaction.StoreType, with consumer, education, and enterprise. AppTransaction.shared returns VerificationResult<AppTransaction>. AppStore.Environment has no education value.
@@ -1701,6 +1760,7 @@ The macOS 27 SDK adds AppTransaction.storeType of type AppTransaction.StoreType,
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: StoreKit
+- Language mode: Swift 6
 
 Schools buy the app in volume through Apple's education channel.
 When the app was obtained that way, it hides its in-app purchase upsell.
@@ -1796,6 +1856,7 @@ extension Page: Sendable where Item: Sendable {}
 - Framework: Swift
 - Source: sdk-diff
 - Target: `arm64-apple-macos27.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/swift/withtaskcancellationshield(operation:)-8zlgh>, <https://sosumi.ai/documentation/swift/task/hasactivecancellationshield>
 
 The macOS 27 SDK adds withTaskCancellationShield(operation:) and Task.hasActiveCancellationShield, both @available(anyAppleOS 27.0, *). The stale answer guesses static members on Task. An unstructured Task { } that captures the non-escaping closure type-checks with Swift 6.4, so it cannot serve as the stale answer, but it does not meet the task: cancellation of the outer task does not reach it, and only the required_symbols check rejects it.
@@ -1808,6 +1869,7 @@ The macOS 27 SDK adds withTaskCancellationShield(operation:) and Task.hasActiveC
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: Swift standard library (Swift Concurrency)
+- Language mode: Swift 6
 
 When the user closes a document window, the app cancels the task
 that edits the document.
@@ -1851,9 +1913,10 @@ func isProtectedFromCancellation() -> Bool {
 - Framework: Swift
 - Source: sdk-diff
 - Target: `arm64-apple-macos26.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/swift/rawspan/load(frombyteoffset:as:_:)>, <https://sosumi.ai/documentation/swift/byteorder>, <https://sosumi.ai/documentation/swift/rawspan/unsafeloadunaligned(frombyteoffset:as:)>
 
-The macOS 27 SDK adds the ByteOrder enum and RawSpan.load(fromByteOffset:as:_:) for fixed-width integers, both @available(anyAppleOS 27.0, *). At a macOS 26.0 deployment target the overload needs #available; the fallback loads with unsafeLoadUnaligned(fromByteOffset:as:) and converts with UInt32(bigEndian:).
+The macOS 27 SDK adds the ByteOrder enum and RawSpan.load(fromByteOffset:as:_:) for fixed-width integers, both @available(anyAppleOS 27.0, *). At a macOS 26.0 deployment target the overload needs #available; the fallback loads with unsafeLoadUnaligned(fromByteOffset:as:) and converts with UInt32(bigEndian:). The task says that on systems with byte-order loading the parser uses it, so an answer must pass the byte-order argument: required_symbols asks for `, .bigEndian)` or `ByteOrder`. An aligned load followed by UInt32(bigEndian:) type-checks but does not meet the task.
 
 ### task.md
 
@@ -1863,6 +1926,7 @@ The macOS 27 SDK adds the ByteOrder enum and RawSpan.load(fromByteOffset:as:_:) 
 - Platform: macOS
 - Deployment target: macOS 26.0 (`arm64-apple-macos26.0`)
 - Framework: Swift standard library
+- Language mode: Swift 6
 
 A file parser reads a 32-bit big-endian length field
 at a given offset in a `RawSpan`.
@@ -1897,6 +1961,7 @@ func readLength(in bytes: RawSpan, at offset: Int) -> UInt32 {
 - Framework: Swift
 - Source: sdk-diff
 - Target: `arm64-apple-macos27.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/swift/uniquearray>
 
 The macOS 27 SDK adds UniqueArray<Element: ~Copyable>, a growable array that can hold noncopyable elements, with init(capacity:) and append(_:). Array cannot hold noncopyable elements.
@@ -1909,6 +1974,7 @@ The macOS 27 SDK adds UniqueArray<Element: ~Copyable>, a growable array that can
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: Swift standard library
+- Language mode: Swift 6
 
 A ticketing system models each ticket as a noncopyable value,
 so that no ticket can be duplicated by accident.
@@ -1949,6 +2015,7 @@ func issueTickets(count: Int) -> UniqueArray<Ticket> {
 - Framework: SwiftData
 - Source: sdk-diff
 - Target: `arm64-apple-macos27.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/swiftdata/resultsobserver>, <https://sosumi.ai/documentation/swiftdata/sectionedresults>
 
 The macOS 27 SDK adds ResultsObserver<Element, SectionTitle>, with throwing initializers that take sortBy:, sectionBy:, and modelContext:, and a sections property of type SectionedResults<Element, SectionTitle>? with sectionTitles.
@@ -1961,6 +2028,7 @@ The macOS 27 SDK adds ResultsObserver<Element, SectionTitle>, with throwing init
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: SwiftData
+- Language mode: Swift 6
 
 An AppKit sidebar lists notes grouped by folder,
 sorted by title within each folder.
@@ -2020,6 +2088,7 @@ func folderNames(in observer: ResultsObserver<Note, String>) -> [String] {
 - Framework: SwiftUI
 - Source: sdk-diff
 - Target: `arm64-apple-macos26.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/swiftui/pickerstyle/tabs>, <https://sosumi.ai/documentation/swiftui/tabspickerstyle>
 
 The macOS 27 SDK adds TabsPickerStyle and PickerStyle.tabs (iOS, macOS, tvOS, visionOS 27.0). At a macOS 26.0 deployment target, the style needs #available(macOS 27.0, *).
@@ -2032,6 +2101,7 @@ The macOS 27 SDK adds TabsPickerStyle and PickerStyle.tabs (iOS, macOS, tvOS, vi
 - Platform: macOS
 - Deployment target: macOS 26.0 (`arm64-apple-macos26.0`)
 - Framework: SwiftUI
+- Language mode: Swift 6
 
 An inspector lets the user switch between three modes.
 On macOS versions that have SwiftUI's tab-style picker,
@@ -2095,6 +2165,7 @@ struct ModePicker: View {
 - Framework: System
 - Source: sdk-diff
 - Target: `arm64-apple-macos27.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/system/filedescriptor/pipe(options:)>, <https://sosumi.ai/documentation/system/filedescriptor/pipeoptions>
 
 The macOS 27 SDK adds FileDescriptor.pipe(options:) throws(Errno) and FileDescriptor.PipeOptions with closeOnExec, nonBlocking, and closeOnFork. The older FileDescriptor.pipe() throws an untyped error, so it cannot be called from a throws(Errno) function without handling the error.
@@ -2107,6 +2178,7 @@ The macOS 27 SDK adds FileDescriptor.pipe(options:) throws(Errno) and FileDescri
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: System
+- Language mode: Swift 6
 
 A process launcher creates a pipe to read a helper's output.
 Both ends of the pipe must be closed automatically when the process executes
@@ -2139,6 +2211,7 @@ func makePrivatePipe() throws(Errno) -> (readEnd: FileDescriptor, writeEnd: File
 - Framework: UniformTypeIdentifiers
 - Source: sdk-diff
 - Target: `arm64-apple-macos26.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/uniformtypeidentifiers/uttype-swift.struct/markdown>, <https://sosumi.ai/documentation/uniformtypeidentifiers/uttype-swift.struct/init(importedas:conformingto:)>
 
 The macOS 27 SDK adds UTType.markdown. At a macOS 26.0 deployment target, it needs #available(macOS 27.0, *); the fallback is UTType(importedAs:).
@@ -2151,6 +2224,7 @@ The macOS 27 SDK adds UTType.markdown. At a macOS 26.0 deployment target, it nee
 - Platform: macOS
 - Deployment target: macOS 26.0 (`arm64-apple-macos26.0`)
 - Framework: UniformTypeIdentifiers
+- Language mode: Swift 6
 
 A notes app opens Markdown files.
 It needs the uniform type for Markdown to configure its open panel.
@@ -2188,6 +2262,7 @@ func markdownType() -> UTType {
 - Framework: Virtualization
 - Source: sdk-diff
 - Target: `arm64-apple-macos27.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/virtualization/vzefivariablestore/issecurebootenabled>
 
 The macOS 27 SDK adds VZEFIVariableStore.isSecureBootEnabled as a throwing property (get throws). Reading it without try does not compile.
@@ -2200,6 +2275,7 @@ The macOS 27 SDK adds VZEFIVariableStore.isSecureBootEnabled as a throwing prope
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: Virtualization
+- Language mode: Swift 6
 
 A virtual machine manager shows a badge
 when a Linux guest's EFI variable store has Secure Boot turned on.
@@ -2234,6 +2310,7 @@ func secureBootBadge(for store: VZEFIVariableStore) -> Bool? {
 - Framework: WidgetKit
 - Source: sdk-diff
 - Target: `arm64-apple-macos26.0`
+- Compiler flags: `-swift-version 6` (the default)
 - Documentation: <https://sosumi.ai/documentation/widgetkit/widgetfamily/systemextralargeportrait>
 
 The macOS 27 SDK adds WidgetFamily.systemExtraLargePortrait (iOS and macOS 27.0, visionOS 26.0; unavailable on tvOS and watchOS). At a macOS 26.0 deployment target it needs #available(macOS 27.0, *).
@@ -2246,6 +2323,7 @@ The macOS 27 SDK adds WidgetFamily.systemExtraLargePortrait (iOS and macOS 27.0,
 - Platform: macOS
 - Deployment target: macOS 26.0 (`arm64-apple-macos26.0`)
 - Framework: WidgetKit
+- Language mode: Swift 6
 
 A calendar widget supports the small, medium, and large system sizes.
 On systems that offer the tall, extra-large portrait system size,

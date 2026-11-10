@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: Swift standard library (Swift Concurrency)
+- Language mode: Swift 6
 
 When the user closes a document window, the app cancels the task
 that edits the document.

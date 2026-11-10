@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: System
+- Language mode: Swift 6
 
 A process launcher creates a pipe to read a helper's output.
 Both ends of the pipe must be closed automatically when the process executes

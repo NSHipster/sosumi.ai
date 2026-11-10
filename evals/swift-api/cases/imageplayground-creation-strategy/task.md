@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 26.4 (`arm64-apple-macos26.4`)
 - Framework: ImagePlayground
+- Language mode: Swift 6
 
 A photo app opens Image Playground with a source image
 and passes it a set of Image Playground options.

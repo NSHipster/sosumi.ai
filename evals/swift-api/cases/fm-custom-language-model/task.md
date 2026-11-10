@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: FoundationModels
+- Language mode: Swift 6
 
 A test suite needs a fake language model that it can pass to
 `LanguageModelSession(model:)` in place of the system model.

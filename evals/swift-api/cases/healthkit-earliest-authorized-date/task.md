@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 26.0 (`arm64-apple-macos26.0`)
 - Framework: HealthKit
+- Language mode: Swift 6
 
 A health dashboard limits its date picker
 to the range of samples that the app is allowed to read.

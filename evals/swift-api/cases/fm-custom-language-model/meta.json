@@ -19,5 +19,5 @@
     "https://sosumi.ai/documentation/foundationmodels/languagemodelexecutor",
     "https://sosumi.ai/documentation/foundationmodels/languagemodelexecutorgenerationchannel"
   ],
-  "notes": "FoundationModels 27 adds a public LanguageModel protocol. A conforming type names an Executor (LanguageModelExecutor) and supplies capabilities and executorConfiguration; the executor streams events into a LanguageModelExecutorGenerationChannel. Models without knowledge of OS 27 invent a request/response method."
+  "notes": "FoundationModels 27 adds a public LanguageModel protocol. A conforming type names an Executor (LanguageModelExecutor) and supplies capabilities and executorConfiguration; the executor streams events into a LanguageModelExecutorGenerationChannel. Models without knowledge of OS 27 invent a request/response method. The API spans several new types (LanguageModel, LanguageModelExecutor, LanguageModelCapabilities, LanguageModelExecutorGenerationChannel and its Event and Response.Action), so an agent needs about six documentation pages within the 12-call limit. The case therefore also measures how an agent budgets its calls."
 }

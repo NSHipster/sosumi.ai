@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 26.0 (`arm64-apple-macos26.0`)
 - Framework: FoundationModels
+- Language mode: Swift 6
 
 Before it sends a long prompt, an app checks how many tokens remain
 in the on-device model's context window

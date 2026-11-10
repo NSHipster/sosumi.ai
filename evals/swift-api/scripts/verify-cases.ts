@@ -7,7 +7,12 @@ import { access, readdir, readFile } from "node:fs/promises"
 import { availableParallelism } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
-import { type CaseMeta, describeGrade as describe, gradeAnswer as grade } from "../src/grader.ts"
+import {
+  type CaseMeta,
+  describeGrade as describe,
+  gradeAnswer as grade,
+  languageMode,
+} from "../src/grader.ts"
 
 const casesDir = resolve(dirname(fileURLToPath(import.meta.url)), "..", "cases")
 const caseFiles = [
@@ -43,6 +48,9 @@ function validateMeta(id: string, meta: CaseMeta, task: string): string[] {
   }
   if (!meta.notes) problems.push("no notes")
   if (!task.includes(meta.target)) problems.push("task.md does not state the target")
+  if (!task.includes(`- Language mode: Swift ${languageMode(meta)}`)) {
+    problems.push("task.md does not state the language mode")
+  }
   return problems
 }
 

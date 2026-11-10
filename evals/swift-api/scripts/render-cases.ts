@@ -15,7 +15,7 @@ interface CaseMeta {
   source: string
   target: string
   swift_flags?: string[]
-  required_symbols: string[]
+  required_symbols: (string | string[])[]
   docs: string[]
   notes: string
   round?: number
@@ -77,7 +77,9 @@ lines.push(
   "| --- | --- | --- | --- | --- |",
 )
 for (const { meta } of cases) {
-  const symbols = meta.required_symbols.map(code).join(", ")
+  const symbols = meta.required_symbols
+    .map((entry) => (Array.isArray(entry) ? entry.map(code).join(" or ") : code(entry)))
+    .join(", ")
   lines.push(
     `| [${meta.id}](#${meta.id}) | ${meta.framework} | ${meta.source} | ${code(meta.target)} | ${symbols} |`,
   )
@@ -90,6 +92,7 @@ for (const { meta, task, reference } of cases) {
   lines.push(`- Target: ${code(meta.target)}`)
   if (meta.round) lines.push(`- Round: ${meta.round}`)
   if (meta.swift_flags?.length) lines.push(`- Compiler flags: ${code(meta.swift_flags.join(" "))}`)
+  else lines.push("- Compiler flags: `-swift-version 6` (the default)")
   lines.push(`- Documentation: ${meta.docs.map((url) => `<${url}>`).join(", ")}`)
   lines.push("", meta.notes, "", "### task.md", "", block("markdown", task))
   lines.push("", "### reference.swift", "", block("swift", reference))

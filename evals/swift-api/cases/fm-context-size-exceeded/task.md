@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: FoundationModels
+- Language mode: Swift 6
 
 When a FoundationModels request fails because the prompt and transcript
 no longer fit in the model's context, an app wants to trim the conversation.

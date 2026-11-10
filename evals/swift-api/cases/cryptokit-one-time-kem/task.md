@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 26.0 (`arm64-apple-macos26.0`)
 - Framework: CryptoKit
+- Language mode: Swift 6
 
 A messaging app sets up a session key with ML-KEM-768.
 It generates a private key, gives the public key to a peer,

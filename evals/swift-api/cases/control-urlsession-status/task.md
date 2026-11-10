@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: Foundation
+- Language mode: Swift 6
 
 A link checker loads each URL with the shared URL session,
 using Swift concurrency, and records the HTTP status code.

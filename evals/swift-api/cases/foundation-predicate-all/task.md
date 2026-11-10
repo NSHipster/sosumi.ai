@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: Foundation
+- Language mode: Swift 6
 
 A product search screen lets the user add any number of filters.
 Each filter is a Foundation `Predicate`.

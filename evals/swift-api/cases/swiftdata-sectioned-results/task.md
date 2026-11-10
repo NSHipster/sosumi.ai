@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: SwiftData
+- Language mode: Swift 6
 
 An AppKit sidebar lists notes grouped by folder,
 sorted by title within each folder.

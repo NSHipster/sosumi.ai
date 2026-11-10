@@ -3,6 +3,7 @@
 - Platform: iOS
 - Deployment target: iOS 27.0 (`arm64-apple-ios27.0`)
 - Framework: UIKit
+- Language mode: Swift 6
 
 A code snippet app edits source code in a text view.
 Writing aids that help with prose get in the way of code,

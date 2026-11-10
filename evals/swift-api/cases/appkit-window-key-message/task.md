@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: AppKit
+- Language mode: Swift 6
 
 A document window refreshes its inspector whenever it becomes the key window.
 The app uses Foundation's typed, concurrency-safe notification messages

@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: Swift standard library
+- Language mode: Swift 6
 
 A ticketing system models each ticket as a noncopyable value,
 so that no ticket can be duplicated by accident.

@@ -3,6 +3,7 @@
 - Platform: iOS
 - Deployment target: iOS 27.0 (`arm64-apple-ios27.0`)
 - Framework: NowPlaying
+- Language mode: Swift 6
 
 A podcast app publishes its playback controls to the system
 (Lock Screen, Control Center, headphones) with the NowPlaying framework.

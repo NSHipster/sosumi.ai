@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: os (unified logging)
+- Language mode: Swift 6
 
 An app logs each sign-in at the informational level
 with the message `Signed in: ` followed by the user name.

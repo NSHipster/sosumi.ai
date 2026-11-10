@@ -19,7 +19,11 @@ export interface CaseMeta {
   target: string
   sdk?: string
   swift_flags?: string[]
-  required_symbols: string[]
+  /**
+   * Symbols that every correct answer contains. An entry that is a list
+   * is met when any one of its alternatives is present.
+   */
+  required_symbols: (string | string[])[]
   docs: string[]
   notes: string
   round?: number
@@ -139,8 +143,17 @@ export function codeOnly(source: string): string {
   return out
 }
 
+/** The Swift language mode of a case: Swift 6 unless its swift_flags set another. */
+export function languageMode(meta: CaseMeta): string {
+  const flags = meta.swift_flags ?? []
+  const index = flags.indexOf("-swift-version")
+  return index >= 0 && flags[index + 1] ? flags[index + 1] : "6"
+}
+
 /** Returns the grader's command line, without the leading `xcrun`. */
 export function typeCheckArguments(meta: CaseMeta): string[] {
+  const flags = meta.swift_flags ?? []
+  const mode = flags.includes("-swift-version") ? [] : ["-swift-version", languageMode(meta)]
   return [
     "--sdk",
     meta.sdk ?? "macosx",
@@ -148,7 +161,8 @@ export function typeCheckArguments(meta: CaseMeta): string[] {
     "-typecheck",
     "-target",
     meta.target,
-    ...(meta.swift_flags ?? []),
+    ...mode,
+    ...flags,
     "answer.swift",
     "check.swift",
   ]
@@ -205,9 +219,10 @@ export async function gradeAnswer(meta: CaseMeta, check: string, answer: string)
     const violations = bannedConstructs.filter((c) => c.pattern.test(code)).map((c) => c.name)
     // Whitespace does not matter, so that `addObserver(\n  of:` matches `addObserver(of`.
     const compact = code.replace(/\s+/g, "")
-    const missingSymbols = meta.required_symbols.filter(
-      (symbol) => !compact.includes(symbol.replace(/\s+/g, "")),
-    )
+    const present = (symbol: string) => compact.includes(symbol.replace(/\s+/g, ""))
+    const missingSymbols = meta.required_symbols
+      .filter((entry) => !(Array.isArray(entry) ? entry.some(present) : present(entry)))
+      .map(describeSymbol)
     const answerDeprecations = typeCheck.deprecations.filter((line) =>
       line.startsWith("answer.swift:"),
     )
@@ -222,6 +237,11 @@ export async function gradeAnswer(meta: CaseMeta, check: string, answer: string)
   } finally {
     await rm(dir, { recursive: true, force: true })
   }
+}
+
+/** Names a required-symbol entry; a list of alternatives reads as `a or b`. */
+export function describeSymbol(entry: string | string[]): string {
+  return Array.isArray(entry) ? entry.join(" or ") : entry
 }
 
 /** Describes why an answer does not pass, or returns an empty string. */

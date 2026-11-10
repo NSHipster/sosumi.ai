@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 26.0 (`arm64-apple-macos26.0`)
 - Framework: Swift standard library
+- Language mode: Swift 6
 
 A file parser reads a 32-bit big-endian length field
 at a given offset in a `RawSpan`.

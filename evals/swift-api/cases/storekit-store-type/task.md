@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: StoreKit
+- Language mode: Swift 6
 
 Schools buy the app in volume through Apple's education channel.
 When the app was obtained that way, it hides its in-app purchase upsell.

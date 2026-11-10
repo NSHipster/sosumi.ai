@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 26.0 (`arm64-apple-macos26.0`)
 - Framework: SwiftUI
+- Language mode: Swift 6
 
 An inspector lets the user switch between three modes.
 On macOS versions that have SwiftUI's tab-style picker,

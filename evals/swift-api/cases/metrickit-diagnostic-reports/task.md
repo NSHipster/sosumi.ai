@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: MetricKit
+- Language mode: Swift 6
 
 An app's support screen shows the signal of the most recent crash
 that the system reports for the app.

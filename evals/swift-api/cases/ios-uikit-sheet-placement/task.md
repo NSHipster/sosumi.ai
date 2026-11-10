@@ -3,6 +3,7 @@
 - Platform: iOS
 - Deployment target: iOS 26.0 (`arm64-apple-ios26.0`)
 - Framework: UIKit
+- Language mode: Swift 6
 
 A drawing app shows its inspector as a sheet over the canvas.
 On iOS versions that let an app choose where a sheet appears,

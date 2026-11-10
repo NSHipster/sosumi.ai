@@ -3,6 +3,7 @@
 - Platform: iOS
 - Deployment target: iOS 27.0 (`arm64-apple-ios27.0`)
 - Framework: UIKit
+- Language mode: Swift 6
 
 A reading app shows long articles in a navigation controller.
 As the reader scrolls down through an article, the navigation bar minimizes

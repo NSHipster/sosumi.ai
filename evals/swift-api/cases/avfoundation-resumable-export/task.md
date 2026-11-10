@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: AVFoundation
+- Language mode: Swift 6
 
 A video editor exports long projects.
 Before it starts an export, it asks the export session to prepare

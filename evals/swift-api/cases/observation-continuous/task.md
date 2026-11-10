@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: Observation
+- Language mode: Swift 6
 
 An app shows a counter in several places.
 A component outside SwiftUI wants a callback every time the counter's value changes,

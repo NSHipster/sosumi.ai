@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 26.0 (`arm64-apple-macos26.0`)
 - Framework: Speech
+- Language mode: Swift 6
 
 A dictation feature records audio buffers in the microphone's native format
 and feeds them to a `SpeechTranscriber`.

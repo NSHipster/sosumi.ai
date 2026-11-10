@@ -3,6 +3,7 @@
 - Platform: iOS
 - Deployment target: iOS 27.0 (`arm64-apple-ios27.0`)
 - Framework: UIKit
+- Language mode: Swift 6
 
 On iPad, a document editor runs in several windows.
 When a window has unsaved changes, closing it must first ask the user to confirm.

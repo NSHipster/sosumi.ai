@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: CryptoKit
+- Language mode: Swift 6
 
 A download manager verifies files against published SHA-256 checksums,
 which are lowercase hexadecimal strings of 64 characters.

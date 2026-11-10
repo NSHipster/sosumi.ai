@@ -3,6 +3,7 @@
 - Platform: iOS
 - Deployment target: iOS 26.0 (`arm64-apple-ios26.0`)
 - Framework: UIKit
+- Language mode: Swift 6
 
 A photo app runs optional background work, such as generating thumbnails ahead of time.
 On iOS versions where the system reports that it prefers apps to reduce their resource usage,

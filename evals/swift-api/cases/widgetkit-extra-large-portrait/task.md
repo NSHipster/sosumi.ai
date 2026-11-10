@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 26.0 (`arm64-apple-macos26.0`)
 - Framework: WidgetKit
+- Language mode: Swift 6
 
 A calendar widget supports the small, medium, and large system sizes.
 On systems that offer the tall, extra-large portrait system size,

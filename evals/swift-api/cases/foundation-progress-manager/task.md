@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: Foundation
+- Language mode: Swift 6
 
 An importer processes a list of files, one at a time.
 The caller hands the importer its share of a parent progress

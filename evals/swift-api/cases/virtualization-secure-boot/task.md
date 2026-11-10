@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: Virtualization
+- Language mode: Swift 6
 
 A virtual machine manager shows a badge
 when a Linux guest's EFI variable store has Secure Boot turned on.

@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: FoundationModels
+- Language mode: Swift 6
 
 An app builds transcript entries by hand.
 When the user adds a picture, the app wants a transcript segment

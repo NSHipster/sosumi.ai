@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: Core Data
+- Language mode: Swift 6
 
 An app that syncs a Core Data store merges history
 whenever another process changes the store.

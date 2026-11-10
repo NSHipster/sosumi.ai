@@ -3,6 +3,7 @@
 - Platform: macOS
 - Deployment target: macOS 27.0 (`arm64-apple-macos27.0`)
 - Framework: Network
+- Language mode: Swift 6
 
 A game client sends encrypted datagrams to its server.
 It uses the Network framework's Swift-native connection type
