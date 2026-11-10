@@ -34,6 +34,8 @@ export interface ResultRow {
     provider: Provider
     condition: string
     end_reason: string
+    /** The agent reached the tool-call limit and was given one final turn to submit. */
+    final_turn?: boolean
     failure_class?: string
     cost_usd: number
     answer?: string

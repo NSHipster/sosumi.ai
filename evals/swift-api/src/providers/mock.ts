@@ -10,10 +10,17 @@ import { type AgentContext, type AgentOutcome, assertModel, withRetries } from "
 
 export type MockAnswer = "reference" | "stale" | "stub" | "empty"
 export type MockFailure = "none" | "error" | "timeout" | "rate-limit-once" | "mismatch"
+/**
+ * submit: submit after at most one Sosumi call.
+ * exhaust: use every tool call without submitting, then submit in the final turn.
+ * exhaust-no-submit: use every tool call, and do not submit in the final turn either.
+ */
+export type MockBehavior = "submit" | "exhaust" | "exhaust-no-submit"
 
 export interface MockOptions {
   answer: MockAnswer
   failure: MockFailure
+  behavior: MockBehavior
   caseDir: string
   docsPath: string
 }
@@ -54,7 +61,35 @@ export async function runMock(options: MockOptions, context: AgentContext): Prom
   progress.model = served
   assertModel(model, served)
 
-  if (context.condition === "sosumi") {
+  if (options.behavior !== "submit") {
+    // Spend the whole budget on documentation calls. In the none condition the tool
+    // does not exist, so each call returns an error but still counts.
+    const args = { path: options.docsPath }
+    while (!session.limitReached) {
+      trace.push({
+        role: "tool_call",
+        name: "fetchAppleDocumentation",
+        content: JSON.stringify(args, null, 2),
+      })
+      await session.handle("fetchAppleDocumentation", args, signal, trace)
+    }
+    const message = session.beginFinalTurn()
+    trace.push({ role: "user", content: message })
+    if (options.behavior === "exhaust-no-submit") {
+      trace.push({ role: "assistant", content: "I need more documentation before I can answer." })
+      return {
+        answer: null,
+        endReason: "tool_limit",
+        stopReason: "end_turn",
+        model: served,
+        usage: progress.usage,
+        toolCalls: progress.toolCalls,
+        sosumiCalls: progress.sosumiCalls,
+        retries: progress.retries,
+        finalTurn: true,
+      }
+    }
+  } else if (context.condition === "sosumi") {
     const args = { path: options.docsPath }
     trace.push({
       role: "tool_call",
@@ -84,5 +119,6 @@ export async function runMock(options: MockOptions, context: AgentContext): Prom
     toolCalls: progress.toolCalls,
     sosumiCalls: progress.sosumiCalls,
     retries: progress.retries,
+    finalTurn: session.finalTurn,
   }
 }

@@ -24,7 +24,13 @@ import {
 import { type EvalCase, evalDir, loadCases } from "./cases.ts"
 import { describeGrade, GraderError, gradeAnswer } from "./grader.ts"
 import { anthropicClient, runAnthropic } from "./providers/anthropic.ts"
-import { type MockAnswer, type MockFailure, mockModelID, runMock } from "./providers/mock.ts"
+import {
+  type MockAnswer,
+  type MockBehavior,
+  type MockFailure,
+  mockModelID,
+  runMock,
+} from "./providers/mock.ts"
 import { openAIClient, runOpenAI } from "./providers/openai.ts"
 import {
   appendJSONL,
@@ -63,6 +69,7 @@ const usage = `Usage: npm run eval -- [options]
   --sosumi-port <n>         Port for the local Sosumi server (default: 8790)
   --mock-answer <name>      reference, stale, stub, or empty (mock provider)
   --mock-failure <name>     none, error, timeout, rate-limit-once, or mismatch (mock provider)
+  --mock-behavior <name>    submit, exhaust, or exhaust-no-submit (mock provider)
   --mock-usd-per-attempt <n>  Spend that each mock attempt counts (default: 0)
   --max-usd-mock <n>        Spend cap for the mock provider, to test the caps
 
@@ -113,6 +120,7 @@ async function main() {
       "sosumi-port": { type: "string", default: "8790" },
       "mock-answer": { type: "string", default: "reference" },
       "mock-failure": { type: "string", default: "none" },
+      "mock-behavior": { type: "string", default: "submit" },
       "mock-usd-per-attempt": { type: "string", default: "0" },
       help: { type: "boolean", default: false },
     },
@@ -124,6 +132,7 @@ async function main() {
 
   const mockAnswer = values["mock-answer"] as MockAnswer
   const mockFailure = values["mock-failure"] as MockFailure
+  const mockBehavior = values["mock-behavior"] as MockBehavior
   const provider = (values.provider ?? inferProvider(values.model ?? "")) as Provider
   if (!["anthropic", "openai", "mock"].includes(provider))
     throw new Error(`Unknown provider ${provider}`)
@@ -132,6 +141,9 @@ async function main() {
       throw new Error(`Unknown mock answer ${mockAnswer}`)
     if (!["none", "error", "timeout", "rate-limit-once", "mismatch"].includes(mockFailure)) {
       throw new Error(`Unknown mock failure ${mockFailure}`)
+    }
+    if (!["submit", "exhaust", "exhaust-no-submit"].includes(mockBehavior)) {
+      throw new Error(`Unknown mock behavior ${mockBehavior}`)
     }
   }
   const requestedModel = provider === "mock" ? mockModelID(mockAnswer) : values.model
@@ -180,7 +192,16 @@ async function main() {
   const openai = provider === "openai" ? openAIClient() : null
 
   const cases = await loadCases(values.case)
-  const modelDir = provider === "mock" && mockFailure !== "none" ? `${model}-${mockFailure}` : model
+  const modelDir =
+    provider === "mock"
+      ? [
+          model,
+          mockFailure !== "none" ? mockFailure : "",
+          mockBehavior !== "submit" ? mockBehavior : "",
+        ]
+          .filter(Boolean)
+          .join("-")
+      : model
   const variantDirs = new Map<Condition, string>()
   for (const condition of conditions) {
     const flowDir = join(runsDir, modelDir, condition)
@@ -309,6 +330,7 @@ async function main() {
         {
           answer: mockAnswer,
           failure: mockFailure,
+          behavior: mockBehavior,
           caseDir: evalCase.dir,
           docsPath: meta.docs[0].replace("https://sosumi.ai", ""),
         },
@@ -399,6 +421,7 @@ async function main() {
       provider,
       condition,
       end_reason: outcome.endReason,
+      final_turn: outcome.finalTurn,
       ...(failureClass ? { failure_class: failureClass } : {}),
       cost_usd: cost,
       ...(outcome.answer !== null ? { answer: answerPath } : {}),

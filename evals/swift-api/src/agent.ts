@@ -85,6 +85,8 @@ export interface AgentOutcome {
   toolCalls: number
   sosumiCalls: number
   retries: number
+  /** The agent reached the tool-call limit and was given one final turn to submit. */
+  finalTurn: boolean
 }
 
 /** What a provider's loop records as it runs, so that a failed attempt keeps its spend. */
@@ -144,9 +146,14 @@ export interface AgentContext {
  * Runs the tools that the model calls, counts calls against the budget,
  * and records the submitted answer.
  */
+/** The result for a tool call that was not run, because the limit was reached first. */
+export const NOT_RUN = "This call was not run, because the tool-call limit was reached."
+
 export class ToolSession {
   answer: string | null = null
   limitReached = false
+  /** True after the limit, during the one final turn in which only submit_answer is offered. */
+  finalTurn = false
   private readonly sosumiTools: Set<string>
   private readonly progress: AttemptProgress
   private readonly maxToolCalls: number
@@ -172,6 +179,19 @@ export class ToolSession {
     return this.answer !== null || this.limitReached
   }
 
+  /**
+   * Starts the final turn after the limit: the provider offers only submit_answer
+   * and sends the returned message to the agent.
+   */
+  beginFinalTurn(): string {
+    this.finalTurn = true
+    return (
+      `You have used all ${this.maxToolCalls} tool calls. ` +
+      "submit_answer is now the only tool. " +
+      "Call submit_answer now with your best answer as one complete Swift source file."
+    )
+  }
+
   async handle(
     name: string,
     args: unknown,
@@ -188,6 +208,8 @@ export class ToolSession {
       } else {
         output = { text: "submit_answer requires a string argument named code.", isError: true }
       }
+    } else if (this.finalTurn) {
+      output = { text: "Only submit_answer is available now.", isError: true }
     } else if (this.sosumiTools.has(name)) {
       this.progress.sosumiCalls++
       try {
@@ -203,7 +225,7 @@ export class ToolSession {
     }
     trace.push({ role: "tool_result", name, content: output.text })
 
-    if (this.answer === null) {
+    if (this.answer === null && !this.finalTurn) {
       const remaining = this.maxToolCalls - this.progress.toolCalls
       if (remaining <= 0) {
         this.limitReached = true

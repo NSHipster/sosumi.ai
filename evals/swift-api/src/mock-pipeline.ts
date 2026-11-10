@@ -7,11 +7,12 @@
 // induced failures, resume, the spend cap, and that grading twice agrees.
 
 import { execFile } from "node:child_process"
-import { mkdtemp, rm } from "node:fs/promises"
+import { mkdtemp, readFile, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { parseArgs } from "node:util"
 import { evalDir } from "./cases.ts"
+import { checkProviderLoops } from "./provider-loops.ts"
 import { regrade } from "./regrade.ts"
 import { type ErrorRow, type ResultRow, readJSONL, summarize } from "./results.ts"
 import { type LocalServer, startLocalServer } from "./sosumi.ts"
@@ -50,6 +51,9 @@ function runEval(args: string[]): Promise<string> {
 }
 
 const percent = (value: number) => `${(value * 100).toFixed(1)}%`
+
+// 0. The provider loops, driven by fake clients with scripted responses.
+await checkProviderLoops(check)
 
 const runsDir = await mkdtemp(join(tmpdir(), "swift-api-mock-"))
 let server: LocalServer | null = null
@@ -166,6 +170,69 @@ try {
   check(
     retried.length === 1 && retried[0].retries === 1,
     "a rate limit is retried once and the retry is recorded",
+  )
+
+  // The tool-call limit: an agent that uses every call gets one final turn to submit.
+  check(
+    sosumiRows.every((row) => row.meta.final_turn === false),
+    "rows of agents that submit within the limit record no final turn",
+  )
+  const limited = ["--case", "control-sha256-hex", "--condition", "both"]
+  await runEval([...common, ...limited, "--mock-behavior", "exhaust"])
+  await runEval([...common, ...limited, "--mock-behavior", "exhaust-no-submit"])
+  for (const condition of ["sosumi", "none"]) {
+    const used = await readJSONL<ResultRow>(
+      join(
+        flow("reference", condition, "none").replace("mock-reference", "mock-reference-exhaust"),
+        "results.jsonl",
+      ),
+    )
+    const unused = await readJSONL<ResultRow>(
+      join(
+        flow("reference", condition, "none").replace(
+          "mock-reference",
+          "mock-reference-exhaust-no-submit",
+        ),
+        "results.jsonl",
+      ),
+    )
+    const expectedSosumiCalls = condition === "sosumi" ? 12 : 0
+    check(
+      used.length === 1 &&
+        used[0].meta.final_turn === true &&
+        used[0].meta.end_reason === "submitted" &&
+        used[0].grade.passes === 1 &&
+        used[0].tool_calls === 13 &&
+        used[0].sosumi_calls === expectedSosumiCalls,
+      `after 12 calls, the final turn lets the agent submit (${condition})`,
+    )
+    check(
+      unused.length === 1 &&
+        unused[0].meta.final_turn === true &&
+        unused[0].meta.end_reason === "tool_limit" &&
+        unused[0].meta.failure_class === "tool_limit" &&
+        unused[0].grade.passes === 0,
+      `an agent that does not submit in the final turn scores as tool_limit (${condition})`,
+    )
+  }
+  const usedTrace = JSON.parse(
+    await readFile(
+      join(
+        runsDir,
+        "mock-reference-exhaust",
+        "sosumi",
+        "baseline",
+        "traces",
+        "control-sha256-hex_rep0.json",
+      ),
+      "utf8",
+    ),
+  ) as { role: string; content: string }[]
+  check(
+    usedTrace.some(
+      (turn) => turn.role === "user" && turn.content.includes("submit_answer is now the only tool"),
+    ),
+    "the trace records the final-turn message",
   )
 
   // 3. Resume: a second run of the same flow adds no rows; a failed attempt runs again.

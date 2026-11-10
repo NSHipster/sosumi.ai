@@ -6,8 +6,10 @@ import {
   type AgentOutcome,
   assertModel,
   type EndReason,
+  NOT_RUN,
   recordRequest,
   retryAfterFromHeaders,
+  SUBMIT_TOOL,
   withRetries,
 } from "../agent.ts"
 
@@ -42,7 +44,7 @@ export async function runOpenAI(
   context: AgentContext,
 ): Promise<AgentOutcome> {
   const { progress, session, trace, signal } = context
-  const tools: OpenAI.Responses.FunctionTool[] = context.tools.map((tool) => ({
+  let tools: OpenAI.Responses.FunctionTool[] = context.tools.map((tool) => ({
     type: "function",
     name: tool.name,
     description: tool.description,
@@ -133,11 +135,12 @@ export async function runOpenAI(
       toolCalls: progress.toolCalls,
       sosumiCalls: progress.sosumiCalls,
       retries: progress.retries,
+      finalTurn: session.finalTurn,
     })
 
     if (refused || incomplete === "content_filter") return finish("refusal")
     if (incomplete === "max_output_tokens") return finish("max_tokens")
-    if (calls.length === 0) return finish("end_turn")
+    if (calls.length === 0) return finish(session.finalTurn ? "tool_limit" : "end_turn")
 
     for (const call of calls) {
       let args: unknown
@@ -146,11 +149,23 @@ export async function runOpenAI(
       } catch {
         args = null
       }
+      if (session.done && !session.finalTurn) {
+        // Every function call needs an output, even one that the limit kept from running.
+        input.push({ type: "function_call_output", call_id: call.call_id, output: NOT_RUN })
+        continue
+      }
       const output = await session.handle(call.name, args, signal, trace)
       input.push({ type: "function_call_output", call_id: call.call_id, output: output.text })
-      if (session.done) break
+      if (session.answer !== null) break
     }
     if (session.answer !== null) return finish("submitted")
-    if (session.limitReached) return finish("tool_limit")
+    if (session.finalTurn) return finish("tool_limit")
+    if (session.limitReached) {
+      // One final turn: only submit_answer is offered, and a message asks for the answer now.
+      const message = session.beginFinalTurn()
+      tools = tools.filter((tool) => tool.name === SUBMIT_TOOL.name)
+      trace.push({ role: "user", content: message })
+      input.push({ role: "user", content: message })
+    }
   }
 }

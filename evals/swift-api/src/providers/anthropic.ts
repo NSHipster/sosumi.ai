@@ -6,8 +6,10 @@ import {
   type AgentOutcome,
   assertModel,
   type EndReason,
+  NOT_RUN,
   recordRequest,
   retryAfterFromHeaders,
+  SUBMIT_TOOL,
   withRetries,
 } from "../agent.ts"
 
@@ -42,7 +44,7 @@ export async function runAnthropic(
   context: AgentContext,
 ): Promise<AgentOutcome> {
   const { progress, session, trace, signal } = context
-  const tools: Anthropic.Tool[] = context.tools.map((tool, index) => ({
+  let tools: Anthropic.Tool[] = context.tools.map((tool, index) => ({
     name: tool.name,
     description: tool.description,
     input_schema: tool.inputSchema as Anthropic.Tool.InputSchema,
@@ -119,15 +121,26 @@ export async function runAnthropic(
       toolCalls: progress.toolCalls,
       sosumiCalls: progress.sosumiCalls,
       retries: progress.retries,
+      finalTurn: session.finalTurn,
     })
 
     if (stopReason === "refusal") return finish("refusal")
     if (stopReason === "max_tokens") return finish("max_tokens")
     if (stopReason === "pause_turn") continue
-    if (calls.length === 0) return finish("end_turn")
+    if (calls.length === 0) return finish(session.finalTurn ? "tool_limit" : "end_turn")
 
     const results: Anthropic.ToolResultBlockParam[] = []
     for (const call of calls) {
+      if (session.done && !session.finalTurn) {
+        // Every tool_use block needs a result, even one that the limit kept from running.
+        results.push({
+          type: "tool_result",
+          tool_use_id: call.id,
+          content: NOT_RUN,
+          is_error: true,
+        })
+        continue
+      }
       const output = await session.handle(call.name, call.input, signal, trace)
       results.push({
         type: "tool_result",
@@ -135,10 +148,20 @@ export async function runAnthropic(
         content: output.text,
         ...(output.isError ? { is_error: true } : {}),
       })
-      if (session.done) break
+      if (session.answer !== null) break
     }
     if (session.answer !== null) return finish("submitted")
-    if (session.limitReached) return finish("tool_limit")
+    if (session.finalTurn) return finish("tool_limit")
+    if (session.limitReached) {
+      // One final turn: only submit_answer is offered, and a message asks for the answer now.
+      const message = session.beginFinalTurn()
+      tools = tools
+        .filter((tool) => tool.name === SUBMIT_TOOL.name)
+        .map((tool) => ({ ...tool, cache_control: { type: "ephemeral" as const } }))
+      trace.push({ role: "user", content: message })
+      messages.push({ role: "user", content: [...results, { type: "text", text: message }] })
+      continue
+    }
     messages.push({ role: "user", content: results })
   }
 }
