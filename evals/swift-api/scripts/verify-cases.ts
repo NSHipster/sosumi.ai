@@ -3,11 +3,11 @@
 //
 // Usage: evals/swift-api/scripts/verify-cases [--case <id>]... [--jobs <n>]
 
-import { execFile } from "node:child_process"
-import { access, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises"
-import { availableParallelism, tmpdir } from "node:os"
+import { access, readdir, readFile } from "node:fs/promises"
+import { availableParallelism } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
+import { type CaseMeta, describeGrade as describe, gradeAnswer as grade } from "../src/grader.ts"
 
 const casesDir = resolve(dirname(fileURLToPath(import.meta.url)), "..", "cases")
 const caseFiles = [
@@ -19,178 +19,6 @@ const caseFiles = [
   "meta.json",
 ]
 const sources = ["failure", "sdk-diff", "control"]
-
-interface CaseMeta {
-  id: string
-  framework: string
-  source: string
-  tags: string[]
-  target: string
-  sdk?: string
-  swift_flags?: string[]
-  required_symbols: string[]
-  docs: string[]
-  notes: string
-}
-
-interface TypeCheck {
-  ok: boolean
-  output: string
-  warnings: string[]
-  deprecations: string[]
-  seconds: number
-}
-
-interface Grade {
-  pass: boolean
-  typeCheck: TypeCheck
-  violations: string[]
-  missingSymbols: string[]
-}
-
-const bannedConstructs: { name: string; pattern: RegExp }[] = [
-  { name: "fatalError", pattern: /\bfatalError\b/ },
-  { name: "preconditionFailure", pattern: /\bpreconditionFailure\b/ },
-  { name: "unsafeBitCast", pattern: /\bunsafeBitCast\b/ },
-  { name: "force cast (as!)", pattern: /\bas!/ },
-]
-
-// Replaces comments and the literal text of strings with spaces,
-// so that rule checks see only code. Interpolated expressions stay.
-export function codeOnly(source: string): string {
-  let out = ""
-  let i = 0
-  const n = source.length
-  const blank = (c: string) => (c === "\n" ? "\n" : " ")
-
-  // Copies an interpolation \( ... ) as code, up to its closing parenthesis.
-  const interpolation = () => {
-    out += "\\("
-    i += 2
-    let depth = 1
-    while (i < n && depth > 0) {
-      if (source[i] === '"') {
-        string()
-        continue
-      }
-      if (source[i] === "(") depth++
-      if (source[i] === ")") depth--
-      out += source[i]
-      i++
-    }
-  }
-
-  const string = () => {
-    const multiline = source.startsWith('"""', i)
-    const quote = multiline ? '"""' : '"'
-    out += quote
-    i += quote.length
-    while (i < n && !source.startsWith(quote, i)) {
-      if (!multiline && source[i] === "\n") return
-      if (source.startsWith("\\(", i)) {
-        interpolation()
-      } else if (source[i] === "\\") {
-        out += "  "
-        i += 2
-      } else {
-        out += blank(source[i])
-        i++
-      }
-    }
-    out += quote
-    i += quote.length
-  }
-
-  while (i < n) {
-    if (source.startsWith("//", i)) {
-      while (i < n && source[i] !== "\n") {
-        out += " "
-        i++
-      }
-    } else if (source.startsWith("/*", i)) {
-      let depth = 0
-      do {
-        if (source.startsWith("/*", i)) {
-          depth++
-          out += "  "
-          i += 2
-        } else if (source.startsWith("*/", i)) {
-          depth--
-          out += "  "
-          i += 2
-        } else {
-          out += blank(source[i])
-          i++
-        }
-      } while (i < n && depth > 0)
-    } else if (source[i] === '"') {
-      string()
-    } else {
-      out += source[i]
-      i++
-    }
-  }
-  return out
-}
-
-function runTypeCheck(meta: CaseMeta, dir: string): Promise<TypeCheck> {
-  const args = [
-    "--sdk",
-    meta.sdk ?? "macosx",
-    "swiftc",
-    "-typecheck",
-    "-target",
-    meta.target,
-    ...(meta.swift_flags ?? []),
-    "answer.swift",
-    "check.swift",
-  ]
-  const start = performance.now()
-  return new Promise((resolvePromise) => {
-    execFile("xcrun", args, { cwd: dir, timeout: 300_000 }, (error, stdout, stderr) => {
-      const output = `${stdout}${stderr}`
-      const diagnostics = output.split("\n").filter((line) => /^\S+\.swift:\d+:\d+: /.test(line))
-      const warnings = diagnostics.filter((line) => line.includes(": warning: "))
-      resolvePromise({
-        ok: error === null,
-        output,
-        warnings,
-        deprecations: warnings.filter((line) =>
-          /deprecated|renamed|#DeprecatedDeclaration/.test(line),
-        ),
-        seconds: (performance.now() - start) / 1000,
-      })
-    })
-  })
-}
-
-async function grade(meta: CaseMeta, check: string, answer: string): Promise<Grade> {
-  const dir = await mkdtemp(join(tmpdir(), `swift-api-${meta.id}-`))
-  try {
-    await writeFile(join(dir, "answer.swift"), answer)
-    await writeFile(join(dir, "check.swift"), check)
-    const typeCheck = await runTypeCheck(meta, dir)
-    const code = codeOnly(answer)
-    const violations = bannedConstructs.filter((c) => c.pattern.test(code)).map((c) => c.name)
-    const missingSymbols = meta.required_symbols.filter((symbol) => !code.includes(symbol))
-    return {
-      pass: typeCheck.ok && violations.length === 0 && missingSymbols.length === 0,
-      typeCheck,
-      violations,
-      missingSymbols,
-    }
-  } finally {
-    await rm(dir, { recursive: true, force: true })
-  }
-}
-
-function describe(result: Grade): string {
-  const reasons: string[] = []
-  if (!result.typeCheck.ok) reasons.push("type-check fails")
-  if (result.violations.length > 0) reasons.push(`uses ${result.violations.join(", ")}`)
-  if (result.missingSymbols.length > 0) reasons.push(`lacks ${result.missingSymbols.join(", ")}`)
-  return reasons.join("; ")
-}
 
 function firstErrors(output: string, count = 3): string {
   return output
@@ -251,7 +79,7 @@ async function verifyCase(id: string): Promise<CaseReport> {
   ])
   report.seconds.push(...[reference, stale, empty, stub].map((result) => result.typeCheck.seconds))
 
-  if (!reference.pass) {
+  if (!reference.passes) {
     report.problems.push(`reference fails: ${describe(reference)}`)
     report.lines.push(firstErrors(reference.typeCheck.output))
   } else if (reference.typeCheck.warnings.length > 0) {
@@ -259,13 +87,13 @@ async function verifyCase(id: string): Promise<CaseReport> {
       `reference has warnings:\n      ${reference.typeCheck.warnings.join("\n      ")}`,
     )
   }
-  if (stale.typeCheck.ok) {
+  if (stale.typechecks) {
     report.problems.push(`stale type-checks (${describe(stale) || "and passes"})`)
   } else {
     report.lines.push(`    stale: ${describe(stale)}`, firstErrors(stale.typeCheck.output, 1))
   }
-  if (empty.pass) report.problems.push("empty answer passes")
-  if (stub.pass) {
+  if (empty.passes) report.problems.push("empty answer passes")
+  if (stub.passes) {
     report.problems.push("stub passes")
   } else if (!stub.violations.includes("fatalError")) {
     report.problems.push("stub does not use fatalError()")
