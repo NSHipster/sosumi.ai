@@ -9,9 +9,10 @@ const APPLE_DOC_BASE_URL = "https://developer.apple.com/documentation/"
  * - `documentation/swift/array` → `swift/array`
  * - `  swift/array  ` → `swift/array`
  * - `/documentation/swift/array` → `swift/array`
+ * - `swift/array/` → `swift/array`
  *
  * @param path - The documentation path to normalize
- * @returns The normalized path without leading slashes or documentation prefixes
+ * @returns The normalized path without leading or trailing slashes or documentation prefixes
  */
 export function normalizeDocumentationPath(path: string): string {
   if (!path || typeof path !== "string") {
@@ -23,6 +24,8 @@ export function normalizeDocumentationPath(path: string): string {
       .trim()
       // Remove leading slashes and documentation prefixes
       .replace(/^\/?(?:documentation\/?)?/, "")
+      // Remove trailing slashes, which Apple's JSON paths don't have
+      .replace(/\/+$/, "")
   )
 }
 

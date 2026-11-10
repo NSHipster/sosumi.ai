@@ -64,9 +64,10 @@ describe("URL Helper Functions", () => {
     })
 
     it("should handle paths ending with slashes", () => {
-      expect(normalizeDocumentationPath("swift/array/")).toBe("swift/array/")
-      expect(normalizeDocumentationPath("/swift/array/")).toBe("swift/array/")
-      expect(normalizeDocumentationPath("documentation/swift/array/")).toBe("swift/array/")
+      expect(normalizeDocumentationPath("swift/array/")).toBe("swift/array")
+      expect(normalizeDocumentationPath("/swift/array//")).toBe("swift/array")
+      expect(normalizeDocumentationPath("documentation/swift/array/")).toBe("swift/array")
+      expect(normalizeDocumentationPath("swift/array/append(_:)/")).toBe("swift/array/append(_:)")
     })
   })
 
