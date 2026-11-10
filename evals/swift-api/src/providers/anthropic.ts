@@ -55,12 +55,16 @@ export async function runAnthropic(
       ? { cache_control: { type: "ephemeral" as const } }
       : {}),
   }))
-  // In the web condition, the server-side web tools come first. Each tool's max_uses is the
-  // call budget left when the turn starts. The API counts uses across every request in a turn
-  // (pause_turn resumes included), so the value stays the same for the whole turn and the tool
-  // list keeps its cache prefix. The API has no limit across both tools together.
+  // In the web condition, the server-side web tools come first. The API has no limit across
+  // both tools together, so each gets its own share of the budget (see webBudgets). max_uses
+  // counts across every request in a turn, pause_turn resumes included, so the values are set
+  // once when the turn starts and the tool list keeps its cache prefix.
   let tools: Anthropic.ToolUnion[] = [
-    ...(context.condition === "web" ? webTools(session.remaining) : []),
+    ...(context.condition === "web"
+      ? webTools(
+          webBudgets(session.limit, session.remaining, progress.webSearches, progress.webFetches),
+        )
+      : []),
     ...clientTools,
   ]
   const system: Anthropic.TextBlockParam[] = [
@@ -219,21 +223,45 @@ export async function runAnthropic(
 const MAX_PAUSE_RESUMES = 10
 
 /** The server-side web tools, each limited to `budget` uses in a turn and blocked from Sosumi. */
-export function webTools(budget: number): Anthropic.ToolUnion[] {
+export function webTools(budgets: WebBudgets): Anthropic.ToolUnion[] {
   return [
     {
       type: "web_search_20260209",
       name: "web_search",
       blocked_domains: BLOCKED_DOMAINS,
-      max_uses: budget,
+      max_uses: budgets.searches,
     },
     {
       type: "web_fetch_20260209",
       name: "web_fetch",
       blocked_domains: BLOCKED_DOMAINS,
-      max_uses: budget,
+      max_uses: budgets.fetches,
     },
   ]
+}
+
+export interface WebBudgets {
+  searches: number
+  fetches: number
+}
+
+/**
+ * Splits the call budget between the two server tools, so that their total can never pass
+ * the calls left: searches get at most half of the limit (6 of 12) and fetches the other half,
+ * each less what it has already used. Searches are capped by the calls left, and fetches by
+ * what is left after the searches' share.
+ */
+export function webBudgets(
+  limit: number,
+  remaining: number,
+  searchesUsed: number,
+  fetchesUsed: number,
+): WebBudgets {
+  const searchHalf = Math.floor(limit / 2)
+  const fetchHalf = limit - searchHalf
+  const searches = Math.max(0, Math.min(searchHalf - searchesUsed, remaining))
+  const fetches = Math.max(0, Math.min(fetchHalf - fetchesUsed, remaining - searches))
+  return { searches, fetches }
 }
 
 /**

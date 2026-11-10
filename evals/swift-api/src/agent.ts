@@ -237,6 +237,11 @@ export class ToolSession {
     this.callSosumi = options.callSosumi
   }
 
+  /** The tool-call limit, including submit_answer. */
+  get limit(): number {
+    return this.maxToolCalls
+  }
+
   /** Tool calls left under the limit. */
   get remaining(): number {
     return Math.max(0, this.maxToolCalls - this.progress.toolCalls)

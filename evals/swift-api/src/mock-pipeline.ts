@@ -13,9 +13,15 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { parseArgs } from "node:util"
 import { evalDir } from "./cases.ts"
-import { checkProviderEdgeCases, checkProviderLoops, checkWebLoops } from "./provider-loops.ts"
+import {
+  checkProviderEdgeCases,
+  checkProviderLoops,
+  checkWebBudgets,
+  checkWebLoops,
+} from "./provider-loops.ts"
 import { regrade } from "./regrade.ts"
 import { type ErrorRow, type ResultRow, readJSONL, summarize } from "./results.ts"
+import { traceLimits } from "./run.ts"
 import { freePort, type LocalServer, startLocalServer } from "./sosumi.ts"
 
 const { values } = parseArgs({
@@ -57,6 +63,7 @@ const percent = (value: number) => `${(value * 100).toFixed(1)}%`
 await checkProviderLoops(check)
 await checkProviderEdgeCases(check)
 await checkWebLoops(check)
+checkWebBudgets(check)
 
 const runsDir = await mkdtemp(join(tmpdir(), "swift-api-mock-"))
 let server: LocalServer | null = null
@@ -324,8 +331,8 @@ try {
         join(flow("reference", "none"), "traces", "control-sha256-hex_rep0.json"),
         "utf8",
       ),
-    ) as { role: string; content: string }[]
-  ).find((turn) => turn.role === "system")
+    ) as { role: string; name?: string; content: string }[]
+  ).find((turn) => turn.role === "system" && turn.name !== "limits")
   check(
     systemTurn?.content.includes(
       "Do not redeclare any type that the task says is already declared",
@@ -371,6 +378,20 @@ try {
       webTrace.some((turn) => turn.name === "web_search" && turn.role === "tool_call") &&
       webTrace.some((turn) => turn.name === "web_fetch" && turn.role === "tool_result"),
     "web traces record the system prompt's web sentence, each search, and each fetch",
+  )
+  check(
+    webTrace[0]?.name === "limits" &&
+      webTrace[0].content.includes("Tool-call limit: 12") &&
+      webTrace[0].content.includes("max_tool_calls") === false &&
+      webTrace[1]?.role === "system" &&
+      webTrace[1].content.startsWith("You write Swift code"),
+    "each trace starts with a header that records the call limit for readers",
+  )
+  check(
+    traceLimits("web", "anthropic", 12).includes("at most 6 web searches and 6 web fetches") &&
+      traceLimits("web", "openai", 12).includes("max_tool_calls") &&
+      !traceLimits("sosumi", "anthropic", 12).includes("web"),
+    "the trace header records the Anthropic 6/6 split and the OpenAI combined cap",
   )
 
   const leaked = await runEval([...common, ...webCases, "--condition", "web", "--mock-web-leak"])

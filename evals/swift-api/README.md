@@ -14,6 +14,10 @@ and the difference between `sosumi` and `web` shows whether Sosumi beats the ope
 
 In `web`, every server-side search and fetch counts toward the tool-call limit,
 and both tools skip `sosumi.ai`.
+Anthropic's API limits each web tool separately,
+so the runner gives searches and fetches half of the budget each (6 and 6 of 12);
+OpenAI's `max_tool_calls` limits all built-in calls together.
+Each trace starts with a header that states these limits.
 The eval's reference answers are public in the Sosumi repository on GitHub,
 so a row whose searches, fetched URLs, or citations include `sosumi.ai`
 records `web_leak` and the matching URLs, and the headline leaves it out.

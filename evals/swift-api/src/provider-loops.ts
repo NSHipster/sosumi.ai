@@ -14,7 +14,7 @@ import {
   ToolSession,
   type Turn,
 } from "./agent.ts"
-import { runAnthropic } from "./providers/anthropic.ts"
+import { runAnthropic, webBudgets } from "./providers/anthropic.ts"
 import { runOpenAI } from "./providers/openai.ts"
 
 const MAX_CALLS = 12
@@ -479,7 +479,7 @@ export async function checkWebLoops(check: (condition: boolean, message: string)
       },
       {
         stop_reason: "end_turn",
-        usage: usage(10, 1),
+        usage: usage(5, 6),
         content: [
           {
             type: "server_tool_use",
@@ -542,9 +542,9 @@ export async function checkWebLoops(check: (condition: boolean, message: string)
         fetch?.name === "web_fetch" &&
         JSON.stringify(search.blocked_domains) === '["sosumi.ai"]' &&
         JSON.stringify(fetch.blocked_domains) === '["sosumi.ai"]' &&
-        search.max_uses === MAX_CALLS &&
-        fetch.max_uses === MAX_CALLS,
-      "Anthropic web: both server tools block sosumi.ai and are limited to the call budget",
+        search.max_uses === MAX_CALLS / 2 &&
+        fetch.max_uses === MAX_CALLS / 2,
+      "Anthropic web: both server tools block sosumi.ai, and each gets half of the call budget (6 and 6)",
     )
     check(
       requests.length === 3 &&
@@ -559,13 +559,13 @@ export async function checkWebLoops(check: (condition: boolean, message: string)
       finalTools.length === 1 &&
         finalTools[0].name === "submit_answer" &&
         String(finalMessage?.content).includes("You have used all 12 tool calls"),
-      "Anthropic web: 11 searches and 1 fetch reach the limit, and the final turn offers only submit_answer",
+      "Anthropic web: 6 searches and 6 fetches reach the limit, and the final turn offers only submit_answer",
     )
     check(
       outcome.endReason === "submitted" &&
         context.session.finalTurnReason === "tool_limit" &&
-        context.progress.webSearches === 11 &&
-        context.progress.webFetches === 1 &&
+        context.progress.webSearches === 6 &&
+        context.progress.webFetches === 6 &&
         outcome.toolCalls === 13 &&
         JSON.stringify(context.progress.leaks) === JSON.stringify([REPOSITORY]),
       "Anthropic web: searches and fetches count as calls, and the repository result is flagged",
@@ -696,4 +696,38 @@ export async function checkWebLoops(check: (condition: boolean, message: string)
       )
     }
   }
+}
+
+/** Checks that the two server tools' max_uses never sum past the calls left, in any state. */
+export function checkWebBudgets(check: (condition: boolean, message: string) => void) {
+  const failures: string[] = []
+  let states = 0
+  for (const limit of [1, 2, 5, 12, 13]) {
+    for (let searchesUsed = 0; searchesUsed <= limit; searchesUsed++) {
+      for (let fetchesUsed = 0; searchesUsed + fetchesUsed <= limit; fetchesUsed++) {
+        // Other calls (such as a rejected client call) can use budget too.
+        for (let other = 0; searchesUsed + fetchesUsed + other <= limit; other++) {
+          const remaining = limit - searchesUsed - fetchesUsed - other
+          const budget = webBudgets(limit, remaining, searchesUsed, fetchesUsed)
+          states++
+          const half = Math.floor(limit / 2)
+          if (
+            budget.searches < 0 ||
+            budget.fetches < 0 ||
+            budget.searches + budget.fetches > remaining ||
+            // A tool never passes its half from a state the runner can reach.
+            (searchesUsed <= half && searchesUsed + budget.searches > half) ||
+            (fetchesUsed <= limit - half && fetchesUsed + budget.fetches > limit - half)
+          ) {
+            failures.push(`${limit}/${searchesUsed}/${fetchesUsed}/${other}`)
+          }
+        }
+      }
+    }
+  }
+  const start = webBudgets(12, 12, 0, 0)
+  check(
+    failures.length === 0 && start.searches === 6 && start.fetches === 6,
+    `Anthropic web: in all ${states} budget states, max_uses for search and fetch never sum past the calls left`,
+  )
 }

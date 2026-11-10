@@ -341,6 +341,7 @@ async function main() {
     const key = `${meta.id}_rep${rep}`
     const system = systemPrompt(condition, maxToolCalls)
     const trace: Turn[] = [
+      { role: "system", name: "limits", content: traceLimits(condition, provider, maxToolCalls) },
       { role: "system", content: system },
       { role: "user", content: evalCase.task },
     ]
@@ -633,6 +634,28 @@ async function main() {
     )
   }
   console.log(`Cumulative spend under ${runsDir}: ${formatSpend(await recordedSpend(runsDir))}`)
+}
+
+/**
+ * The header of each trace, for readers and not sent to the model: the call limit and,
+ * in the web condition, how the provider's web calls are capped.
+ */
+export function traceLimits(
+  condition: Condition,
+  provider: Provider,
+  maxToolCalls: number,
+): string {
+  const half = Math.floor(maxToolCalls / 2)
+  const web =
+    condition !== "web"
+      ? ""
+      : provider === "anthropic"
+        ? ` Web tools split the budget: at most ${half} web searches and ${maxToolCalls - half} web fetches` +
+          " (max_uses on each tool, capped by the calls left)."
+        : provider === "openai"
+          ? " Built-in web calls are capped together by max_tool_calls at the calls left."
+          : " The mock records its web calls directly."
+  return `Harness note, not sent to the model. Tool-call limit: ${maxToolCalls}, including submit_answer.${web}`
 }
 
 /** Drops the JSON Schema `$schema` keyword, which only names the draft; the schema is otherwise unchanged. */
