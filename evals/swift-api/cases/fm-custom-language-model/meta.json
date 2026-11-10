@@ -12,7 +12,7 @@
   "required_symbols": [
     "LanguageModelExecutor",
     "LanguageModelCapabilities",
-    "channel.send"
+    ".send("
   ],
   "docs": [
     "https://sosumi.ai/documentation/foundationmodels/languagemodel",
