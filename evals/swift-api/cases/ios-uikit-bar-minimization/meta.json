@@ -1,0 +1,23 @@
+{
+  "id": "ios-uikit-bar-minimization",
+  "framework": "UIKit",
+  "source": "sdk-diff",
+  "tags": [
+    "UIKit",
+    "navigation-bar",
+    "scrolling"
+  ],
+  "target": "arm64-apple-ios27.0",
+  "sdk": "iphoneos",
+  "required_symbols": [
+    "navigationBarMinimization",
+    "onScrollDown",
+    "atScrollEdge"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/uikit/uinavigationitem/navigationbarminimization-1kj9z",
+    "https://sosumi.ai/documentation/uikit/uibarminimization-swift.struct"
+  ],
+  "notes": "The iOS 27 SDK adds UIBarMinimization (a Swift struct refined from the Objective-C class) with minimizationBehavior, safeAreaAdjustment, and restorationBehavior, and UINavigationItem.navigationBarMinimization. iOS 26 has UITabBarController.tabBarMinimizeBehavior but no navigation bar equivalent.",
+  "round": 2
+}

@@ -1,0 +1,23 @@
+{
+  "id": "ios-uikit-grammar-checking",
+  "framework": "UIKit",
+  "source": "sdk-diff",
+  "tags": [
+    "UIKit",
+    "text-input"
+  ],
+  "target": "arm64-apple-ios27.0",
+  "sdk": "iphoneos",
+  "required_symbols": [
+    "grammarCheckingType",
+    "spellCheckingType",
+    "autocorrectionType",
+    "smartQuotesType"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/uikit/uitextinputtraits/grammarcheckingtype",
+    "https://sosumi.ai/documentation/uikit/uitextgrammarcheckingtype"
+  ],
+  "notes": "The iOS 27 SDK adds UITextGrammarCheckingType (default, no, yes) and the grammarCheckingType text input trait. NSTextView on macOS uses isGrammarCheckingEnabled, which UITextView does not have.",
+  "round": 2
+}

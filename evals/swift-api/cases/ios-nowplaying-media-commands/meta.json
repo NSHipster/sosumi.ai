@@ -1,0 +1,23 @@
+{
+  "id": "ios-nowplaying-media-commands",
+  "framework": "NowPlaying",
+  "source": "sdk-diff",
+  "tags": [
+    "NowPlaying",
+    "media",
+    "new-framework"
+  ],
+  "target": "arm64-apple-ios27.0",
+  "sdk": "iphoneos",
+  "required_symbols": [
+    "skipForward",
+    "skipBackward",
+    "preferredIntervals"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/nowplaying/mediacommand",
+    "https://sosumi.ai/documentation/nowplaying/mediacommand/skipforward(preferredintervals:_:)"
+  ],
+  "notes": "NowPlaying is a new framework in the iOS 27 SDK. MediaCommand has static factories such as play(_:), pause(_:), skipForward(preferredIntervals:_:), and skipBackward(preferredIntervals:_:). Before it, apps registered handlers on MPRemoteCommandCenter, whose commands are MPRemoteCommand objects.",
+  "round": 2
+}

@@ -1,0 +1,22 @@
+{
+  "id": "ios-uikit-sheet-placement",
+  "framework": "UIKit",
+  "source": "sdk-diff",
+  "tags": [
+    "UIKit",
+    "availability",
+    "sheets"
+  ],
+  "target": "arm64-apple-ios26.0",
+  "sdk": "iphoneos",
+  "required_symbols": [
+    "preferredPlacement",
+    "trailing"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/uikit/uisheetpresentationcontroller/preferredplacement",
+    "https://sosumi.ai/documentation/uikit/uisheetpresentationcontroller/placement"
+  ],
+  "notes": "The iOS 27 SDK adds UISheetPresentationController.Placement (automatic, leading, center, trailing) and preferredPlacement. At an iOS 26.0 deployment target the property needs #available(iOS 27.0, *).",
+  "round": 2
+}
