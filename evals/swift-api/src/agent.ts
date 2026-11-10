@@ -1,7 +1,7 @@
 // Pieces that every provider's agent loop shares:
 // the prompt, the tools, the tool-call budget, retries, and the attempt result.
 
-import type { ToolOutput, ToolSpec } from "./sosumi.ts"
+import { SosumiServerError, type ToolOutput, type ToolSpec } from "./sosumi.ts"
 
 export type Condition = "sosumi" | "none"
 
@@ -105,6 +105,7 @@ export type FailureClass =
   | "api_error"
   | "model_mismatch"
   | "tool_error"
+  | "sosumi_server"
   | "grader_error"
   | "harness_error"
 
@@ -216,6 +217,10 @@ export class ToolSession {
         output = await this.callSosumi(name, args, signal)
       } catch (error) {
         if (signal.aborted) throw error
+        if (error instanceof SosumiServerError) {
+          // The server failed, not the tool: the runner retries the attempt.
+          throw new AttemptError("sosumi_server", error.message, { cause: error })
+        }
         throw new AttemptError("tool_error", `Sosumi tool ${name} failed: ${String(error)}`, {
           cause: error,
         })

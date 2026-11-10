@@ -37,6 +37,14 @@ cd evals/swift-api && npm ci   # for the runner
 
 The grader needs Xcode with the macOS and iOS SDKs that the cases name.
 
+Each run starts its own local Sosumi server on a free port,
+with its own Wrangler inspector port and state directory,
+so that runs can start at the same time.
+`--sosumi-port` chooses the port; the run stops if that port is taken.
+If the server exits during a run, the runner restarts it and repeats the tool call.
+An attempt that still fails because of the server is recorded as `sosumi_server`
+in `errors.jsonl` and retried in the same run, up to two times.
+
 ## Run
 
 ```bash

@@ -16,6 +16,7 @@ import {
   type Condition,
   describeError,
   emptyUsage,
+  type FailureClass,
   SUBMIT_TOOL,
   systemPrompt,
   ToolSession,
@@ -47,7 +48,7 @@ import {
   recordedSpend,
   summarize,
 } from "./results.ts"
-import { type LocalServer, SosumiClient, startLocalServer, type ToolSpec } from "./sosumi.ts"
+import { SosumiServerError, SosumiService, type ToolSpec } from "./sosumi.ts"
 
 const usage = `Usage: npm run eval -- [options]
 
@@ -66,9 +67,10 @@ const usage = `Usage: npm run eval -- [options]
   --runs-dir <path>         Where flow directories go (default: evals/swift-api/runs)
   --variant <name>          Variant directory: baseline or v<N> (default: baseline)
   --sosumi-url <url>        Use a running Sosumi server instead of starting one
-  --sosumi-port <n>         Port for the local Sosumi server (default: 8790)
+  --sosumi-port <n>         Port for the local Sosumi server (default: a free port)
   --mock-answer <name>      reference, stale, stub, or empty (mock provider)
-  --mock-failure <name>     none, error, timeout, rate-limit-once, or mismatch (mock provider)
+  --mock-failure <name>     none, error, timeout, rate-limit-once, mismatch, kill-server,
+                            or server-error-once (mock provider)
   --mock-behavior <name>    submit, exhaust, or exhaust-no-submit (mock provider)
   --mock-usd-per-attempt <n>  Spend that each mock attempt counts (default: 0)
   --max-usd-mock <n>        Spend cap for the mock provider, to test the caps
@@ -79,7 +81,12 @@ interface WorkItem {
   evalCase: EvalCase
   condition: Condition
   rep: number
+  /** How many times this attempt was retried after the Sosumi server failed. */
+  serverRetries: number
 }
+
+/** Attempts that fail because the Sosumi server failed are retried this many times. */
+const MAX_SERVER_RETRIES = 2
 
 interface Ledger {
   spent: number
@@ -117,7 +124,7 @@ async function main() {
       "runs-dir": { type: "string", default: join(evalDir, "runs") },
       variant: { type: "string", default: "baseline" },
       "sosumi-url": { type: "string" },
-      "sosumi-port": { type: "string", default: "8790" },
+      "sosumi-port": { type: "string" },
       "mock-answer": { type: "string", default: "reference" },
       "mock-failure": { type: "string", default: "none" },
       "mock-behavior": { type: "string", default: "submit" },
@@ -139,7 +146,16 @@ async function main() {
   if (provider === "mock") {
     if (!["reference", "stale", "stub", "empty"].includes(mockAnswer))
       throw new Error(`Unknown mock answer ${mockAnswer}`)
-    if (!["none", "error", "timeout", "rate-limit-once", "mismatch"].includes(mockFailure)) {
+    const failures = [
+      "none",
+      "error",
+      "timeout",
+      "rate-limit-once",
+      "mismatch",
+      "kill-server",
+      "server-error-once",
+    ]
+    if (!failures.includes(mockFailure)) {
       throw new Error(`Unknown mock failure ${mockFailure}`)
     }
     if (!["submit", "exhaust", "exhaust-no-submit"].includes(mockBehavior)) {
@@ -223,7 +239,8 @@ async function main() {
     )
     for (const evalCase of cases) {
       for (let rep = 0; rep < reps; rep++) {
-        if (!done.has(`${evalCase.meta.id}#${rep}`)) queue.push({ evalCase, condition, rep })
+        if (!done.has(`${evalCase.meta.id}#${rep}`))
+          queue.push({ evalCase, condition, rep, serverRetries: 0 })
       }
     }
   }
@@ -235,21 +252,33 @@ async function main() {
   )
 
   // Sosumi: the real tools from a local server, over MCP.
-  let server: LocalServer | null = null
-  let sosumi: SosumiClient | null = null
+  // The service restarts the server if it exits during the run.
+  let sosumi: SosumiService | null = null
   if (conditions.includes("sosumi") && queue.some((item) => item.condition === "sosumi")) {
-    let url = values["sosumi-url"]
-    if (!url) {
-      await mkdir(runsDir, { recursive: true })
-      const logPath = join(runsDir, "sosumi-server.log")
-      console.log(
-        `Starting a local Sosumi server on port ${values["sosumi-port"]} (log: ${logPath})`,
-      )
-      server = await startLocalServer(Number(values["sosumi-port"]), logPath)
-      url = server.url
-    }
-    sosumi = await SosumiClient.connect(url)
+    await mkdir(runsDir, { recursive: true })
+    sosumi = await SosumiService.start({
+      url: values["sosumi-url"],
+      port: values["sosumi-port"] === undefined ? undefined : Number(values["sosumi-port"]),
+      logPath: join(runsDir, "sosumi-server.log"),
+      log: (message) => console.log(message),
+    })
     console.log(`Sosumi tools: ${sosumi.tools.map((tool) => tool.name).join(", ")}`)
+  }
+  // Test hooks for the mock provider: kill the server before the run's first Sosumi call,
+  // or fail the first attempt's Sosumi call as if the server could not be restarted.
+  let serverFailureInjected = false
+  const callSosumi = async (name: string, args: unknown, signal: AbortSignal) => {
+    if (!sosumi) throw new Error("No Sosumi server")
+    if (provider === "mock" && !serverFailureInjected) {
+      if (mockFailure === "kill-server") {
+        serverFailureInjected = true
+        await sosumi.killServerForTest()
+      } else if (mockFailure === "server-error-once") {
+        serverFailureInjected = true
+        throw new SosumiServerError("Injected Sosumi server failure")
+      }
+    }
+    return sosumi.call(name, args, signal)
   }
   const toolsFor = (condition: Condition): ToolSpec[] =>
     condition === "sosumi" && sosumi
@@ -270,7 +299,8 @@ async function main() {
     ledger.completed++
   }
 
-  async function attempt(item: WorkItem): Promise<void> {
+  /** Runs one attempt. Returns the failure class when the attempt produced no scorable answer. */
+  async function attempt(item: WorkItem): Promise<FailureClass | null> {
     const { evalCase, condition, rep } = item
     const { meta } = evalCase
     const variantDir = variantDirs.get(condition) as string
@@ -294,10 +324,7 @@ async function main() {
       sosumiTools: tools.filter((tool) => tool !== SUBMIT_TOOL).map((tool) => tool.name),
       progress,
       maxToolCalls,
-      callSosumi: (name, args, signal) => {
-        if (!sosumi) throw new Error("No Sosumi server")
-        return sosumi.call(name, args, signal)
-      },
+      callSosumi,
     })
     const context: AgentContext = {
       condition,
@@ -379,7 +406,7 @@ async function main() {
             ? reason
             : new AttemptError("harness_error", describeError(error), { cause: error })
       await recordError(failure)
-      return
+      return failure.failureClass
     } finally {
       clearTimeout(timer)
       if (!controller.signal.aborted) controller.abort(new Error("Attempt finished"))
@@ -441,7 +468,7 @@ async function main() {
         // The model's call completed, so the attempt's spend counts.
         progress.model = outcome.model
         await recordError(new AttemptError("grader_error", error.message, { cause: error }))
-        return
+        return "grader_error"
       }
       row = {
         ...base,
@@ -467,6 +494,7 @@ async function main() {
         ? `typechecks ${row.grade.typechecks} passes ${row.grade.passes}`
         : row.status
     console.log(`  ${condition} ${meta.id} rep ${rep}: ${verdict}`)
+    return null
   }
 
   // Before an attempt starts, check that it cannot push the provider's spend past the cap.
@@ -509,7 +537,15 @@ async function main() {
       if (item === undefined) break
       ledger.inFlight++
       try {
-        await attempt(item)
+        const failure = await attempt(item)
+        if (failure === "sosumi_server" && item.serverRetries < MAX_SERVER_RETRIES) {
+          item.serverRetries++
+          queue.unshift(item)
+          console.log(
+            `  retrying ${item.condition} ${item.evalCase.meta.id} rep ${item.rep} ` +
+              `after a Sosumi server failure (${item.serverRetries} of ${MAX_SERVER_RETRIES})`,
+          )
+        }
       } finally {
         ledger.inFlight--
         wake()
@@ -522,7 +558,6 @@ async function main() {
     await Promise.all(Array.from({ length: concurrency }, worker))
   } finally {
     await sosumi?.close()
-    await server?.stop()
   }
 
   console.log("")
@@ -533,6 +568,8 @@ async function main() {
         `the costliest attempt so far was ${projection.maxAttempt.toFixed(4)} USD).`,
     )
   }
+  if (sosumi && sosumi.restarts > 0)
+    console.log(`The Sosumi server was restarted ${sosumi.restarts} times.`)
   console.log(`Wall time ${((performance.now() - started) / 1_000).toFixed(1)} s`)
   console.log(`Spend in this run: ${provider} ${ledger.spent.toFixed(4)} USD`)
   for (const condition of conditions) {

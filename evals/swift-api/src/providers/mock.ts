@@ -9,7 +9,15 @@ import { join } from "node:path"
 import { type AgentContext, type AgentOutcome, assertModel, withRetries } from "../agent.ts"
 
 export type MockAnswer = "reference" | "stale" | "stub" | "empty"
-export type MockFailure = "none" | "error" | "timeout" | "rate-limit-once" | "mismatch"
+/** kill-server and server-error-once are handled by the runner, around the Sosumi calls. */
+export type MockFailure =
+  | "none"
+  | "error"
+  | "timeout"
+  | "rate-limit-once"
+  | "mismatch"
+  | "kill-server"
+  | "server-error-once"
 /**
  * submit: submit after at most one Sosumi call.
  * exhaust: use every tool call without submitting, then submit in the final turn.

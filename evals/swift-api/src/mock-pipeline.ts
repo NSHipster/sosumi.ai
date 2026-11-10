@@ -8,6 +8,7 @@
 
 import { execFile } from "node:child_process"
 import { mkdtemp, readFile, rm } from "node:fs/promises"
+import { createServer } from "node:net"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { parseArgs } from "node:util"
@@ -15,13 +16,13 @@ import { evalDir } from "./cases.ts"
 import { checkProviderLoops } from "./provider-loops.ts"
 import { regrade } from "./regrade.ts"
 import { type ErrorRow, type ResultRow, readJSONL, summarize } from "./results.ts"
-import { type LocalServer, startLocalServer } from "./sosumi.ts"
+import { freePort, type LocalServer, startLocalServer } from "./sosumi.ts"
 
 const { values } = parseArgs({
   options: {
     keep: { type: "boolean", default: false },
     "sosumi-url": { type: "string" },
-    "sosumi-port": { type: "string", default: "8791" },
+    "sosumi-port": { type: "string" },
   },
 })
 
@@ -61,7 +62,7 @@ try {
   let url = values["sosumi-url"]
   if (!url) {
     server = await startLocalServer(
-      Number(values["sosumi-port"]),
+      values["sosumi-port"] ? Number(values["sosumi-port"]) : await freePort(),
       join(runsDir, "sosumi-server.log"),
     )
     url = server.url
@@ -305,7 +306,103 @@ try {
     "a run of another flow counts the spend of the first and starts no attempt",
   )
 
-  // 5. Grading the same answers again gives the same verdicts, twice.
+  // 5. The local server: each run starts its own on a free port, a taken port fails loudly,
+  // and a server that dies mid-run is restarted without failing the model.
+  const ownServer = (dir: string, ...more: string[]) => [
+    "--provider",
+    "mock",
+    "--condition",
+    "sosumi",
+    "--runs-dir",
+    join(runsDir, dir),
+    ...more,
+  ]
+  const portLine = /Starting a local Sosumi server on port (\d+)/
+  const [firstRun, secondRun] = await Promise.all([
+    runEval(ownServer("ports-a", "--case", "control-sha256-hex")),
+    runEval(ownServer("ports-b", "--case", "control-sha256-hex")),
+  ])
+  const firstPort = portLine.exec(firstRun)?.[1]
+  const secondPort = portLine.exec(secondRun)?.[1]
+  check(
+    firstPort !== undefined && secondPort !== undefined && firstPort !== secondPort,
+    `two runs started together use their own servers (ports ${firstPort} and ${secondPort})`,
+  )
+
+  const held = createServer()
+  const heldPort = await new Promise<number>((done) =>
+    held.listen(0, "127.0.0.1", () => done((held.address() as { port: number }).port)),
+  )
+  let takenOutput = ""
+  try {
+    takenOutput = await runEval(
+      ownServer("ports-taken", "--case", "control-sha256-hex", "--sosumi-port", String(heldPort)),
+    )
+  } catch (error) {
+    takenOutput = String(error)
+  } finally {
+    held.close()
+  }
+  const takenRows = await readJSONL<ResultRow>(
+    join(runsDir, "ports-taken", "mock-reference", "sosumi", "baseline", "results.jsonl"),
+  )
+  check(
+    takenOutput.includes(`Port ${heldPort} is already in use`) &&
+      takenOutput.includes("failed") &&
+      takenRows.length === 0,
+    "a --sosumi-port that another process holds stops the run with an error",
+  )
+
+  const killed = await runEval(
+    ownServer(
+      "crash",
+      "--case",
+      "control-sha256-hex",
+      "--case",
+      "fm-image-attachment",
+      "--case",
+      "network-dtls",
+      "--concurrency",
+      "2",
+      "--mock-failure",
+      "kill-server",
+    ),
+  )
+  const crashDir = join(runsDir, "crash", "mock-reference-kill-server", "sosumi", "baseline")
+  const crashRows = await readJSONL<ResultRow>(join(crashDir, "results.jsonl"))
+  const crashErrors = await readJSONL<ErrorRow>(join(crashDir, "errors.jsonl"))
+  check(
+    killed.includes("The local Sosumi server exited; restarting it") &&
+      killed.includes("The Sosumi server was restarted 1 times") &&
+      crashRows.length === 3 &&
+      crashRows.every((row) => row.grade.passes === 1 && row.sosumi_calls === 1) &&
+      crashErrors.length === 0,
+    "a server killed mid-run is restarted, and every attempt still scores",
+  )
+
+  await runEval([
+    ...common,
+    "--case",
+    "control-sha256-hex",
+    "--condition",
+    "sosumi",
+    "--mock-failure",
+    "server-error-once",
+  ])
+  const retryDir = flow("reference", "sosumi", "server-error-once")
+  const retryRows = await readJSONL<ResultRow>(join(retryDir, "results.jsonl"))
+  const retryErrors = await readJSONL<ErrorRow>(join(retryDir, "errors.jsonl"))
+  const retrySummary = await summarize(retryDir)
+  check(
+    retryErrors.length === 1 &&
+      retryErrors[0].failure_class === "sosumi_server" &&
+      retryRows.length === 1 &&
+      retryRows[0].grade.passes === 1 &&
+      retrySummary.errors === 0,
+    "an attempt that fails because of the server is retried in the same run and scored",
+  )
+
+  // 6. Grading the same answers again gives the same verdicts, twice.
   const dirs = ["reference", "stale", "stub", "empty"].flatMap((answer) =>
     ["sosumi", "none"].map((condition) => flow(answer, condition)),
   )
