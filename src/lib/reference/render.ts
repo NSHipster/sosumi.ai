@@ -13,6 +13,7 @@ import {
   MAX_INLINE_DEPTH,
   mapAsideStyleToCallout,
 } from "../markdown"
+import { isLanguageVariant } from "../types"
 import { extractTitleFromIdentifier } from "../url"
 import type {
   AppleDocJSON,
@@ -80,6 +81,7 @@ export async function renderFromJSON(
     }
   }
 
+  markdown += renderLanguageNotice(jsonData, options.externalOrigin)
   markdown += renderDeprecationNotice(jsonData, jsonData.references, options.externalOrigin)
 
   // Add declaration
@@ -832,6 +834,39 @@ function getDeprecationMessageFromPlatforms(platforms?: Platform[]): string | nu
 const DEFAULT_DEPRECATION_MESSAGE = "This symbol is deprecated."
 
 /** Leading paragraph for callouts that flag deprecated APIs. */
+/**
+ * Render a note for a page that documents an Objective-C symbol,
+ * linking to the Swift version of the symbol when Apple's data names one.
+ * Without this note, the Objective-C declaration can read as the Swift API,
+ * although Swift may expose the symbol with a different name or type,
+ * such as a structure in place of a class.
+ */
+function renderLanguageNotice(jsonData: AppleDocJSON, externalOrigin?: string): string {
+  if (jsonData.identifier?.interfaceLanguage !== "occ") {
+    return ""
+  }
+
+  const swiftPath = jsonData.variants
+    ?.filter(isLanguageVariant)
+    .find((variant) => variant.traits.some((trait) => trait.interfaceLanguage === "swift"))
+    ?.paths[0]
+
+  if (swiftPath) {
+    // Link by path, because Swift can name the symbol differently.
+    const url = rewriteDocumentationPath(swiftPath, externalOrigin)
+    const link = `[${url}](${url})`
+    return formatCallout(
+      "NOTE",
+      `This page documents the Objective-C API. For the Swift API, see ${link}.`,
+    )
+  }
+
+  return formatCallout(
+    "NOTE",
+    "This page documents the Objective-C API. Apple's documentation doesn't link a Swift version of this symbol, which may have a different name or type in Swift.",
+  )
+}
+
 const DEPRECATED_LEAD = "**Deprecated**"
 
 /**
