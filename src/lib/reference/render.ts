@@ -13,12 +13,12 @@ import {
   MAX_INLINE_DEPTH,
   mapAsideStyleToCallout,
 } from "../markdown"
+import { isLanguageVariant } from "../types"
 import { extractTitleFromIdentifier } from "../url"
 import type {
   AppleDocJSON,
   ContentItem,
   Declaration,
-  IndexContentItem,
   Platform,
   PossibleValueItem,
   PropertyItem,
@@ -63,23 +63,26 @@ export async function renderFromJSON(
   // Add platform availability
   if (jsonData.metadata?.platforms && jsonData.metadata.platforms.length > 0) {
     const platforms = jsonData.metadata.platforms
-      .map((p) => `${p.name} ${p.introducedAt}+${p.beta ? " Beta" : ""}`)
+      .map((p) => `${p.name}${p.introducedAt ? ` ${p.introducedAt}+` : ""}${p.beta ? " Beta" : ""}`)
       .join(", ")
     markdown += `**Available on:** ${platforms}\n\n`
   }
 
   // Add abstract
   if (jsonData.abstract && Array.isArray(jsonData.abstract)) {
-    const abstractText = jsonData.abstract
-      .filter((item) => item.type === "text")
-      .map((item) => item.text)
-      .join("")
+    const abstractText = renderInlineContent(
+      jsonData.abstract,
+      jsonData.references,
+      0,
+      options.externalOrigin,
+    )
 
     if (abstractText.trim()) {
       markdown += `> ${abstractText}\n\n`
     }
   }
 
+  markdown += renderLanguageNotice(jsonData, options.externalOrigin)
   markdown += renderDeprecationNotice(jsonData, jsonData.references, options.externalOrigin)
 
   // Add declaration
@@ -152,14 +155,6 @@ export async function renderFromJSON(
     )
   }
 
-  // Add index content for framework pages
-  if (jsonData.interfaceLanguages?.swift) {
-    const swiftContent = jsonData.interfaceLanguages.swift[0]
-    if (swiftContent.children) {
-      markdown += renderIndexContent(swiftContent.children, options.externalOrigin)
-    }
-  }
-
   // Add see also sections
   if (jsonData.seeAlsoSections) {
     markdown += renderSeeAlso(
@@ -191,16 +186,10 @@ function generateFrontMatterFromJSON(jsonData: AppleDocJSON, sourceUrl: string):
   if (jsonData.metadata?.title) {
     const cleanTitle = jsonData.metadata.title.replace("| Apple Developer Documentation", "").trim()
     frontMatter.title = cleanTitle
-  } else if (jsonData.interfaceLanguages?.swift?.[0]?.title) {
-    frontMatter.title = jsonData.interfaceLanguages.swift[0].title
   }
 
   if (jsonData.abstract && Array.isArray(jsonData.abstract)) {
-    const description = jsonData.abstract
-      .filter((item) => item.type === "text")
-      .map((item) => item.text)
-      .join("")
-      .trim()
+    const description = renderPlainText(jsonData.abstract, jsonData.references).trim()
     if (description) {
       frontMatter.description = description
     }
@@ -550,6 +539,42 @@ function renderInlineContent(
 }
 
 /**
+ * Render inline content as plain text, for front matter.
+ * Code spans keep their code, and symbol references keep their title,
+ * without Markdown syntax.
+ */
+function renderPlainText(
+  inlineContent: ContentItem[],
+  references?: Record<string, ContentItem>,
+  depth: number = 0,
+): string {
+  if (depth > MAX_INLINE_DEPTH) {
+    return ""
+  }
+
+  return inlineContent
+    .map((item) => {
+      if (item.type === "codeVoice") {
+        return item.code ?? ""
+      }
+      if (item.type === "reference") {
+        const reference = item.identifier ? references?.[item.identifier] : undefined
+        return (
+          item.title ||
+          item.text ||
+          reference?.title ||
+          (item.identifier ? extractTitleFromIdentifier(item.identifier) : "")
+        )
+      }
+      if (item.inlineContent) {
+        return renderPlainText(item.inlineContent, references, depth + 1)
+      }
+      return item.text ?? ""
+    })
+    .join("")
+}
+
+/**
  * Resolve the display title for a reference, preferring its rich
  * `titleInlineContent` (which preserves code spans) over the flat `title`.
  * When there is no rich title, wrap symbol titles in backticks so older DocC
@@ -595,7 +620,10 @@ function resolveLink(
     resolveReferenceTitle(reference, references, 0, externalOrigin) ||
     extractTitleFromIdentifier(id)
   const url = convertIdentifierToURL(id, references, externalOrigin)
-  const abstract = (info?.abstract ?? reference?.abstract)?.map((a) => a.text).join("") ?? ""
+  const abstractContent = info?.abstract ?? reference?.abstract
+  const abstract = abstractContent
+    ? renderInlineContent(abstractContent, references, 0, externalOrigin)
+    : ""
   return { title, url, abstract, deprecated: reference?.deprecated === true }
 }
 
@@ -702,59 +730,6 @@ function renderTopicSections(
 }
 
 /**
- * Render index content for framework pages
- */
-function renderIndexContent(children: IndexContentItem[], externalOrigin?: string): string {
-  return renderIndexContentWithIndent(children, 2, externalOrigin)
-}
-
-/**
- * Render index content with proper indentation and spacing
- */
-function renderIndexContentWithIndent(
-  children: IndexContentItem[],
-  headingLevel: number,
-  externalOrigin?: string,
-): string {
-  let markdown = ""
-
-  for (let i = 0; i < children.length; i++) {
-    const child = children[i]
-
-    if (child.type === "groupMarker") {
-      // Add spacing before group markers (except the first one)
-      if (i > 0) {
-        markdown += "\n"
-      }
-
-      // Group markers are headings at the current level
-      const hashes = "#".repeat(Math.min(headingLevel, 6))
-      markdown += `${hashes} ${child.title}\n\n`
-    } else if (child.path && child.title) {
-      const beta = child.beta ? " **Beta**" : ""
-
-      // List items are always unindented under their heading
-      const rewrittenPath = rewriteDocumentationPath(child.path, externalOrigin)
-      markdown += `- [${child.title}](${rewrittenPath})${beta}\n`
-
-      if (child.children) {
-        // Add spacing before nested content
-        markdown += "\n"
-        // Nested content gets a deeper heading level
-        const nestedContent = renderIndexContentWithIndent(
-          child.children,
-          headingLevel + 1,
-          externalOrigin,
-        )
-        markdown += nestedContent
-      }
-    }
-  }
-
-  return markdown
-}
-
-/**
  * Render see also sections
  */
 function renderSeeAlso(
@@ -832,6 +807,39 @@ function getDeprecationMessageFromPlatforms(platforms?: Platform[]): string | nu
 const DEFAULT_DEPRECATION_MESSAGE = "This symbol is deprecated."
 
 /** Leading paragraph for callouts that flag deprecated APIs. */
+/**
+ * Render a note for a page that documents an Objective-C symbol,
+ * linking to the Swift version of the symbol when Apple's data names one.
+ * Without this note, the Objective-C declaration can read as the Swift API,
+ * although Swift may expose the symbol with a different name or type,
+ * such as a structure in place of a class.
+ */
+function renderLanguageNotice(jsonData: AppleDocJSON, externalOrigin?: string): string {
+  if (jsonData.identifier?.interfaceLanguage !== "occ") {
+    return ""
+  }
+
+  const swiftPath = jsonData.variants
+    ?.filter(isLanguageVariant)
+    .find((variant) => variant.traits.some((trait) => trait.interfaceLanguage === "swift"))
+    ?.paths[0]
+
+  if (swiftPath) {
+    // Link by path, because Swift can name the symbol differently.
+    const url = rewriteDocumentationPath(swiftPath, externalOrigin)
+    const link = `[${url}](${url})`
+    return formatCallout(
+      "NOTE",
+      `This page documents the Objective-C API. For the Swift API, see ${link}.`,
+    )
+  }
+
+  return formatCallout(
+    "NOTE",
+    "This page documents the Objective-C API. Apple's documentation doesn't link a Swift version of this symbol, which may have a different name or type in Swift.",
+  )
+}
+
 const DEPRECATED_LEAD = "**Deprecated**"
 
 /**

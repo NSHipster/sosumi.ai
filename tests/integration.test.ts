@@ -1,12 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { fetchExternalDocCJSON } from "../src/lib/external"
+import { NotFoundError } from "../src/lib/fetch"
 import {
   fetchHIGPageData,
   fetchHIGTableOfContents,
   renderHIGFromJSON,
   renderHIGTableOfContents,
 } from "../src/lib/hig"
-import { fetchJSONData, renderFromJSON } from "../src/lib/reference"
+import { fetchDocumentationPage, fetchJSONData, renderFromJSON } from "../src/lib/reference"
 import higGettingStartedData from "./fixtures/hig/getting-started.json"
 import higTocData from "./fixtures/hig/toc.json"
 import arrayData from "./fixtures/reference/array.json"
@@ -61,7 +62,113 @@ describe("Integration Tests with Mocked Apple API", () => {
     global.fetch = vi.fn().mockResolvedValue(new Response("Not Found", { status: 404 }))
 
     await expect(fetchJSONData("/documentation/swift/nonexistent")).rejects.toThrow()
-    expect(global.fetch).toHaveBeenCalledTimes(1)
+    // The second request looks for the symbol in the parent page
+    expect(global.fetch).toHaveBeenCalledTimes(2)
+  })
+
+  describe("symbol paths without a signature or disambiguation suffix", () => {
+    const parentData = {
+      metadata: { title: "Observation" },
+      references: {
+        "doc://com.apple.documentation/documentation/Observation/withObservationTracking(_:onChange:)":
+          {
+            title: "withObservationTracking(_:onChange:)",
+            url: "/documentation/observation/withobservationtracking(_:onchange:)",
+          },
+        "doc://com.apple.documentation/documentation/Observation/withObservationTracking(options:_:onChange:)":
+          {
+            title: "withObservationTracking(options:_:onChange:)",
+            url: "/documentation/observation/withobservationtracking(options:_:onchange:)",
+          },
+        "doc://com.apple.documentation/documentation/Observation/ObservationTracking": {
+          title: "ObservationTracking",
+          url: "/documentation/observation/observationtracking",
+        },
+        "doc://com.apple.documentation/documentation/Observation/Observable-macro": {
+          title: "Observable()",
+          url: "/documentation/observation/observable-8ab1c",
+        },
+        "doc://com.apple.documentation/documentation/Observation/Observable/Child": {
+          title: "Child",
+          url: "/documentation/observation/observable/child-1a2b3",
+        },
+      },
+    }
+
+    function mockApple(pages: Record<string, unknown>) {
+      global.fetch = vi.fn().mockImplementation((url: string) => {
+        const page = pages[url]
+        return Promise.resolve(
+          page
+            ? new Response(JSON.stringify(page), { status: 200 })
+            : new Response("Not Found", { status: 404 }),
+        )
+      })
+    }
+
+    const base = "https://developer.apple.com/tutorials/data/documentation"
+
+    it("should fetch the only page whose path adds a suffix to the name", async () => {
+      const symbolData = { metadata: { title: "Observable()" } }
+      mockApple({
+        [`${base}/observation.json`]: parentData,
+        [`${base}/observation/observable-8ab1c.json`]: symbolData,
+      })
+
+      const page = await fetchDocumentationPage("/documentation/observation/observable")
+
+      expect(page.path).toBe("observation/observable-8ab1c")
+      expect(page.data).toEqual(symbolData)
+      expect(global.fetch).toHaveBeenNthCalledWith(
+        2,
+        `${base}/observation.json`,
+        expect.any(Object),
+      )
+    })
+
+    it("should list the candidates when more than one page matches", async () => {
+      mockApple({ [`${base}/observation.json`]: parentData })
+
+      const error = await fetchDocumentationPage("observation/withobservationtracking").catch(
+        (e) => e,
+      )
+
+      expect(error).toBeInstanceOf(NotFoundError)
+      expect(error.candidates).toEqual([
+        {
+          path: "observation/withobservationtracking(_:onchange:)",
+          title: "withObservationTracking(_:onChange:)",
+        },
+        {
+          path: "observation/withobservationtracking(options:_:onchange:)",
+          title: "withObservationTracking(options:_:onChange:)",
+        },
+      ])
+      expect(error.message).toContain(
+        "- withObservationTracking(_:onChange:): /documentation/observation/withobservationtracking(_:onchange:)",
+      )
+    })
+
+    it("should not match a different name with the same prefix", async () => {
+      mockApple({ [`${base}/observation.json`]: parentData })
+
+      const error = await fetchDocumentationPage("observation/observation").catch((e) => e)
+
+      expect(error).toBeInstanceOf(NotFoundError)
+      expect(error.candidates).toEqual([])
+      expect(error.message).toBe(
+        `Apple documentation page not found at ${base}/observation/observation.json`,
+      )
+    })
+
+    it("should not resolve a path that already has a signature", async () => {
+      mockApple({ [`${base}/observation.json`]: parentData })
+
+      await expect(
+        fetchDocumentationPage("observation/withobservationtracking(_:)"),
+      ).rejects.toBeInstanceOf(NotFoundError)
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+    })
   })
 
   it("should handle network errors when fetching from Apple", async () => {
@@ -72,28 +179,42 @@ describe("Integration Tests with Mocked Apple API", () => {
     expect(global.fetch).toHaveBeenCalledTimes(1)
   })
 
-  it("should handle framework index requests", async () => {
+  it("should fetch framework pages from the page JSON, not the navigator index", async () => {
     const mockFrameworkData = {
-      metadata: { title: "Swift" },
-      references: {},
+      metadata: { title: "Observation", roleHeading: "Framework" },
+      references: {
+        "doc://com.apple.documentation/documentation/Observation/Observable": {
+          title: "Observable",
+          url: "/documentation/observation/observable",
+          abstract: [{ type: "text", text: "A type that emits notifications." }],
+        },
+      },
       primaryContentSections: [],
+      topicSections: [
+        {
+          title: "Observable conformance",
+          identifiers: ["doc://com.apple.documentation/documentation/Observation/Observable"],
+        },
+      ],
     }
 
     global.fetch = vi
       .fn()
       .mockResolvedValue(new Response(JSON.stringify(mockFrameworkData), { status: 200 }))
 
-    const jsonData = await fetchJSONData("/documentation/swift")
+    const jsonData = await fetchJSONData("/documentation/observation")
     const markdown = await renderFromJSON(
       jsonData,
-      "https://developer.apple.com/documentation/swift",
+      "https://developer.apple.com/documentation/observation",
     )
 
-    expect(markdown).toContain("# Swift")
+    expect(markdown).toContain("# Observation")
+    expect(markdown).toContain("## Observable conformance")
+    expect(markdown).toContain("[Observable](/documentation/observation/observable)")
 
-    // Should call the framework index endpoint
+    expect(global.fetch).toHaveBeenCalledTimes(1)
     expect(global.fetch).toHaveBeenCalledWith(
-      "https://developer.apple.com/tutorials/data/index/swift",
+      "https://developer.apple.com/tutorials/data/documentation/observation.json",
       expect.any(Object),
     )
   })

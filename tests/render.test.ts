@@ -27,18 +27,6 @@ describe("Render Function", () => {
       )
     })
 
-    it("should use interfaceLanguages title as fallback", async () => {
-      const data = {
-        interfaceLanguages: {
-          swift: [{ title: "Interface Title" }],
-        },
-      }
-
-      const result = await renderFromJSON(data as any, "https://test.com")
-
-      expect(result).toContain("title: Interface Title")
-    })
-
     it("should include description from abstract", async () => {
       const data = {
         metadata: { title: "Test Title" },
@@ -71,6 +59,80 @@ describe("Render Function", () => {
       )
 
       expect(result).toContain("deprecated: true")
+    })
+  })
+
+  describe("Abstract rendering", () => {
+    const references = {
+      "doc://com.apple.SwiftData/documentation/SwiftData/ResultsSection": {
+        title: "ResultsSection",
+        url: "/documentation/swiftdata/resultssection",
+        kind: "symbol",
+      },
+      "doc://com.apple.SwiftData/documentation/SwiftData/SectionedResults/sections": {
+        title: "sections",
+        url: "/documentation/swiftdata/sectionedresults/sections",
+        kind: "symbol",
+        abstract: [
+          { type: "text", text: "The " },
+          { type: "codeVoice", code: "ResultsSection" },
+          { type: "text", text: " values." },
+        ],
+      },
+    }
+    const abstract = [
+      { type: "text", text: "A " },
+      { type: "codeVoice", code: "RandomAccessCollection" },
+      { type: "text", text: " of " },
+      {
+        type: "reference",
+        identifier: "doc://com.apple.SwiftData/documentation/SwiftData/ResultsSection",
+      },
+      { type: "text", text: " instances." },
+    ]
+
+    it("should keep code spans and references in the abstract", async () => {
+      const result = await renderFromJSON(
+        { metadata: { title: "SectionedResults" }, abstract, references } as any,
+        "https://developer.apple.com/documentation/swiftdata/sectionedresults",
+      )
+
+      expect(result).toContain(
+        "> A `RandomAccessCollection` of [ResultsSection](/documentation/swiftdata/resultssection) instances.",
+      )
+    })
+
+    it("should keep code and reference titles as plain text in the description", async () => {
+      const result = await renderFromJSON(
+        { metadata: { title: "SectionedResults" }, abstract, references } as any,
+        "https://developer.apple.com/documentation/swiftdata/sectionedresults",
+      )
+
+      expect(result).toContain(
+        "description: A RandomAccessCollection of ResultsSection instances.\n",
+      )
+    })
+
+    it("should keep code spans in topic abstracts", async () => {
+      const result = await renderFromJSON(
+        {
+          metadata: { title: "SectionedResults" },
+          references,
+          topicSections: [
+            {
+              title: "Instance Properties",
+              identifiers: [
+                "doc://com.apple.SwiftData/documentation/SwiftData/SectionedResults/sections",
+              ],
+            },
+          ],
+        } as any,
+        "https://developer.apple.com/documentation/swiftdata/sectionedresults",
+      )
+
+      expect(result).toContain(
+        "- [sections](/documentation/swiftdata/sectionedresults/sections) The `ResultsSection` values.",
+      )
     })
   })
 
@@ -130,6 +192,27 @@ describe("Render Function", () => {
     })
   })
 
+  describe("Platform availability", () => {
+    it("should show a platform without a version by its name only", async () => {
+      const result = await renderFromJSON(
+        {
+          metadata: {
+            title: "autocorrectionType",
+            platforms: [
+              { name: "iOS", introducedAt: "2.0" },
+              { name: "visionOS", beta: true },
+              { name: "tvOS" },
+            ],
+          },
+        } as any,
+        "https://developer.apple.com/documentation/uikit/uitextinputtraits/autocorrectiontype",
+      )
+
+      expect(result).toContain("**Available on:** iOS 2.0+, visionOS Beta, tvOS\n")
+      expect(result).not.toContain("undefined")
+    })
+  })
+
   describe("Breadcrumb Navigation", () => {
     it("should generate breadcrumbs for documentation URLs", async () => {
       const testCases = [
@@ -174,6 +257,69 @@ describe("Render Function", () => {
         "https://developer.apple.com/documentation/swiftui/view",
       )
       expect(result).toContain("[Swiftui](/documentation/swiftui)") // First letter capitalized
+    })
+  })
+
+  describe("Objective-C pages", () => {
+    const swiftVariant = {
+      paths: ["/documentation/foundation/datecomponents"],
+      traits: [{ interfaceLanguage: "swift" }],
+    }
+    const objcVariant = {
+      paths: ["/documentation/foundation/nsdatecomponents"],
+      traits: [{ interfaceLanguage: "occ" }],
+    }
+
+    it("should link the Swift version of an Objective-C page", async () => {
+      const result = await renderFromJSON(
+        {
+          metadata: { title: "NSDateComponents" },
+          identifier: {
+            url: "doc://com.apple.foundation/documentation/Foundation/NSDateComponents",
+            interfaceLanguage: "occ",
+          },
+          variants: [swiftVariant, objcVariant],
+        } as any,
+        "https://developer.apple.com/documentation/foundation/nsdatecomponents",
+      )
+
+      expect(result).toContain(
+        "> [!NOTE]\n> This page documents the Objective-C API. For the Swift API, see [/documentation/foundation/datecomponents](/documentation/foundation/datecomponents).",
+      )
+    })
+
+    it("should say when an Objective-C page has no Swift version", async () => {
+      const result = await renderFromJSON(
+        {
+          metadata: { title: "era" },
+          identifier: {
+            url: "doc://com.apple.foundation/documentation/Foundation/NSDateComponents/era",
+            interfaceLanguage: "occ",
+          },
+          variants: [objcVariant],
+        } as any,
+        "https://developer.apple.com/documentation/foundation/nsdatecomponents/era",
+      )
+
+      expect(result).toContain(
+        "> This page documents the Objective-C API. Apple's documentation doesn't link a Swift version of this symbol",
+      )
+    })
+
+    it("should not add a note to a Swift page", async () => {
+      const result = await renderFromJSON(
+        {
+          metadata: { title: "DateComponents" },
+          identifier: {
+            url: "doc://com.apple.foundation/documentation/Foundation/DateComponents",
+            interfaceLanguage: "swift",
+          },
+          variants: [swiftVariant, objcVariant],
+        } as any,
+        "https://developer.apple.com/documentation/foundation/datecomponents",
+      )
+
+      expect(result).not.toContain("Objective-C")
     })
   })
 
