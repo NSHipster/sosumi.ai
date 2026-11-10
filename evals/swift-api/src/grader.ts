@@ -203,7 +203,11 @@ export async function gradeAnswer(meta: CaseMeta, check: string, answer: string)
     const typeCheck = await runTypeCheck(meta, dir)
     const code = codeOnly(answer)
     const violations = bannedConstructs.filter((c) => c.pattern.test(code)).map((c) => c.name)
-    const missingSymbols = meta.required_symbols.filter((symbol) => !code.includes(symbol))
+    // Whitespace does not matter, so that `addObserver(\n  of:` matches `addObserver(of`.
+    const compact = code.replace(/\s+/g, "")
+    const missingSymbols = meta.required_symbols.filter(
+      (symbol) => !compact.includes(symbol.replace(/\s+/g, "")),
+    )
     const answerDeprecations = typeCheck.deprecations.filter((line) =>
       line.startsWith("answer.swift:"),
     )

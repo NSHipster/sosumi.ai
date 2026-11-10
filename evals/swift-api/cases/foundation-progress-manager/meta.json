@@ -10,8 +10,7 @@
   "target": "arm64-apple-macos27.0",
   "sdk": "macosx27.0",
   "required_symbols": [
-    "start(totalCount",
-    "complete(count"
+    "start(totalCount"
   ],
   "docs": [
     "https://sosumi.ai/documentation/foundation/subprogress",

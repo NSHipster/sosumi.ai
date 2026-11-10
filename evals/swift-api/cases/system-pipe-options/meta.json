@@ -10,8 +10,7 @@
   "target": "arm64-apple-macos27.0",
   "sdk": "macosx27.0",
   "required_symbols": [
-    "pipe(options",
-    "closeOnExec"
+    "pipe(options"
   ],
   "docs": [
     "https://sosumi.ai/documentation/system/filedescriptor/pipe(options:)",

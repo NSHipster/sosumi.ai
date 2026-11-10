@@ -21,34 +21,34 @@ These 8 cases have `"round": 2` in `meta.json`.
 
 | ID | Framework | Source | Target | Required symbols |
 | --- | --- | --- | --- | --- |
-| [appkit-window-key-message](#appkit-window-key-message) | AppKit | sdk-diff | `arm64-apple-macos27.0` | `addObserver(of`, `didBecomeKey` |
+| [appkit-window-key-message](#appkit-window-key-message) | AppKit | sdk-diff | `arm64-apple-macos27.0` | `addObserver(of` |
 | [avfoundation-resumable-export](#avfoundation-resumable-export) | AVFoundation | sdk-diff | `arm64-apple-macos27.0` | `configureForResumableExport` |
-| [control-directory-listing](#control-directory-listing) | Foundation | control | `arm64-apple-macos27.0` | `contentsOfDirectory`, `skipsHiddenFiles` |
-| [control-iso8601-fractional-seconds](#control-iso8601-fractional-seconds) | Foundation | control | `arm64-apple-macos27.0` | `ISO8601` |
+| [control-directory-listing](#control-directory-listing) | Foundation | control | `arm64-apple-macos27.0` |  |
+| [control-iso8601-fractional-seconds](#control-iso8601-fractional-seconds) | Foundation | control | `arm64-apple-macos27.0` |  |
 | [control-logger-privacy](#control-logger-privacy) | os | control | `arm64-apple-macos27.0` | `privacy` |
 | [control-sha256-hex](#control-sha256-hex) | CryptoKit | control | `arm64-apple-macos27.0` | `SHA256` |
 | [control-urlsession-status](#control-urlsession-status) | Foundation | control | `arm64-apple-macos27.0` | `URLSession`, `HTTPURLResponse` |
-| [coredata-remote-change-message](#coredata-remote-change-message) | CoreData | sdk-diff | `arm64-apple-macos27.0` | `messages(of`, `remoteChange` |
+| [coredata-remote-change-message](#coredata-remote-change-message) | CoreData | sdk-diff | `arm64-apple-macos27.0` |  |
 | [cryptokit-one-time-kem](#cryptokit-one-time-kem) | CryptoKit | sdk-diff | `arm64-apple-macos26.0` | `OneTimePrivateKey`, `decapsulate` |
 | [fm-context-size-exceeded](#fm-context-size-exceeded) | FoundationModels | sdk-diff | `arm64-apple-macos27.0` | `contextSizeExceeded`, `LanguageModelError` |
 | [fm-custom-language-model](#fm-custom-language-model) | FoundationModels | failure | `arm64-apple-macos27.0` | `LanguageModelExecutor`, `LanguageModelCapabilities`, `.send(` |
-| [fm-image-attachment](#fm-image-attachment) | FoundationModels | failure | `arm64-apple-macos27.0` | `capabilities`, `vision`, `AttachmentSegment`, `ImageAttachment` |
+| [fm-image-attachment](#fm-image-attachment) | FoundationModels | failure | `arm64-apple-macos27.0` | `capabilities`, `vision` |
 | [fm-session-property-sendable](#fm-session-property-sendable) | FoundationModels | failure | `arm64-apple-macos27.0` | `SessionProperty` |
 | [fm-token-budget](#fm-token-budget) | FoundationModels | failure | `arm64-apple-macos26.0` | `contextSize`, `tokenCount` |
 | [foundation-predicate-all](#foundation-predicate-all) | Foundation | sdk-diff | `arm64-apple-macos27.0` | `Predicate` |
-| [foundation-progress-manager](#foundation-progress-manager) | Foundation | sdk-diff | `arm64-apple-macos27.0` | `start(totalCount`, `complete(count` |
-| [healthkit-earliest-authorized-date](#healthkit-earliest-authorized-date) | HealthKit | sdk-diff | `arm64-apple-macos26.0` | `earliestAuthorizedSampleDate`, `earliestPermittedSampleDate` |
+| [foundation-progress-manager](#foundation-progress-manager) | Foundation | sdk-diff | `arm64-apple-macos27.0` | `start(totalCount` |
+| [healthkit-earliest-authorized-date](#healthkit-earliest-authorized-date) | HealthKit | sdk-diff | `arm64-apple-macos26.0` | `AuthorizedSampleDate`, `earliestPermittedSampleDate` |
 | [imageplayground-creation-strategy](#imageplayground-creation-strategy) | ImagePlayground | sdk-diff | `arm64-apple-macos26.4` | `creationStrategy`, `editExisting` |
 | [ios-appintents-execution-targets](#ios-appintents-execution-targets) | AppIntents | sdk-diff | `arm64-apple-ios27.0` | `allowedExecutionTargets`, `refresh` |
 | [ios-nowplaying-media-commands](#ios-nowplaying-media-commands) | NowPlaying | sdk-diff | `arm64-apple-ios27.0` | `skipForward`, `skipBackward`, `preferredIntervals` |
-| [ios-photosui-picker-search](#ios-photosui-picker-search) | PhotosUI | sdk-diff | `arm64-apple-ios27.0` | `searchText`, `PHPickerSearchText` |
+| [ios-photosui-picker-search](#ios-photosui-picker-search) | PhotosUI | sdk-diff | `arm64-apple-ios27.0` | `searchText` |
 | [ios-uikit-bar-minimization](#ios-uikit-bar-minimization) | UIKit | sdk-diff | `arm64-apple-ios27.0` | `navigationBarMinimization`, `onScrollDown`, `atScrollEdge` |
 | [ios-uikit-grammar-checking](#ios-uikit-grammar-checking) | UIKit | sdk-diff | `arm64-apple-ios27.0` | `grammarCheckingType`, `spellCheckingType`, `autocorrectionType`, `smartQuotesType` |
 | [ios-uikit-reduced-resource-usage](#ios-uikit-reduced-resource-usage) | UIKit | sdk-diff | `arm64-apple-ios26.0` | `systemPrefersReducedResourceUsage`, `isLowPowerModeEnabled` |
-| [ios-uikit-scene-closure-confirmation](#ios-uikit-scene-closure-confirmation) | UIKit | sdk-diff | `arm64-apple-ios27.0` | `closureConfirmation`, `UISceneClosureConfirmation` |
+| [ios-uikit-scene-closure-confirmation](#ios-uikit-scene-closure-confirmation) | UIKit | sdk-diff | `arm64-apple-ios27.0` | `closureConfirmation` |
 | [ios-uikit-sheet-placement](#ios-uikit-sheet-placement) | UIKit | sdk-diff | `arm64-apple-ios26.0` | `preferredPlacement`, `trailing` |
 | [metrickit-diagnostic-reports](#metrickit-diagnostic-reports) | MetricKit | sdk-diff | `arm64-apple-macos27.0` | `diagnosticReports`, `crash` |
-| [network-dtls](#network-dtls) | Network | sdk-diff | `arm64-apple-macos27.0` | `NetworkConnection`, `DTLS`, `UDP`, `DTLSv12` |
+| [network-dtls](#network-dtls) | Network | sdk-diff | `arm64-apple-macos27.0` | `NetworkConnection`, `DTLS`, `DTLSv12` |
 | [observation-continuous](#observation-continuous) | Observation | sdk-diff | `arm64-apple-macos27.0` | `withContinuousObservation` |
 | [speech-input-converter](#speech-input-converter) | Speech | sdk-diff | `arm64-apple-macos26.0` | `AnalyzerInputConverter`, `bestAvailableAudioFormat` |
 | [storekit-store-type](#storekit-store-type) | StoreKit | sdk-diff | `arm64-apple-macos27.0` | `AppTransaction`, `storeType`, `education` |
@@ -56,9 +56,9 @@ These 8 cases have `"round": 2` in `meta.json`.
 | [swift-cancellation-shield](#swift-cancellation-shield) | Swift | sdk-diff | `arm64-apple-macos27.0` | `withTaskCancellationShield`, `hasActiveCancellationShield` |
 | [swift-span-byte-order](#swift-span-byte-order) | Swift | sdk-diff | `arm64-apple-macos26.0` | `bigEndian`, `load` |
 | [swift-unique-array](#swift-unique-array) | Swift | sdk-diff | `arm64-apple-macos27.0` | `UniqueArray`, `append` |
-| [swiftdata-sectioned-results](#swiftdata-sectioned-results) | SwiftData | sdk-diff | `arm64-apple-macos27.0` | `sectionBy`, `sectionTitles` |
-| [swiftui-tabs-picker](#swiftui-tabs-picker) | SwiftUI | sdk-diff | `arm64-apple-macos26.0` | `.tabs`, `pickerStyle` |
-| [system-pipe-options](#system-pipe-options) | System | sdk-diff | `arm64-apple-macos27.0` | `pipe(options`, `closeOnExec` |
+| [swiftdata-sectioned-results](#swiftdata-sectioned-results) | SwiftData | sdk-diff | `arm64-apple-macos27.0` | `sectionBy` |
+| [swiftui-tabs-picker](#swiftui-tabs-picker) | SwiftUI | sdk-diff | `arm64-apple-macos26.0` | `pickerStyle` |
+| [system-pipe-options](#system-pipe-options) | System | sdk-diff | `arm64-apple-macos27.0` | `pipe(options` |
 | [uttype-markdown](#uttype-markdown) | UniformTypeIdentifiers | sdk-diff | `arm64-apple-macos26.0` | `markdown` |
 | [virtualization-secure-boot](#virtualization-secure-boot) | Virtualization | sdk-diff | `arm64-apple-macos27.0` | `isSecureBootEnabled` |
 | [widgetkit-extra-large-portrait](#widgetkit-extra-large-portrait) | WidgetKit | sdk-diff | `arm64-apple-macos26.0` | `systemExtraLargePortrait` |

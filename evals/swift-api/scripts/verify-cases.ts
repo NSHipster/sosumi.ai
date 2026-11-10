@@ -35,7 +35,8 @@ function validateMeta(id: string, meta: CaseMeta, task: string): string[] {
   if (!sources.includes(meta.source)) problems.push(`unknown source ${meta.source}`)
   if (meta.tags?.[0] !== meta.framework) problems.push("first tag is not the framework")
   if (!/^arm64-apple-(macos|ios|tvos)\d+\.\d+$/.test(meta.target ?? "")) problems.push("bad target")
-  if (!(meta.required_symbols?.length > 0)) problems.push("no required_symbols")
+  // An empty list is allowed: some tasks have correct answers that share no API symbol.
+  if (!Array.isArray(meta.required_symbols)) problems.push("no required_symbols list")
   if (!(meta.docs?.length > 0)) problems.push("no docs")
   if (meta.docs?.some((url) => !url.startsWith("https://sosumi.ai/"))) {
     problems.push("docs must be Sosumi URLs")

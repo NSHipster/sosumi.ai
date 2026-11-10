@@ -10,8 +10,7 @@
   "target": "arm64-apple-macos27.0",
   "sdk": "macosx27.0",
   "required_symbols": [
-    "sectionBy",
-    "sectionTitles"
+    "sectionBy"
   ],
   "docs": [
     "https://sosumi.ai/documentation/swiftdata/resultsobserver",

@@ -10,8 +10,7 @@
   "target": "arm64-apple-macos27.0",
   "sdk": "macosx27.0",
   "required_symbols": [
-    "addObserver(of",
-    "didBecomeKey"
+    "addObserver(of"
   ],
   "docs": [
     "https://sosumi.ai/documentation/appkit/nswindow/didbecomekeymessage",

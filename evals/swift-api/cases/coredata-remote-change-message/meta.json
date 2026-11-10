@@ -9,10 +9,7 @@
   ],
   "target": "arm64-apple-macos27.0",
   "sdk": "macosx27.0",
-  "required_symbols": [
-    "messages(of",
-    "remoteChange"
-  ],
+  "required_symbols": [],
   "docs": [
     "https://sosumi.ai/documentation/coredata/nspersistentstorecoordinator/remotechangemessage",
     "https://sosumi.ai/documentation/foundation/notificationcenter/messages(of:for:buffersize:)-4tof0"

@@ -10,7 +10,7 @@
   "target": "arm64-apple-macos26.0",
   "sdk": "macosx27.0",
   "required_symbols": [
-    "earliestAuthorizedSampleDate",
+    "AuthorizedSampleDate",
     "earliestPermittedSampleDate"
   ],
   "docs": [

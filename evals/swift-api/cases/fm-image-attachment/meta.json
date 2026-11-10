@@ -12,9 +12,7 @@
   "sdk": "macosx27.0",
   "required_symbols": [
     "capabilities",
-    "vision",
-    "AttachmentSegment",
-    "ImageAttachment"
+    "vision"
   ],
   "docs": [
     "https://sosumi.ai/documentation/foundationmodels/transcript/segment/attachment(_:)",

@@ -8,10 +8,7 @@
   ],
   "target": "arm64-apple-macos27.0",
   "sdk": "macosx27.0",
-  "required_symbols": [
-    "contentsOfDirectory",
-    "skipsHiddenFiles"
-  ],
+  "required_symbols": [],
   "docs": [
     "https://sosumi.ai/documentation/foundation/filemanager/contentsofdirectory(at:includingpropertiesforkeys:options:)",
     "https://sosumi.ai/documentation/foundation/filemanager/directoryenumerationoptions/skipshiddenfiles"

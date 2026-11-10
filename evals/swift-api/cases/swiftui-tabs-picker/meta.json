@@ -10,7 +10,6 @@
   "target": "arm64-apple-macos26.0",
   "sdk": "macosx27.0",
   "required_symbols": [
-    ".tabs",
     "pickerStyle"
   ],
   "docs": [

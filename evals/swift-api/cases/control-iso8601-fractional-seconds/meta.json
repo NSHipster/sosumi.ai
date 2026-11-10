@@ -9,9 +9,7 @@
   ],
   "target": "arm64-apple-macos27.0",
   "sdk": "macosx27.0",
-  "required_symbols": [
-    "ISO8601"
-  ],
+  "required_symbols": [],
   "docs": [
     "https://sosumi.ai/documentation/foundation/iso8601dateformatter",
     "https://sosumi.ai/documentation/foundation/iso8601dateformatter/options/withfractionalseconds"

@@ -12,7 +12,6 @@
   "required_symbols": [
     "NetworkConnection",
     "DTLS",
-    "UDP",
     "DTLSv12"
   ],
   "docs": [

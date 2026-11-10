@@ -10,8 +10,7 @@
   "target": "arm64-apple-ios27.0",
   "sdk": "iphoneos",
   "required_symbols": [
-    "closureConfirmation",
-    "UISceneClosureConfirmation"
+    "closureConfirmation"
   ],
   "docs": [
     "https://sosumi.ai/documentation/uikit/uiwindowscene/closureconfirmation",
