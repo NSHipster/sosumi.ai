@@ -46,6 +46,11 @@ export interface ResultRow {
     /** True when a web search, fetched page, or citation came from Sosumi or its repository. */
     web_leak?: boolean
     web_leak_urls?: string[]
+    /** In the sosumi condition: the length of the server instructions in the system prompt (0 if none). */
+    server_instructions_chars?: number
+    /** The checkout that the local Sosumi server started from, and its HEAD commit. */
+    sosumi_root?: string
+    sosumi_commit?: string
     /** Why the final turn was given: tool_limit or end_turn. */
     final_turn_reason?: string
     failure_class?: string

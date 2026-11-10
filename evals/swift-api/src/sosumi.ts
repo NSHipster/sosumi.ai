@@ -6,12 +6,12 @@
 // server exited or stopped answering, it restarts the server, reconnects, and
 // tries the call again, so that a server crash does not count against a model.
 
-import { type ChildProcess, spawn } from "node:child_process"
+import { type ChildProcess, execFile, spawn } from "node:child_process"
 import { createWriteStream } from "node:fs"
-import { mkdtemp, rm } from "node:fs/promises"
+import { access, mkdtemp, readFile, rm } from "node:fs/promises"
 import { createServer } from "node:net"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { join, resolve as resolvePath } from "node:path"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 import { repoRoot } from "./cases.ts"
@@ -91,7 +91,11 @@ export interface LocalServer {
  * and the port answers, so that a server started by another run cannot stand in for it.
  * The server's output goes to `logPath`.
  */
-export async function startLocalServer(port: number, logPath: string): Promise<LocalServer> {
+export async function startLocalServer(
+  port: number,
+  logPath: string,
+  root: string = repoRoot,
+): Promise<LocalServer> {
   await assertPortFree(port)
   // Wrangler also opens an inspector port, which it picks from 9229 upward. Two servers that
   // start together can pick the same one, so each server gets its own free inspector port.
@@ -100,11 +104,13 @@ export async function startLocalServer(port: number, logPath: string): Promise<L
   // two servers that start together lock the same SQLite database. Each gets its own directory.
   const stateDir = await mkdtemp(join(tmpdir(), "sosumi-wrangler-state-"))
   const log = createWriteStream(logPath, { flags: "a" })
-  log.write(`\n--- Starting sosumi serve on port ${port} at ${new Date().toISOString()} ---\n`)
+  log.write(
+    `\n--- Starting sosumi serve from ${root} on port ${port} at ${new Date().toISOString()} ---\n`,
+  )
   const child: ChildProcess = spawn(
     process.execPath,
     [
-      join(repoRoot, "bin", "sosumi.mjs"),
+      join(root, "bin", "sosumi.mjs"),
       "serve",
       "--port",
       String(port),
@@ -115,7 +121,7 @@ export async function startLocalServer(port: number, logPath: string): Promise<L
       "--persist-to",
       stateDir,
     ],
-    { cwd: repoRoot, detached: true, stdio: ["ignore", "pipe", "pipe"] },
+    { cwd: root, detached: true, stdio: ["ignore", "pipe", "pipe"] },
   )
   const url = `http://127.0.0.1:${port}`
   let output = ""
@@ -197,11 +203,14 @@ async function answers(url: string): Promise<boolean> {
 /** An MCP client for a Sosumi server. */
 export class SosumiClient {
   readonly tools: ToolSpec[]
+  /** The server's instructions from the MCP initialize result, if it sends any. */
+  readonly instructions: string | undefined
   private readonly client: Client
 
   private constructor(client: Client, tools: ToolSpec[]) {
     this.client = client
     this.tools = tools
+    this.instructions = client.getInstructions()
   }
 
   static async connect(baseURL: string): Promise<SosumiClient> {
@@ -242,6 +251,8 @@ export interface SosumiServiceOptions {
   url?: string
   /** A fixed port for the local server; by default each start uses a free port. */
   port?: number
+  /** The checkout of this repository that the local server starts from. */
+  root?: string
   logPath: string
   log: (message: string) => void
 }
@@ -249,6 +260,8 @@ export interface SosumiServiceOptions {
 /** Sosumi's tools from a server that stays up for the whole run. */
 export class SosumiService {
   tools: ToolSpec[] = []
+  /** The server's MCP instructions, as a host such as Claude Code receives them. */
+  instructions: string | undefined
   restarts = 0
   private client: SosumiClient | null = null
   private server: LocalServer | null = null
@@ -263,6 +276,7 @@ export class SosumiService {
     const service = new SosumiService(options)
     await service.connect()
     service.tools = service.client?.tools ?? []
+    service.instructions = service.client?.instructions
     return service
   }
 
@@ -284,7 +298,7 @@ export class SosumiService {
         `Starting a local Sosumi server on port ${port} (log: ${this.options.logPath})`,
       )
       try {
-        server = await startLocalServer(port, this.options.logPath)
+        server = await startLocalServer(port, this.options.logPath, this.options.root)
         break
       } catch (error) {
         if (!(error instanceof ServerStartError) || attempt >= 3) throw error
@@ -372,5 +386,53 @@ export class SosumiService {
   async close(): Promise<void> {
     await this.client?.close()
     await this.server?.stop()
+  }
+}
+
+export interface SosumiCheckout {
+  root: string
+  commit: string
+}
+
+/**
+ * Checks that `path` is a checkout of this repository with its dependencies installed,
+ * so that `sosumi serve` can start from it, and returns its absolute path and HEAD commit.
+ */
+export async function inspectCheckout(path: string): Promise<SosumiCheckout> {
+  const root = resolvePath(path)
+  const fail = (reason: string): never => {
+    throw new Error(`--sosumi-root ${path} is not usable: ${reason}`)
+  }
+  let manifest: { name?: string }
+  try {
+    manifest = JSON.parse(await readFile(join(root, "package.json"), "utf8"))
+  } catch {
+    return fail("it has no package.json")
+  }
+  if (manifest.name !== "@nshipster/sosumi") {
+    fail(`its package.json names ${manifest.name ?? "no package"}, not @nshipster/sosumi`)
+  }
+  for (const file of ["bin/sosumi.mjs", "wrangler.jsonc"]) {
+    if (!(await exists(join(root, file)))) fail(`it has no ${file}`)
+  }
+  if (!(await exists(join(root, "node_modules", "wrangler", "package.json")))) {
+    fail("its node_modules are not installed (run npm ci in that checkout)")
+  }
+  const commit = await new Promise<string>((resolveCommit, rejectCommit) => {
+    execFile("git", ["rev-parse", "HEAD"], { cwd: root }, (error, stdout) => {
+      if (error)
+        rejectCommit(new Error(`--sosumi-root ${path} is not usable: git rev-parse HEAD failed`))
+      else resolveCommit(stdout.trim())
+    })
+  })
+  return { root, commit }
+}
+
+async function exists(path: string): Promise<boolean> {
+  try {
+    await access(path)
+    return true
+  } catch {
+    return false
   }
 }

@@ -24,6 +24,21 @@ records `web_leak` and the matching URLs, and the headline leaves it out.
 `prices.json` holds the price of a web search for each provider;
 the runner refuses the `web` condition for a provider without one.
 
+In `sosumi`, the system prompt ends with the Sosumi server's MCP instructions
+under the heading "Instructions from the documentation server",
+as hosts such as Claude Code show them to the model;
+`--no-server-instructions` leaves them out.
+`--sosumi-root <path>` starts the local server from another checkout of this repository,
+such as a worktree on a branch; that checkout needs its `node_modules` installed.
+Each trace starts with a header, not sent to the model,
+that states the limits, whether the instructions were included and their length,
+and the checkout's path and commit, which each row's `meta` records too.
+
+Results go to `runs/<model>/<condition>/<variant>/`.
+`--variant` names the variant directory, `baseline` by default or `v<N>`,
+and `--change-note <text>` writes `change.md` there;
+the report builder takes the variant's description from its first line.
+
 `split.json` divides the cases into 26 train and 15 test cases.
 Each row records its split, the summary prints the headline for each half,
 and `--split train` or `--split test` runs one half.

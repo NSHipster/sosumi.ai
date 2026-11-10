@@ -7,12 +7,13 @@
 // induced failures, resume, the spend cap, and that grading twice agrees.
 
 import { execFile } from "node:child_process"
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { createServer } from "node:net"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { parseArgs } from "node:util"
-import { evalDir } from "./cases.ts"
+import { SERVER_INSTRUCTIONS_HEADING } from "./agent.ts"
+import { evalDir, repoRoot } from "./cases.ts"
 import {
   checkProviderEdgeCases,
   checkProviderLoops,
@@ -22,7 +23,7 @@ import {
 import { regrade } from "./regrade.ts"
 import { type ErrorRow, type ResultRow, readJSONL, summarize } from "./results.ts"
 import { traceLimits } from "./run.ts"
-import { freePort, type LocalServer, startLocalServer } from "./sosumi.ts"
+import { freePort, type LocalServer, SosumiClient, startLocalServer } from "./sosumi.ts"
 
 const { values } = parseArgs({
   options: {
@@ -629,7 +630,139 @@ try {
     "an attempt that fails because of the server is retried in the same run and scored",
   )
 
-  // 6. Grading the same answers again gives the same verdicts, twice.
+  // 6. The Sosumi server's instructions, another checkout, and variants.
+  type TraceTurn = { role: string; name?: string; content: string }
+  const readTrace = async (dir: string, id = "control-sha256-hex") =>
+    JSON.parse(await readFile(join(dir, "traces", `${id}_rep0.json`), "utf8")) as TraceTurn[]
+  const serverInstructions = (await SosumiClient.connect(url)).instructions?.trim() ?? ""
+  const withInstructions = await readTrace(flow("reference", "sosumi"))
+  const prompt = withInstructions.find((turn) => turn.role === "system" && turn.name !== "limits")
+  const header = withInstructions.find((turn) => turn.name === "limits")
+  check(
+    serverInstructions.length > 0 &&
+      prompt?.content.endsWith(`${SERVER_INSTRUCTIONS_HEADING}\n\n${serverInstructions}`) ===
+        true &&
+      header?.content.includes(
+        `Server instructions: included (${serverInstructions.length} characters)`,
+      ) === true &&
+      sosumiRows.every((row) => row.meta.server_instructions_chars === serverInstructions.length),
+    `the sosumi system prompt ends with the server's ${serverInstructions.length}-character instructions under their heading`,
+  )
+  const noneTrace = await readTrace(flow("reference", "none"))
+  check(
+    !noneTrace.some((turn) => turn.content.includes(SERVER_INSTRUCTIONS_HEADING)) &&
+      noneRows.every((row) => row.meta.server_instructions_chars === undefined),
+    "the none condition gets no server instructions",
+  )
+  await runEval([
+    ...common,
+    "--case",
+    "control-sha256-hex",
+    "--condition",
+    "sosumi",
+    "--no-server-instructions",
+    "--runs-dir",
+    join(runsDir, "no-instructions"),
+  ])
+  const offDir = join(runsDir, "no-instructions", "mock-reference", "sosumi", "baseline")
+  const offTrace = await readTrace(offDir)
+  const offRows = await readJSONL<ResultRow>(join(offDir, "results.jsonl"))
+  check(
+    !offTrace.some((turn) => turn.content.includes(SERVER_INSTRUCTIONS_HEADING)) &&
+      offTrace[0].content.includes("not included (--no-server-instructions)") &&
+      offRows[0]?.meta.server_instructions_chars === 0,
+    "--no-server-instructions leaves them out and says so in the trace header",
+  )
+
+  const repoCommit = await new Promise<string>((done, fail) =>
+    execFile("git", ["rev-parse", "HEAD"], { cwd: repoRoot }, (error, stdout) =>
+      error ? fail(error) : done(stdout.trim()),
+    ),
+  )
+  await runEval(ownServer("checkout", "--case", "control-sha256-hex", "--sosumi-root", repoRoot))
+  const checkoutDir = join(runsDir, "checkout", "mock-reference", "sosumi", "baseline")
+  const checkoutRows = await readJSONL<ResultRow>(join(checkoutDir, "results.jsonl"))
+  const checkoutTrace = await readTrace(checkoutDir)
+  check(
+    checkoutRows.length === 1 &&
+      checkoutRows[0].meta.sosumi_root === repoRoot &&
+      checkoutRows[0].meta.sosumi_commit === repoCommit &&
+      checkoutTrace[0].content.includes(`Sosumi server: ${repoRoot} at ${repoCommit}.`),
+    "--sosumi-root starts the server from that checkout and records its path and commit",
+  )
+  const notCheckout = await mkdtemp(join(tmpdir(), "not-sosumi-"))
+  const noModules = await mkdtemp(join(tmpdir(), "sosumi-without-modules-"))
+  await writeFile(join(noModules, "package.json"), JSON.stringify({ name: "@nshipster/sosumi" }))
+  await mkdir(join(noModules, "bin"))
+  await writeFile(join(noModules, "bin", "sosumi.mjs"), "")
+  await writeFile(join(noModules, "wrangler.jsonc"), "{}")
+  const refused = async (dir: string, ...args: string[]) => {
+    try {
+      await runEval(ownServer(dir, "--case", "control-sha256-hex", ...args))
+      return ""
+    } catch (error) {
+      return String(error)
+    }
+  }
+  const notCheckoutError = await refused("bad-root-a", "--sosumi-root", notCheckout)
+  const noModulesError = await refused("bad-root-b", "--sosumi-root", noModules)
+  const withURLError = await refused("bad-root-c", "--sosumi-root", repoRoot, "--sosumi-url", url)
+  const wroteNothing = (
+    await Promise.all(
+      ["bad-root-a", "bad-root-b", "bad-root-c"].map((dir) =>
+        readJSONL<ResultRow>(
+          join(runsDir, dir, "mock-reference", "sosumi", "baseline", "results.jsonl"),
+        ),
+      ),
+    )
+  ).every((rows) => rows.length === 0)
+  check(
+    notCheckoutError.includes("is not usable: it has no package.json") &&
+      noModulesError.includes("node_modules are not installed") &&
+      withURLError.includes("cannot be used with --sosumi-url") &&
+      wroteNothing,
+    "--sosumi-root refuses a directory that is not a Sosumi checkout with node_modules, before any attempt",
+  )
+  await rm(notCheckout, { recursive: true, force: true })
+  await rm(noModules, { recursive: true, force: true })
+
+  const note = "Forward Sosumi's server instructions\n\nMore detail on a later line."
+  await runEval([
+    ...common,
+    "--case",
+    "control-sha256-hex",
+    "--condition",
+    "none",
+    "--variant",
+    "v2",
+    "--change-note",
+    note,
+  ])
+  const v2Dir = join(runsDir, "mock-reference", "none", "v2")
+  const v2Rows = await readJSONL<ResultRow>(join(v2Dir, "results.jsonl"))
+  const changeFile = await readFile(join(v2Dir, "change.md"), "utf8")
+  let badVariant = ""
+  try {
+    await runEval([
+      ...common,
+      "--case",
+      "control-sha256-hex",
+      "--condition",
+      "none",
+      "--variant",
+      "experiment",
+    ])
+  } catch (error) {
+    badVariant = String(error)
+  }
+  check(
+    v2Rows.length === 1 &&
+      changeFile.split("\n")[0] === "Forward Sosumi's server instructions" &&
+      badVariant.includes("--variant must be baseline or v<N>"),
+    "--variant v2 writes <model>/<condition>/v2/ with change.md, and other names are refused",
+  )
+
+  // 7. Grading the same answers again gives the same verdicts, twice.
   const dirs = ["reference", "stale", "stub", "empty"].flatMap((answer) =>
     ["sosumi", "none"].map((condition) => flow(answer, condition)),
   )

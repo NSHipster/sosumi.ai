@@ -23,7 +23,7 @@ import {
   ToolSession,
   type Turn,
 } from "./agent.ts"
-import { type EvalCase, evalDir, loadCases } from "./cases.ts"
+import { type EvalCase, evalDir, loadCases, repoRoot } from "./cases.ts"
 import { describeGrade, GraderError, gradeAnswer } from "./grader.ts"
 import { anthropicClient, runAnthropic } from "./providers/anthropic.ts"
 import {
@@ -49,7 +49,7 @@ import {
   recordedSpend,
   summarize,
 } from "./results.ts"
-import { SosumiServerError, SosumiService, type ToolSpec } from "./sosumi.ts"
+import { inspectCheckout, SosumiServerError, SosumiService, type ToolSpec } from "./sosumi.ts"
 
 const usage = `Usage: npm run eval -- [options]
 
@@ -71,6 +71,10 @@ const usage = `Usage: npm run eval -- [options]
   --variant <name>          Variant directory: baseline or v<N> (default: baseline)
   --sosumi-url <url>        Use a running Sosumi server instead of starting one
   --sosumi-port <n>         Port for the local Sosumi server (default: a free port)
+  --sosumi-root <path>      Start the local Sosumi server from this checkout of the repository
+                            (default: this checkout)
+  --no-server-instructions  Leave the Sosumi server's MCP instructions out of the system prompt
+  --change-note <text>      Write <text> to change.md in each variant directory
   --mock-answer <name>      reference, stale, stub, or empty (mock provider)
   --mock-failure <name>     none, error, timeout, rate-limit-once, mismatch, kill-server,
                             or server-error-once (mock provider)
@@ -138,8 +142,12 @@ async function main() {
       "mock-usd-per-attempt": { type: "string", default: "0" },
       "mock-web-leak": { type: "boolean", default: false },
       prices: { type: "string" },
+      "sosumi-root": { type: "string" },
+      "server-instructions": { type: "boolean", default: true },
+      "change-note": { type: "string" },
       help: { type: "boolean", default: false },
     },
+    allowNegative: true,
   })
   if (values.help) {
     console.log(usage)
@@ -252,6 +260,20 @@ async function main() {
           .filter(Boolean)
           .join("-")
       : model
+  // The checkout that the local Sosumi server starts from: checked before anything is written.
+  if (values["sosumi-root"] && values["sosumi-url"]) {
+    throw new Error("--sosumi-root starts a local server, so it cannot be used with --sosumi-url")
+  }
+  const checkout =
+    values["sosumi-root"] !== undefined
+      ? await inspectCheckout(values["sosumi-root"])
+      : conditions.includes("sosumi") && !values["sosumi-url"]
+        ? await inspectCheckout(repoRoot)
+        : null
+  const includeInstructions = values["server-instructions"]
+  const changeNote = values["change-note"]?.trim()
+  if (values["change-note"] !== undefined && !changeNote) throw new Error("--change-note is empty")
+
   const variantDirs = new Map<Condition, string>()
   for (const condition of conditions) {
     const flowDir = join(runsDir, modelDir, condition)
@@ -259,6 +281,8 @@ async function main() {
     await ensureFlowState(flowDir, model, price)
     await mkdir(join(variantDir, "traces"), { recursive: true })
     await mkdir(join(variantDir, "answers"), { recursive: true })
+    // The report builder takes a variant's description from the first line of its change.md.
+    if (changeNote) await writeFile(join(variantDir, "change.md"), `${changeNote}\n`)
     variantDirs.set(condition, variantDir)
   }
 
@@ -293,10 +317,16 @@ async function main() {
     sosumi = await SosumiService.start({
       url: values["sosumi-url"],
       port: values["sosumi-port"] === undefined ? undefined : Number(values["sosumi-port"]),
+      root: checkout?.root,
       logPath: join(runsDir, "sosumi-server.log"),
       log: (message) => console.log(message),
     })
     console.log(`Sosumi tools: ${sosumi.tools.map((tool) => tool.name).join(", ")}`)
+    if (checkout) console.log(`Sosumi checkout: ${checkout.root} at ${checkout.commit}`)
+    console.log(
+      `Server instructions: ${sosumi.instructions?.length ?? 0} characters, ` +
+        `${includeInstructions ? "included in" : "left out of"} the system prompt`,
+    )
   }
   // Test hooks for the mock provider: kill the server before the run's first Sosumi call,
   // or fail the first attempt's Sosumi call as if the server could not be restarted.
@@ -339,9 +369,29 @@ async function main() {
     const { meta } = evalCase
     const variantDir = variantDirs.get(condition) as string
     const key = `${meta.id}_rep${rep}`
-    const system = systemPrompt(condition, maxToolCalls)
+    const instructions =
+      condition === "sosumi" && includeInstructions ? sosumi?.instructions?.trim() : undefined
+    const system = systemPrompt(condition, maxToolCalls, instructions)
+    const sosumiHeader =
+      condition !== "sosumi"
+        ? ""
+        : ` Server instructions: ${
+            instructions
+              ? `included (${instructions.length} characters).`
+              : includeInstructions
+                ? "not included (the server sent none)."
+                : "not included (--no-server-instructions)."
+          } Sosumi server: ${
+            checkout
+              ? `${checkout.root} at ${checkout.commit}.`
+              : `${values["sosumi-url"]}, not started by this run.`
+          }`
     const trace: Turn[] = [
-      { role: "system", name: "limits", content: traceLimits(condition, provider, maxToolCalls) },
+      {
+        role: "system",
+        name: "limits",
+        content: traceLimits(condition, provider, maxToolCalls) + sosumiHeader,
+      },
       { role: "system", content: system },
       { role: "user", content: evalCase.task },
     ]
@@ -505,6 +555,12 @@ async function main() {
       ...(outcome.answer !== null ? { answer: answerPath } : {}),
       target: meta.target,
       sdk: meta.sdk ?? "macosx",
+      ...(condition === "sosumi"
+        ? {
+            server_instructions_chars: instructions?.length ?? 0,
+            ...(checkout ? { sosumi_root: checkout.root, sosumi_commit: checkout.commit } : {}),
+          }
+        : {}),
     }
 
     let row: ResultRow

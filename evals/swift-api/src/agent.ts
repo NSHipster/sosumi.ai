@@ -35,13 +35,25 @@ export const SUBMIT_TOOL: ToolSpec = {
   },
 }
 
-export function systemPrompt(condition: Condition, maxToolCalls: number): string {
+/** The heading above the documentation server's MCP instructions in the system prompt. */
+export const SERVER_INSTRUCTIONS_HEADING = "## Instructions from the documentation server"
+
+/**
+ * The system prompt. In the sosumi condition, `serverInstructions` (the MCP server's
+ * instructions from initialize) follow under their own heading, as hosts such as Claude Code
+ * put them in the model's context.
+ */
+export function systemPrompt(
+  condition: Condition,
+  maxToolCalls: number,
+  serverInstructions?: string,
+): string {
   const tools = {
     sosumi: "You can use the documentation tools to read Apple's developer documentation.",
     none: "No documentation tools are available.",
     web: "You can use web search and web fetch to find and read pages on the web.",
   }[condition]
-  return [
+  const prompt = [
     "You write Swift code for Apple platforms.",
     "The user gives you a programming task.",
     "You cannot compile or run code, and you cannot read or write files.",
@@ -52,6 +64,8 @@ export function systemPrompt(condition: Condition, maxToolCalls: number): string
     `You can make at most ${maxToolCalls} tool calls in total, including submit_answer.`,
     "When you are ready, call submit_answer once with one complete Swift source file.",
   ].join(" ")
+  if (condition !== "sosumi" || !serverInstructions?.trim()) return prompt
+  return `${prompt}\n\n${SERVER_INSTRUCTIONS_HEADING}\n\n${serverInstructions.trim()}`
 }
 
 /** One entry of a trace file, in the shape of the hillclimb report's Turn. */
