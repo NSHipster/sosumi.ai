@@ -30,6 +30,9 @@ export function systemPrompt(condition: Condition, maxToolCalls: number): string
     "The user gives you a programming task.",
     "You cannot compile or run code, and you cannot read or write files.",
     tools,
+    "The grader compiles your file together with a check file that uses the declarations " +
+      "the task asks for, in the Swift language mode that the task states.",
+    "Do not redeclare any type that the task says is already declared.",
     `You can make at most ${maxToolCalls} tool calls in total, including submit_answer.`,
     "When you are ready, call submit_answer once with one complete Swift source file.",
   ].join(" ")
@@ -74,7 +77,39 @@ export function emptyUsage(): Usage {
 }
 
 /** Why the agent loop ended. */
-export type EndReason = "submitted" | "end_turn" | "tool_limit" | "refusal" | "max_tokens"
+export type EndReason =
+  | "submitted"
+  | "end_turn"
+  | "tool_limit"
+  | "refusal"
+  | "max_tokens"
+  | "context_overflow"
+
+/** Tool results longer than this many characters are cut, in every condition and provider. */
+export const TOOL_RESULT_LIMIT = 100_000
+
+/** Cuts a tool result at TOOL_RESULT_LIMIT characters and says so at the end. */
+export function cutToolResult(text: string): { text: string; cut: boolean } {
+  if (text.length <= TOOL_RESULT_LIMIT) return { text, cut: false }
+  const note =
+    `[This result was cut at ${TOOL_RESULT_LIMIT.toLocaleString("en-US")} characters; ` +
+    `the full result has ${text.length.toLocaleString("en-US")} characters.]`
+  return { text: `${text.slice(0, TOOL_RESULT_LIMIT)}\n\n${note}`, cut: true }
+}
+
+/** A request failed because the prompt is longer than the model's context window. */
+export class ContextOverflowError extends Error {
+  override name = "ContextOverflowError"
+}
+
+/** True for a provider's error that says the prompt exceeds the context window. */
+export function isContextOverflow(error: unknown): boolean {
+  const e = error as { status?: number; message?: string; code?: string; error?: { code?: string } }
+  if (e?.status !== 400) return false
+  if (e.code === "context_length_exceeded" || e.error?.code === "context_length_exceeded")
+    return true
+  return /prompt is too long|context length|context window|maximum context/i.test(e.message ?? "")
+}
 
 export interface AgentOutcome {
   answer: string | null
@@ -85,7 +120,7 @@ export interface AgentOutcome {
   toolCalls: number
   sosumiCalls: number
   retries: number
-  /** The agent reached the tool-call limit and was given one final turn to submit. */
+  /** The agent stopped without submitting and was given one final turn to submit. */
   finalTurn: boolean
 }
 
@@ -98,6 +133,8 @@ export interface AttemptProgress {
   retries: number
   toolCalls: number
   sosumiCalls: number
+  /** Tool results cut at TOOL_RESULT_LIMIT characters. */
+  cutResults: number
 }
 
 export type FailureClass =
@@ -153,8 +190,10 @@ export const NOT_RUN = "This call was not run, because the tool-call limit was r
 export class ToolSession {
   answer: string | null = null
   limitReached = false
-  /** True after the limit, during the one final turn in which only submit_answer is offered. */
+  /** True during the one final turn in which only submit_answer is offered. */
   finalTurn = false
+  /** Why the final turn was given: the call limit, or a turn that ended without a submission. */
+  finalTurnReason: "tool_limit" | "end_turn" | null = null
   private readonly sosumiTools: Set<string>
   private readonly progress: AttemptProgress
   private readonly maxToolCalls: number
@@ -181,13 +220,18 @@ export class ToolSession {
   }
 
   /**
-   * Starts the final turn after the limit: the provider offers only submit_answer
-   * and sends the returned message to the agent.
+   * Starts the final turn, after the call limit or after a turn that ended without
+   * a submission: the provider offers only submit_answer and sends the returned message.
    */
-  beginFinalTurn(): string {
+  beginFinalTurn(reason: "tool_limit" | "end_turn"): string {
     this.finalTurn = true
+    this.finalTurnReason = reason
+    const why =
+      reason === "tool_limit"
+        ? `You have used all ${this.maxToolCalls} tool calls. `
+        : "You ended your turn without calling submit_answer. "
     return (
-      `You have used all ${this.maxToolCalls} tool calls. ` +
+      why +
       "submit_answer is now the only tool. " +
       "Call submit_answer now with your best answer as one complete Swift source file."
     )
@@ -228,6 +272,9 @@ export class ToolSession {
     } else {
       output = { text: `There is no tool named ${name}.`, isError: true }
     }
+    const limited = cutToolResult(output.text)
+    if (limited.cut) this.progress.cutResults++
+    output = { ...output, text: limited.text }
     trace.push({ role: "tool_result", name, content: output.text })
 
     if (this.answer === null && !this.finalTurn) {
@@ -261,6 +308,8 @@ export async function withRetries<T>(
       return await operation()
     } catch (error) {
       if (signal.aborted) throw error
+      if (isContextOverflow(error))
+        throw new ContextOverflowError(describeError(error), { cause: error })
       if (attempt >= maxRetries || !policy.isRetryable(error)) {
         if (error instanceof AttemptError) throw error
         throw new AttemptError("api_error", describeError(error), { cause: error })

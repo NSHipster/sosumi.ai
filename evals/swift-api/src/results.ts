@@ -29,6 +29,8 @@ export interface ResultRow {
   latency_s: number
   tool_calls: number
   sosumi_calls: number
+  /** Tool results cut at 100,000 characters. */
+  cut_tool_results?: number
   retries: number
   meta: {
     provider: Provider
@@ -36,6 +38,8 @@ export interface ResultRow {
     end_reason: string
     /** The agent reached the tool-call limit and was given one final turn to submit. */
     final_turn?: boolean
+    /** Why the final turn was given: tool_limit or end_turn. */
+    final_turn_reason?: string
     failure_class?: string
     cost_usd: number
     answer?: string
@@ -73,6 +77,7 @@ export const flowState = {
     { id: "out_tokens", label: "Output tokens" },
     { id: "tool_calls", label: "Tool calls" },
     { id: "sosumi_calls", label: "Sosumi calls" },
+    { id: "cut_tool_results", label: "Cut results" },
     { id: "latency_s", label: "Latency", unit: "s" },
   ],
 }

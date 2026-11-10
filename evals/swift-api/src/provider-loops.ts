@@ -10,6 +10,7 @@ import {
   emptyUsage,
   NOT_RUN,
   SUBMIT_TOOL,
+  TOOL_RESULT_LIMIT,
   ToolSession,
   type Turn,
 } from "./agent.ts"
@@ -31,6 +32,7 @@ function makeContext(): AgentContext {
     retries: 0,
     toolCalls: 0,
     sosumiCalls: 0,
+    cutResults: 0,
   }
   const trace: Turn[] = []
   return {
@@ -226,4 +228,200 @@ export async function checkProviderLoops(check: (condition: boolean, message: st
       )
     }
   }
+}
+
+type Script = (requestIndex: number) => "text" | "submit" | "overflow"
+
+/** A fake Anthropic client that follows `script` and records each request. */
+function fakeAnthropic(script: Script, requests: Anthropic.MessageCreateParams[]): Anthropic {
+  const usage = {
+    input_tokens: 10,
+    output_tokens: 5,
+    cache_read_input_tokens: 0,
+    cache_creation_input_tokens: 0,
+  }
+  return {
+    messages: {
+      stream: (params: Anthropic.MessageCreateParams) => ({
+        finalMessage: async () => {
+          requests.push(structuredClone(params))
+          const step = script(requests.length - 1)
+          if (step === "overflow") {
+            throw Object.assign(
+              new Error("400 prompt is too long: 1453316 tokens > 1000000 maximum"),
+              {
+                status: 400,
+              },
+            )
+          }
+          return step === "submit"
+            ? {
+                model: "claude-sonnet-5-5",
+                stop_reason: "tool_use",
+                usage,
+                content: [
+                  {
+                    type: "tool_use",
+                    id: "submit",
+                    name: "submit_answer",
+                    input: { code: "let x = 1" },
+                  },
+                ],
+              }
+            : {
+                model: "claude-sonnet-5-5",
+                stop_reason: "end_turn",
+                usage,
+                content: [{ type: "text", text: "Here is my plan." }],
+              }
+        },
+      }),
+    },
+  } as unknown as Anthropic
+}
+
+/** A fake OpenAI client that follows `script` and records each request. */
+function fakeOpenAI(script: Script, requests: OpenAI.Responses.ResponseCreateParams[]): OpenAI {
+  return {
+    responses: {
+      create: async (params: OpenAI.Responses.ResponseCreateParams) => {
+        requests.push(structuredClone(params))
+        const step = script(requests.length - 1)
+        if (step === "overflow") {
+          throw Object.assign(
+            new Error("400 Your input exceeds the context window of this model."),
+            {
+              status: 400,
+              code: "context_length_exceeded",
+            },
+          )
+        }
+        return {
+          model: "gpt-6.1-sol",
+          status: "completed",
+          incomplete_details: null,
+          usage: {
+            input_tokens: 10,
+            output_tokens: 5,
+            total_tokens: 15,
+            input_tokens_details: { cached_tokens: 0 },
+            output_tokens_details: { reasoning_tokens: 0 },
+          },
+          output:
+            step === "submit"
+              ? [
+                  {
+                    type: "function_call",
+                    call_id: "submit",
+                    name: "submit_answer",
+                    arguments: JSON.stringify({ code: "let x = 1" }),
+                  },
+                ]
+              : [
+                  {
+                    type: "message",
+                    role: "assistant",
+                    content: [{ type: "output_text", text: "Here is my plan." }],
+                  },
+                ],
+        }
+      },
+    },
+  } as unknown as OpenAI
+}
+
+/** Checks the final turn after end_turn, context overflow, and the tool-result limit. */
+export async function checkProviderEdgeCases(check: (condition: boolean, message: string) => void) {
+  // A turn that ends without submit_answer gets the final submit-only turn.
+  for (const submit of [true, false]) {
+    const script: Script = (index) => (index === 1 && submit ? "submit" : "text")
+    const label = submit ? "submits" : "does not submit"
+
+    const anthropicRequests: Anthropic.MessageCreateParams[] = []
+    const anthropicContext = makeContext()
+    const anthropic = await runAnthropic(
+      fakeAnthropic(script, anthropicRequests),
+      { model: "claude-sonnet-5-5", effort: "medium", maxTokens: 1000 },
+      anthropicContext,
+    )
+    const anthropicFinal = anthropicRequests[1]
+    const anthropicLast = anthropicFinal?.messages.at(-1)
+    check(
+      anthropicRequests.length === 2 &&
+        anthropicFinal?.tools?.length === 1 &&
+        anthropicLast?.role === "user" &&
+        String(anthropicLast.content).includes("ended your turn without calling submit_answer") &&
+        anthropic.finalTurn &&
+        anthropicContext.session.finalTurnReason === "end_turn" &&
+        anthropic.endReason === (submit ? "submitted" : "end_turn"),
+      `Anthropic loop: after end_turn, a submit-only final turn follows (agent ${label})`,
+    )
+
+    const openAIRequests: OpenAI.Responses.ResponseCreateParams[] = []
+    const openAIContext = makeContext()
+    const openai = await runOpenAI(
+      fakeOpenAI(script, openAIRequests),
+      { model: "gpt-6.1-sol", effort: "medium", maxTokens: 1000 },
+      openAIContext,
+    )
+    const openAIFinal = openAIRequests[1]
+    const openAIInput = Array.isArray(openAIFinal?.input) ? openAIFinal.input : []
+    const openAILast = openAIInput.at(-1) as { role?: string; content?: unknown } | undefined
+    check(
+      openAIRequests.length === 2 &&
+        openAIFinal?.tools?.length === 1 &&
+        openAILast?.role === "user" &&
+        String(openAILast.content).includes("ended your turn without calling submit_answer") &&
+        openai.finalTurn &&
+        openAIContext.session.finalTurnReason === "end_turn" &&
+        openai.endReason === (submit ? "submitted" : "end_turn"),
+      `OpenAI loop: after end_turn, a submit-only final turn follows (agent ${label})`,
+    )
+  }
+
+  // A prompt longer than the context window ends the attempt as context_overflow, without retries.
+  const overflow: Script = (index) => (index === 0 ? "text" : "overflow")
+  const anthropicOverflow = await runAnthropic(
+    fakeAnthropic(overflow, []),
+    { model: "claude-sonnet-5-5", effort: "medium", maxTokens: 1000 },
+    makeContext(),
+  )
+  check(
+    anthropicOverflow.endReason === "context_overflow" &&
+      anthropicOverflow.retries === 0 &&
+      anthropicOverflow.answer === null,
+    "Anthropic loop: a prompt-too-long 400 ends the attempt as context_overflow",
+  )
+  const openAIOverflow = await runOpenAI(
+    fakeOpenAI(overflow, []),
+    { model: "gpt-6.1-sol", effort: "medium", maxTokens: 1000 },
+    makeContext(),
+  )
+  check(
+    openAIOverflow.endReason === "context_overflow" &&
+      openAIOverflow.retries === 0 &&
+      openAIOverflow.answer === null,
+    "OpenAI loop: a context_length_exceeded 400 ends the attempt as context_overflow",
+  )
+
+  // Tool results are cut at 100,000 characters, with a note, and counted.
+  const context = makeContext()
+  const long = new ToolSession({
+    sosumiTools: [DOCS_TOOL.name],
+    progress: context.progress,
+    maxToolCalls: MAX_CALLS,
+    callSosumi: async () => ({ text: "x".repeat(250_000), isError: false }),
+  })
+  const cut = await long.handle(DOCS_TOOL.name, {}, context.signal, context.trace)
+  const short = await long.handle(DOCS_TOOL.name, {}, context.signal, context.trace)
+  check(
+    cut.text.startsWith("x".repeat(TOOL_RESULT_LIMIT)) &&
+      cut.text.length < TOOL_RESULT_LIMIT + 200 &&
+      cut.text.includes("cut at 100,000 characters") &&
+      cut.text.includes("250,000 characters") &&
+      short.text.length === cut.text.length &&
+      context.progress.cutResults === 2 &&
+      context.trace.at(-1)?.content === short.text,
+    "a tool result longer than 100,000 characters is cut, noted, counted, and traced as cut",
+  )
 }

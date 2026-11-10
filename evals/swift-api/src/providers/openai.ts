@@ -5,6 +5,7 @@ import {
   type AgentContext,
   type AgentOutcome,
   assertModel,
+  ContextOverflowError,
   type EndReason,
   NOT_RUN,
   recordRequest,
@@ -52,27 +53,45 @@ export async function runOpenAI(
     strict: false,
   }))
   const input: OpenAI.Responses.ResponseInputItem[] = [{ role: "user", content: context.task }]
+  const finish = (endReason: EndReason, stopReason: string): AgentOutcome => ({
+    answer: session.answer,
+    endReason,
+    stopReason,
+    model: progress.model ?? options.model,
+    usage: progress.usage,
+    toolCalls: progress.toolCalls,
+    sosumiCalls: progress.sosumiCalls,
+    retries: progress.retries,
+    finalTurn: session.finalTurn,
+  })
 
   while (true) {
-    const response = await withRetries(
-      () =>
-        client.responses.create(
-          {
-            model: options.model,
-            instructions: context.system,
-            input,
-            tools,
-            reasoning: { effort: options.effort, summary: "auto" },
-            max_output_tokens: options.maxTokens,
-            store: false,
-            include: ["reasoning.encrypted_content"],
-          },
-          { signal },
-        ),
-      retryPolicy,
-      progress,
-      signal,
-    )
+    let response: OpenAI.Responses.Response
+    try {
+      response = await withRetries(
+        () =>
+          client.responses.create(
+            {
+              model: options.model,
+              instructions: context.system,
+              input,
+              tools,
+              reasoning: { effort: options.effort, summary: "auto" },
+              max_output_tokens: options.maxTokens,
+              store: false,
+              include: ["reasoning.encrypted_content"],
+            },
+            { signal },
+          ),
+        retryPolicy,
+        progress,
+        signal,
+      )
+    } catch (error) {
+      if (error instanceof ContextOverflowError)
+        return finish("context_overflow", "context_overflow")
+      throw error
+    }
 
     progress.model = response.model
     const usage = response.usage
@@ -126,21 +145,17 @@ export async function runOpenAI(
 
     const incomplete = response.incomplete_details?.reason
     const stopReason = incomplete ? `incomplete:${incomplete}` : (response.status ?? "unknown")
-    const finish = (endReason: EndReason): AgentOutcome => ({
-      answer: session.answer,
-      endReason,
-      stopReason,
-      model: response.model,
-      usage: progress.usage,
-      toolCalls: progress.toolCalls,
-      sosumiCalls: progress.sosumiCalls,
-      retries: progress.retries,
-      finalTurn: session.finalTurn,
-    })
-
-    if (refused || incomplete === "content_filter") return finish("refusal")
-    if (incomplete === "max_output_tokens") return finish("max_tokens")
-    if (calls.length === 0) return finish(session.finalTurn ? "tool_limit" : "end_turn")
+    if (refused || incomplete === "content_filter") return finish("refusal", stopReason)
+    if (incomplete === "max_output_tokens") return finish("max_tokens", stopReason)
+    if (calls.length === 0) {
+      if (session.finalTurn) return finish(session.finalTurnReason ?? "end_turn", stopReason)
+      // The agent stopped without submitting: one final turn asks for the answer.
+      const message = session.beginFinalTurn("end_turn")
+      tools = tools.filter((tool) => tool.name === SUBMIT_TOOL.name)
+      trace.push({ role: "user", content: message })
+      input.push({ role: "user", content: message })
+      continue
+    }
 
     for (const call of calls) {
       let args: unknown
@@ -158,11 +173,11 @@ export async function runOpenAI(
       input.push({ type: "function_call_output", call_id: call.call_id, output: output.text })
       if (session.answer !== null) break
     }
-    if (session.answer !== null) return finish("submitted")
-    if (session.finalTurn) return finish("tool_limit")
+    if (session.answer !== null) return finish("submitted", stopReason)
+    if (session.finalTurn) return finish(session.finalTurnReason ?? "tool_limit", stopReason)
     if (session.limitReached) {
       // One final turn: only submit_answer is offered, and a message asks for the answer now.
-      const message = session.beginFinalTurn()
+      const message = session.beginFinalTurn("tool_limit")
       tools = tools.filter((tool) => tool.name === SUBMIT_TOOL.name)
       trace.push({ role: "user", content: message })
       input.push({ role: "user", content: message })

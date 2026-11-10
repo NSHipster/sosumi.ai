@@ -13,7 +13,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { parseArgs } from "node:util"
 import { evalDir } from "./cases.ts"
-import { checkProviderLoops } from "./provider-loops.ts"
+import { checkProviderEdgeCases, checkProviderLoops } from "./provider-loops.ts"
 import { regrade } from "./regrade.ts"
 import { type ErrorRow, type ResultRow, readJSONL, summarize } from "./results.ts"
 import { freePort, type LocalServer, startLocalServer } from "./sosumi.ts"
@@ -55,6 +55,7 @@ const percent = (value: number) => `${(value * 100).toFixed(1)}%`
 
 // 0. The provider loops, driven by fake clients with scripted responses.
 await checkProviderLoops(check)
+await checkProviderEdgeCases(check)
 
 const runsDir = await mkdtemp(join(tmpdir(), "swift-api-mock-"))
 let server: LocalServer | null = null
@@ -234,6 +235,68 @@ try {
       (turn) => turn.role === "user" && turn.content.includes("submit_answer is now the only tool"),
     ),
     "the trace records the final-turn message",
+  )
+
+  // A turn that ends without a submission gets the same final turn, and a context overflow
+  // is scored as a failure instead of an unscored error.
+  const single = ["--case", "control-sha256-hex", "--condition", "none"]
+  await runEval([...common, ...single, "--mock-behavior", "end-turn"])
+  await runEval([...common, ...single, "--mock-behavior", "end-turn-no-submit"])
+  await runEval([...common, ...single, "--mock-failure", "context-overflow"])
+  const endTurn = await readJSONL<ResultRow>(
+    join(runsDir, "mock-reference-end-turn", "none", "baseline", "results.jsonl"),
+  )
+  const endTurnNoSubmit = await readJSONL<ResultRow>(
+    join(runsDir, "mock-reference-end-turn-no-submit", "none", "baseline", "results.jsonl"),
+  )
+  check(
+    endTurn.length === 1 &&
+      endTurn[0].meta.final_turn === true &&
+      endTurn[0].meta.final_turn_reason === "end_turn" &&
+      endTurn[0].meta.end_reason === "submitted" &&
+      endTurn[0].grade.passes === 1,
+    "after an end_turn without a submission, the final turn lets the agent submit",
+  )
+  check(
+    endTurnNoSubmit.length === 1 &&
+      endTurnNoSubmit[0].meta.final_turn_reason === "end_turn" &&
+      endTurnNoSubmit[0].meta.end_reason === "end_turn" &&
+      endTurnNoSubmit[0].meta.failure_class === "no_submission" &&
+      endTurnNoSubmit[0].grade.passes === 0,
+    "an agent that does not submit in that final turn scores as no_submission",
+  )
+  const overflowDir = join(runsDir, "mock-reference-context-overflow", "none", "baseline")
+  const overflowRows = await readJSONL<ResultRow>(join(overflowDir, "results.jsonl"))
+  const overflowErrors = await readJSONL<ErrorRow>(join(overflowDir, "errors.jsonl"))
+  await runEval([...common, ...single, "--mock-failure", "context-overflow"])
+  const overflowAgain = await readJSONL<ResultRow>(join(overflowDir, "results.jsonl"))
+  check(
+    overflowRows.length === 1 &&
+      overflowRows[0].meta.failure_class === "context_overflow" &&
+      overflowRows[0].grade.passes === 0 &&
+      overflowErrors.length === 0 &&
+      overflowAgain.length === 1,
+    "a context overflow is scored as a context_overflow failure, and resume does not repeat it",
+  )
+  check(
+    sosumiRows.every((row) => row.cut_tool_results === 0),
+    "rows record how many tool results were cut",
+  )
+  const systemTurn = (
+    JSON.parse(
+      await readFile(
+        join(flow("reference", "none"), "traces", "control-sha256-hex_rep0.json"),
+        "utf8",
+      ),
+    ) as { role: string; content: string }[]
+  ).find((turn) => turn.role === "system")
+  check(
+    systemTurn?.content.includes(
+      "Do not redeclare any type that the task says is already declared",
+    ) === true &&
+      systemTurn.content.includes("in the Swift language mode that the task states") &&
+      noneRows.every((row) => row.prompt.includes("- Language mode: Swift 6")),
+    "the system prompt forbids redeclarations and points to the language mode that each task states",
   )
 
   // 3. Resume: a second run of the same flow adds no rows; a failed attempt runs again.

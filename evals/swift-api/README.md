@@ -11,9 +11,17 @@ The difference between the two scores shows what Sosumi adds.
 The agent has no compiler, shell, or file access.
 It ends a case by calling `submit_answer` with one complete Swift file.
 It can make 12 tool calls.
-An agent that reaches the limit without submitting gets one final turn
-in which `submit_answer` is the only tool,
-and the row records `final_turn: true`.
+An agent that reaches the limit, or ends its turn, without submitting
+gets one final turn in which `submit_answer` is the only tool;
+the row records `final_turn` and `final_turn_reason`.
+Tool results longer than 100,000 characters are cut, with a note,
+and the row records how many were cut in `cut_tool_results`.
+A request that fails because the prompt exceeds the model's context window
+ends the attempt, which is scored as a failure with the cause `context_overflow`.
+
+The grader type-checks every case in the Swift 6 language mode,
+unless the case's `swift_flags` set another mode,
+and each task states its mode.
 
 ## Layout
 
@@ -71,7 +79,7 @@ that already has a result and attempts failed ones again.
   `preconditionFailure`, `unsafeBitCast`, or force cast,
   and contains every required symbol.
   A required symbol is one that every correct answer must contain;
-  whitespace does not matter, and some cases have none.
+  whitespace does not matter, an entry can list alternatives, and some cases have none.
 - `typechecks`: the answer and the check file type-check together.
   A stub with `fatalError()` bodies type-checks, so this metric alone overstates success.
 - `deprecations`: the number of deprecation warnings in the answer.

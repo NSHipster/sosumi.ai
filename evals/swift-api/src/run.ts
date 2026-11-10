@@ -71,7 +71,8 @@ const usage = `Usage: npm run eval -- [options]
   --mock-answer <name>      reference, stale, stub, or empty (mock provider)
   --mock-failure <name>     none, error, timeout, rate-limit-once, mismatch, kill-server,
                             or server-error-once (mock provider)
-  --mock-behavior <name>    submit, exhaust, or exhaust-no-submit (mock provider)
+  --mock-behavior <name>    submit, exhaust, exhaust-no-submit, end-turn,
+                            or end-turn-no-submit (mock provider)
   --mock-usd-per-attempt <n>  Spend that each mock attempt counts (default: 0)
   --max-usd-mock <n>        Spend cap for the mock provider, to test the caps
 
@@ -154,11 +155,13 @@ async function main() {
       "mismatch",
       "kill-server",
       "server-error-once",
+      "context-overflow",
     ]
     if (!failures.includes(mockFailure)) {
       throw new Error(`Unknown mock failure ${mockFailure}`)
     }
-    if (!["submit", "exhaust", "exhaust-no-submit"].includes(mockBehavior)) {
+    const behaviors = ["submit", "exhaust", "exhaust-no-submit", "end-turn", "end-turn-no-submit"]
+    if (!behaviors.includes(mockBehavior)) {
       throw new Error(`Unknown mock behavior ${mockBehavior}`)
     }
   }
@@ -317,6 +320,7 @@ async function main() {
       retries: 0,
       toolCalls: 0,
       sosumiCalls: 0,
+      cutResults: 0,
     }
     const tools = toolsFor(condition)
     const controller = new AbortController()
@@ -429,6 +433,7 @@ async function main() {
       tool_limit: "tool_limit",
       refusal: "refusal",
       max_tokens: "truncated",
+      context_overflow: "context_overflow",
     }[outcome.endReason]
     const cost = attemptCost(progress.requests)
     const base = {
@@ -442,6 +447,7 @@ async function main() {
       latency_s: latency,
       tool_calls: outcome.toolCalls,
       sosumi_calls: outcome.sosumiCalls,
+      cut_tool_results: progress.cutResults,
       retries: outcome.retries,
     }
     const rowMeta = {
@@ -449,6 +455,9 @@ async function main() {
       condition,
       end_reason: outcome.endReason,
       final_turn: outcome.finalTurn,
+      ...(context.session.finalTurnReason
+        ? { final_turn_reason: context.session.finalTurnReason }
+        : {}),
       ...(failureClass ? { failure_class: failureClass } : {}),
       cost_usd: cost,
       ...(outcome.answer !== null ? { answer: answerPath } : {}),

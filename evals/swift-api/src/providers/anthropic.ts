@@ -5,6 +5,7 @@ import {
   type AgentContext,
   type AgentOutcome,
   assertModel,
+  ContextOverflowError,
   type EndReason,
   NOT_RUN,
   recordRequest,
@@ -56,28 +57,51 @@ export async function runAnthropic(
     { type: "text", text: context.system, cache_control: { type: "ephemeral" } },
   ]
   const messages: Anthropic.MessageParam[] = [{ role: "user", content: context.task }]
+  const finish = (endReason: EndReason, stopReason: string): AgentOutcome => ({
+    answer: session.answer,
+    endReason,
+    stopReason,
+    model: progress.model ?? options.model,
+    usage: progress.usage,
+    toolCalls: progress.toolCalls,
+    sosumiCalls: progress.sosumiCalls,
+    retries: progress.retries,
+    finalTurn: session.finalTurn,
+  })
+  // The final turn offers only submit_answer.
+  const submitOnly = () =>
+    tools
+      .filter((tool) => tool.name === SUBMIT_TOOL.name)
+      .map((tool) => ({ ...tool, cache_control: { type: "ephemeral" as const } }))
 
   while (true) {
-    const response = await withRetries(
-      () =>
-        client.messages
-          .stream(
-            {
-              model: options.model,
-              max_tokens: options.maxTokens,
-              system,
-              tools,
-              messages,
-              thinking: { type: "adaptive", display: "summarized" },
-              output_config: { effort: options.effort },
-            },
-            { signal },
-          )
-          .finalMessage(),
-      retryPolicy,
-      progress,
-      signal,
-    )
+    let response: Anthropic.Message
+    try {
+      response = await withRetries(
+        () =>
+          client.messages
+            .stream(
+              {
+                model: options.model,
+                max_tokens: options.maxTokens,
+                system,
+                tools,
+                messages,
+                thinking: { type: "adaptive", display: "summarized" },
+                output_config: { effort: options.effort },
+              },
+              { signal },
+            )
+            .finalMessage(),
+        retryPolicy,
+        progress,
+        signal,
+      )
+    } catch (error) {
+      if (error instanceof ContextOverflowError)
+        return finish("context_overflow", "context_overflow")
+      throw error
+    }
 
     progress.model = response.model
     const usage = response.usage
@@ -111,23 +135,21 @@ export async function runAnthropic(
     if (thinking) trace.push({ role: "assistant", content: "", thinking })
     messages.push({ role: "assistant", content: response.content })
 
-    const stopReason = response.stop_reason ?? "unknown"
-    const finish = (endReason: EndReason): AgentOutcome => ({
-      answer: session.answer,
-      endReason,
-      stopReason,
-      model: response.model,
-      usage: progress.usage,
-      toolCalls: progress.toolCalls,
-      sosumiCalls: progress.sosumiCalls,
-      retries: progress.retries,
-      finalTurn: session.finalTurn,
-    })
-
-    if (stopReason === "refusal") return finish("refusal")
-    if (stopReason === "max_tokens") return finish("max_tokens")
+    const stopReason: string = response.stop_reason ?? "unknown"
+    if (stopReason === "refusal") return finish("refusal", stopReason)
+    if (stopReason === "max_tokens") return finish("max_tokens", stopReason)
+    if (stopReason === "model_context_window_exceeded")
+      return finish("context_overflow", stopReason)
     if (stopReason === "pause_turn") continue
-    if (calls.length === 0) return finish(session.finalTurn ? "tool_limit" : "end_turn")
+    if (calls.length === 0) {
+      if (session.finalTurn) return finish(session.finalTurnReason ?? "end_turn", stopReason)
+      // The agent stopped without submitting: one final turn asks for the answer.
+      const message = session.beginFinalTurn("end_turn")
+      tools = submitOnly()
+      trace.push({ role: "user", content: message })
+      messages.push({ role: "user", content: message })
+      continue
+    }
 
     const results: Anthropic.ToolResultBlockParam[] = []
     for (const call of calls) {
@@ -150,14 +172,12 @@ export async function runAnthropic(
       })
       if (session.answer !== null) break
     }
-    if (session.answer !== null) return finish("submitted")
-    if (session.finalTurn) return finish("tool_limit")
+    if (session.answer !== null) return finish("submitted", stopReason)
+    if (session.finalTurn) return finish(session.finalTurnReason ?? "tool_limit", stopReason)
     if (session.limitReached) {
       // One final turn: only submit_answer is offered, and a message asks for the answer now.
-      const message = session.beginFinalTurn()
-      tools = tools
-        .filter((tool) => tool.name === SUBMIT_TOOL.name)
-        .map((tool) => ({ ...tool, cache_control: { type: "ephemeral" as const } }))
+      const message = session.beginFinalTurn("tool_limit")
+      tools = submitOnly()
       trace.push({ role: "user", content: message })
       messages.push({ role: "user", content: [...results, { type: "text", text: message }] })
       continue
