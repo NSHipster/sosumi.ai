@@ -3,7 +3,22 @@
 
 import { SosumiServerError, type ToolOutput, type ToolSpec } from "./sosumi.ts"
 
-export type Condition = "sosumi" | "none"
+/**
+ * sosumi: Sosumi's MCP tools. none: no documentation tools.
+ * web: the provider's built-in web search and fetch tools.
+ */
+export type Condition = "sosumi" | "none" | "web"
+
+export const CONDITIONS: Condition[] = ["sosumi", "none", "web"]
+
+/**
+ * A web result that could carry the eval's answers: Sosumi itself, or the repository
+ * that holds the reference answers (github.com/NSHipster/sosumi.ai), which contains "sosumi.ai".
+ */
+export const LEAK_PATTERN = /sosumi\.ai/i
+
+/** The domains that the web tools are told to skip. */
+export const BLOCKED_DOMAINS = ["sosumi.ai"]
 
 export const SUBMIT_TOOL: ToolSpec = {
   name: "submit_answer",
@@ -21,10 +36,11 @@ export const SUBMIT_TOOL: ToolSpec = {
 }
 
 export function systemPrompt(condition: Condition, maxToolCalls: number): string {
-  const tools =
-    condition === "sosumi"
-      ? "You can use the documentation tools to read Apple's developer documentation."
-      : "No documentation tools are available."
+  const tools = {
+    sosumi: "You can use the documentation tools to read Apple's developer documentation.",
+    none: "No documentation tools are available.",
+    web: "You can use web search and web fetch to find and read pages on the web.",
+  }[condition]
   return [
     "You write Swift code for Apple platforms.",
     "The user gives you a programming task.",
@@ -135,6 +151,12 @@ export interface AttemptProgress {
   sosumiCalls: number
   /** Tool results cut at TOOL_RESULT_LIMIT characters. */
   cutResults: number
+  /** Server-side web searches, counted toward the tool-call limit. */
+  webSearches: number
+  /** Server-side page fetches (and, for OpenAI, other page actions), counted toward the limit. */
+  webFetches: number
+  /** Search queries and URLs from web tools that match LEAK_PATTERN. */
+  leaks: string[]
 }
 
 export type FailureClass =
@@ -213,6 +235,31 @@ export class ToolSession {
     this.progress = options.progress
     this.maxToolCalls = options.maxToolCalls
     this.callSosumi = options.callSosumi
+  }
+
+  /** Tool calls left under the limit. */
+  get remaining(): number {
+    return Math.max(0, this.maxToolCalls - this.progress.toolCalls)
+  }
+
+  /**
+   * Counts web searches and fetches that the provider ran server-side.
+   * They count toward the limit like any other tool call.
+   */
+  recordServerCalls(searches: number, fetches: number): void {
+    this.progress.toolCalls += searches + fetches
+    this.progress.webSearches += searches
+    this.progress.webFetches += fetches
+    if (this.answer === null && !this.finalTurn && this.remaining <= 0) this.limitReached = true
+  }
+
+  /** Records any search query, result URL, fetched URL, or cited URL that could leak answers. */
+  noteWebEvidence(values: (string | null | undefined)[]): void {
+    for (const value of values) {
+      if (value && LEAK_PATTERN.test(value) && !this.progress.leaks.includes(value)) {
+        this.progress.leaks.push(value)
+      }
+    }
   }
 
   get done(): boolean {

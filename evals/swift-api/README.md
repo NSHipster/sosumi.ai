@@ -3,10 +3,26 @@
 This eval asks one question:
 when an agent writes Swift for an Apple API and Sosumi is its only documentation,
 does the code type-check against the SDK?
-Each model runs in two conditions.
+Each model runs in up to three conditions.
 In `sosumi`, the agent has Sosumi's MCP tools and `submit_answer`;
-in `none`, it has only `submit_answer`.
-The difference between the two scores shows what Sosumi adds.
+in `none`, it has only `submit_answer`;
+in `web`, it has its provider's built-in web search and fetch tools and `submit_answer`.
+The difference between `sosumi` and `none` shows what Sosumi adds,
+and the difference between `sosumi` and `web` shows whether Sosumi beats the open web.
+`--condition` takes one condition or a list, such as `sosumi,web`;
+`both` means `sosumi,none`.
+
+In `web`, every server-side search and fetch counts toward the tool-call limit,
+and both tools skip `sosumi.ai`.
+The eval's reference answers are public in the Sosumi repository on GitHub,
+so a row whose searches, fetched URLs, or citations include `sosumi.ai`
+records `web_leak` and the matching URLs, and the headline leaves it out.
+`prices.json` holds the price of a web search for each provider;
+the runner refuses the `web` condition for a provider without one.
+
+`split.json` divides the cases into 26 train and 15 test cases.
+Each row records its split, the summary prints the headline for each half,
+and `--split train` or `--split test` runs one half.
 
 The agent has no compiler, shell, or file access.
 It ends a case by calling `submit_answer` with one complete Swift file.

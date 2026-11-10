@@ -5,12 +5,14 @@ import {
   type AgentContext,
   type AgentOutcome,
   assertModel,
+  BLOCKED_DOMAINS,
   ContextOverflowError,
   type EndReason,
   NOT_RUN,
   recordRequest,
   retryAfterFromHeaders,
   SUBMIT_TOOL,
+  type Turn,
   withRetries,
 } from "../agent.ts"
 
@@ -45,7 +47,7 @@ export async function runAnthropic(
   context: AgentContext,
 ): Promise<AgentOutcome> {
   const { progress, session, trace, signal } = context
-  let tools: Anthropic.Tool[] = context.tools.map((tool, index) => ({
+  const clientTools: Anthropic.Tool[] = context.tools.map((tool, index) => ({
     name: tool.name,
     description: tool.description,
     input_schema: tool.inputSchema as Anthropic.Tool.InputSchema,
@@ -53,6 +55,14 @@ export async function runAnthropic(
       ? { cache_control: { type: "ephemeral" as const } }
       : {}),
   }))
+  // In the web condition, the server-side web tools come first. Each tool's max_uses is the
+  // call budget left when the turn starts. The API counts uses across every request in a turn
+  // (pause_turn resumes included), so the value stays the same for the whole turn and the tool
+  // list keeps its cache prefix. The API has no limit across both tools together.
+  let tools: Anthropic.ToolUnion[] = [
+    ...(context.condition === "web" ? webTools(session.remaining) : []),
+    ...clientTools,
+  ]
   const system: Anthropic.TextBlockParam[] = [
     { type: "text", text: context.system, cache_control: { type: "ephemeral" } },
   ]
@@ -69,10 +79,11 @@ export async function runAnthropic(
     finalTurn: session.finalTurn,
   })
   // The final turn offers only submit_answer.
-  const submitOnly = () =>
-    tools
+  const submitOnly = (): Anthropic.ToolUnion[] =>
+    clientTools
       .filter((tool) => tool.name === SUBMIT_TOOL.name)
       .map((tool) => ({ ...tool, cache_control: { type: "ephemeral" as const } }))
+  let pauses = 0
 
   while (true) {
     let response: Anthropic.Message
@@ -112,14 +123,27 @@ export async function runAnthropic(
       cache_creation_input_tokens: usage.cache_creation_input_tokens ?? 0,
     })
     assertModel(options.model, response.model)
+    // Searches and fetches the server ran in this request, including ones run from code
+    // execution through dynamic filtering, which have no direct block of their own.
+    session.recordServerCalls(
+      usage.server_tool_use?.web_search_requests ?? 0,
+      usage.server_tool_use?.web_fetch_requests ?? 0,
+    )
 
     let thinking = ""
     const calls: Anthropic.ToolUseBlock[] = []
     for (const block of response.content) {
       if (block.type === "thinking") {
         thinking += block.thinking
-      } else if (block.type === "text" && block.text.trim()) {
-        trace.push({ role: "assistant", content: block.text, ...(thinking ? { thinking } : {}) })
+      } else if (block.type === "text") {
+        session.noteWebEvidence(
+          (block.citations ?? []).map((citation) => ("url" in citation ? citation.url : null)),
+        )
+        if (block.text.trim()) {
+          trace.push({ role: "assistant", content: block.text, ...(thinking ? { thinking } : {}) })
+          thinking = ""
+        }
+      } else if (traceServerBlock(block, trace, session, thinking)) {
         thinking = ""
       } else if (block.type === "tool_use") {
         trace.push({
@@ -140,11 +164,16 @@ export async function runAnthropic(
     if (stopReason === "max_tokens") return finish("max_tokens", stopReason)
     if (stopReason === "model_context_window_exceeded")
       return finish("context_overflow", stopReason)
-    if (stopReason === "pause_turn") continue
+    if (stopReason === "pause_turn") {
+      // The server paused its own tool loop. Sending the assistant content back unchanged,
+      // with the same tools, resumes it.
+      if (++pauses > MAX_PAUSE_RESUMES) return finish("end_turn", stopReason)
+      continue
+    }
     if (calls.length === 0) {
       if (session.finalTurn) return finish(session.finalTurnReason ?? "end_turn", stopReason)
       // The agent stopped without submitting: one final turn asks for the answer.
-      const message = session.beginFinalTurn("end_turn")
+      const message = session.beginFinalTurn(session.limitReached ? "tool_limit" : "end_turn")
       tools = submitOnly()
       trace.push({ role: "user", content: message })
       messages.push({ role: "user", content: message })
@@ -184,4 +213,113 @@ export async function runAnthropic(
     }
     messages.push({ role: "user", content: results })
   }
+}
+
+/** pause_turn resumes allowed in one attempt, so that a server loop cannot run forever. */
+const MAX_PAUSE_RESUMES = 10
+
+/** The server-side web tools, each limited to `budget` uses in a turn and blocked from Sosumi. */
+export function webTools(budget: number): Anthropic.ToolUnion[] {
+  return [
+    {
+      type: "web_search_20260209",
+      name: "web_search",
+      blocked_domains: BLOCKED_DOMAINS,
+      max_uses: budget,
+    },
+    {
+      type: "web_fetch_20260209",
+      name: "web_fetch",
+      blocked_domains: BLOCKED_DOMAINS,
+      max_uses: budget,
+    },
+  ]
+}
+
+/**
+ * Records a server tool block in the trace (each query, each result's title and URL, each
+ * fetched URL) and notes possible leaks. Returns false for any other block.
+ */
+function traceServerBlock(
+  block: Anthropic.ContentBlock,
+  trace: Turn[],
+  session: AgentContext["session"],
+  thinking: string,
+): boolean {
+  const viaCode = (block as { caller?: { type?: string } }).caller?.type?.startsWith(
+    "code_execution",
+  )
+  const note = viaCode ? " (from code execution)" : ""
+  if (block.type === "server_tool_use") {
+    const input = block.input as { query?: string; url?: string; code?: string; command?: string }
+    session.noteWebEvidence([input.query, input.url])
+    trace.push({
+      role: "tool_call",
+      name: `${block.name}${note}`,
+      content: JSON.stringify(block.input, null, 2),
+      ...(thinking ? { thinking } : {}),
+    })
+    return true
+  }
+  if (block.type === "web_search_tool_result") {
+    const content = block.content
+    if (Array.isArray(content)) {
+      session.noteWebEvidence(content.map((result) => result.url))
+      trace.push({
+        role: "tool_result",
+        name: `web_search${note}`,
+        content:
+          content.map((result) => `- ${result.title}: ${result.url}`).join("\n") || "No results.",
+      })
+    } else {
+      trace.push({
+        role: "tool_result",
+        name: `web_search${note}`,
+        content: `Error: ${content.error_code}`,
+      })
+    }
+    return true
+  }
+  if (block.type === "web_fetch_tool_result") {
+    const content = block.content as {
+      type: string
+      url?: string
+      error_code?: string
+      content?: { title?: string | null; source?: { data?: string } }
+    }
+    if (content.type === "web_fetch_result") {
+      session.noteWebEvidence([content.url])
+      const length = content.content?.source?.data?.length
+      trace.push({
+        role: "tool_result",
+        name: `web_fetch${note}`,
+        content:
+          `Fetched ${content.url}` +
+          `${content.content?.title ? ` (${content.content.title})` : ""}` +
+          `${length !== undefined ? `, ${length.toLocaleString("en-US")} characters` : ""}`,
+      })
+    } else {
+      trace.push({
+        role: "tool_result",
+        name: `web_fetch${note}`,
+        content: `Error: ${content.error_code}`,
+      })
+    }
+    return true
+  }
+  if (
+    block.type === "code_execution_tool_result" ||
+    block.type === "bash_code_execution_tool_result" ||
+    block.type === "text_editor_code_execution_tool_result"
+  ) {
+    const content = block.content as { stdout?: string; stderr?: string; return_code?: number }
+    const output = [content.stdout, content.stderr].filter(Boolean).join("\n").slice(0, 4_000)
+    trace.push({
+      role: "tool_result",
+      name: block.type,
+      content: output || JSON.stringify(content).slice(0, 4_000),
+    })
+    return true
+  }
+  return false
 }

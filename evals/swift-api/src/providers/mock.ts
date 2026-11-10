@@ -41,6 +41,8 @@ export interface MockOptions {
   answer: MockAnswer
   failure: MockFailure
   behavior: MockBehavior
+  /** In the web condition, one search result comes from the eval's repository. */
+  webLeak?: boolean
   caseDir: string
   docsPath: string
 }
@@ -105,7 +107,38 @@ export async function runMock(options: MockOptions, context: AgentContext): Prom
 
   // Behaviors that end without a submission get the final submit-only turn, as the providers give it.
   let finalReason: "tool_limit" | "end_turn" | null = null
-  if (options.behavior.startsWith("exhaust")) {
+  // In the web condition the mock plays the provider's server-side tools: it records
+  // searches and fetches the way a provider loop does, with their trace entries.
+  const webSearch = () => {
+    const query = "Swift API documentation"
+    const urls = [
+      "https://developer.apple.com/documentation/swift",
+      ...(options.webLeak ? ["https://github.com/NSHipster/sosumi.ai/pull/128"] : []),
+    ]
+    trace.push({
+      role: "tool_call",
+      name: "web_search",
+      content: JSON.stringify({ query }, null, 2),
+    })
+    trace.push({
+      role: "tool_result",
+      name: "web_search",
+      content: urls.map((url) => `- ${url}`).join("\n"),
+    })
+    session.noteWebEvidence([query, ...urls])
+    session.recordServerCalls(1, 0)
+  }
+  const webFetch = () => {
+    const url = "https://developer.apple.com/documentation/swift"
+    trace.push({ role: "tool_call", name: "web_fetch", content: JSON.stringify({ url }, null, 2) })
+    trace.push({ role: "tool_result", name: "web_fetch", content: `Fetched ${url}` })
+    session.noteWebEvidence([url])
+    session.recordServerCalls(0, 1)
+  }
+  if (context.condition === "web" && options.behavior.startsWith("exhaust")) {
+    while (!session.limitReached) webSearch()
+    finalReason = "tool_limit"
+  } else if (options.behavior.startsWith("exhaust")) {
     // Spend the whole budget on documentation calls. In the none condition the tool
     // does not exist, so each call returns an error but still counts.
     const args = { path: options.docsPath }
@@ -121,6 +154,9 @@ export async function runMock(options: MockOptions, context: AgentContext): Prom
   } else if (options.behavior.startsWith("end-turn")) {
     trace.push({ role: "assistant", content: "Here is my plan for the answer." })
     finalReason = "end_turn"
+  } else if (context.condition === "web") {
+    webSearch()
+    webFetch()
   } else if (context.condition === "sosumi") {
     const args = { path: options.docsPath }
     trace.push({

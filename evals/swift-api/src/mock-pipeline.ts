@@ -7,13 +7,13 @@
 // induced failures, resume, the spend cap, and that grading twice agrees.
 
 import { execFile } from "node:child_process"
-import { mkdtemp, readFile, rm } from "node:fs/promises"
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { createServer } from "node:net"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { parseArgs } from "node:util"
 import { evalDir } from "./cases.ts"
-import { checkProviderEdgeCases, checkProviderLoops } from "./provider-loops.ts"
+import { checkProviderEdgeCases, checkProviderLoops, checkWebLoops } from "./provider-loops.ts"
 import { regrade } from "./regrade.ts"
 import { type ErrorRow, type ResultRow, readJSONL, summarize } from "./results.ts"
 import { freePort, type LocalServer, startLocalServer } from "./sosumi.ts"
@@ -56,6 +56,7 @@ const percent = (value: number) => `${(value * 100).toFixed(1)}%`
 // 0. The provider loops, driven by fake clients with scripted responses.
 await checkProviderLoops(check)
 await checkProviderEdgeCases(check)
+await checkWebLoops(check)
 
 const runsDir = await mkdtemp(join(tmpdir(), "swift-api-mock-"))
 let server: LocalServer | null = null
@@ -332,6 +333,113 @@ try {
       systemTurn.content.includes("in the Swift language mode that the task states") &&
       noneRows.every((row) => row.prompt.includes("- Language mode: Swift 6")),
     "the system prompt forbids redeclarations and points to the language mode that each task states",
+  )
+
+  // The web condition: server-side searches and fetches count as calls and cost money,
+  // a result from Sosumi's repository flags the row and leaves it out of the headline,
+  // and a price table without a web search price refuses the condition.
+  const webCases = ["--case", "control-sha256-hex", "--case", "fm-image-attachment"]
+  const listed = await runEval([...common, ...webCases, "--condition", "none,web"])
+  const webRows = await readJSONL<ResultRow>(join(flow("reference", "web"), "results.jsonl"))
+  const webNoneRows = await readJSONL<ResultRow>(join(flow("reference", "none"), "results.jsonl"))
+  check(
+    listed.includes("conditions none and web") &&
+      webRows.length === 2 &&
+      webNoneRows.length >= 2 &&
+      webRows.every(
+        (row) =>
+          row.grade.passes === 1 &&
+          row.web_searches === 1 &&
+          row.web_fetches === 1 &&
+          row.tool_calls === 3 &&
+          row.sosumi_calls === 0 &&
+          row.meta.web_leak === false &&
+          Math.abs(row.meta.cost_usd - 0.01) < 1e-9,
+      ),
+    "--condition none,web runs both; web rows count a search and a fetch as calls and bill the search",
+  )
+  const webTrace = JSON.parse(
+    await readFile(
+      join(flow("reference", "web"), "traces", "control-sha256-hex_rep0.json"),
+      "utf8",
+    ),
+  ) as { role: string; name?: string; content: string }[]
+  check(
+    webTrace.some(
+      (turn) => turn.role === "system" && turn.content.includes("web search and web fetch"),
+    ) &&
+      webTrace.some((turn) => turn.name === "web_search" && turn.role === "tool_call") &&
+      webTrace.some((turn) => turn.name === "web_fetch" && turn.role === "tool_result"),
+    "web traces record the system prompt's web sentence, each search, and each fetch",
+  )
+
+  const leaked = await runEval([...common, ...webCases, "--condition", "web", "--mock-web-leak"])
+  const leakDir = join(runsDir, "mock-reference-web-leak", "web", "baseline")
+  const leakRows = await readJSONL<ResultRow>(join(leakDir, "results.jsonl"))
+  const leakSummary = await summarize(leakDir)
+  check(
+    leakRows.length === 2 &&
+      leakRows.every(
+        (row) =>
+          row.meta.web_leak === true &&
+          JSON.stringify(row.meta.web_leak_urls) ===
+            '["https://github.com/NSHipster/sosumi.ai/pull/128"]',
+      ) &&
+      leakSummary.leaked === 2 &&
+      leakSummary.cases === 0 &&
+      leaked.includes("left out for a Sosumi or repository leak: 2 rows"),
+    "a web result from the eval's repository flags the row, which the headline leaves out and counts",
+  )
+
+  await runEval([
+    ...common,
+    "--case",
+    "control-sha256-hex",
+    "--condition",
+    "web",
+    "--mock-behavior",
+    "exhaust",
+  ])
+  const webLimit = await readJSONL<ResultRow>(
+    join(runsDir, "mock-reference-exhaust", "web", "baseline", "results.jsonl"),
+  )
+  check(
+    webLimit.length === 1 &&
+      webLimit[0].web_searches === 12 &&
+      webLimit[0].tool_calls === 13 &&
+      webLimit[0].meta.final_turn_reason === "tool_limit" &&
+      webLimit[0].grade.passes === 1,
+    "twelve web searches reach the limit, and the final turn still lets the agent submit",
+  )
+
+  const prices = JSON.parse(await readFile(join(evalDir, "prices.json"), "utf8")) as {
+    web_search: Record<string, unknown>
+  }
+  delete prices.web_search.mock
+  const pricesPath = join(runsDir, "prices-without-mock-search.json")
+  await writeFile(pricesPath, JSON.stringify(prices))
+  let refusal = ""
+  try {
+    refusal = await runEval([
+      ...common,
+      "--case",
+      "control-sha256-hex",
+      "--condition",
+      "sosumi,web",
+      "--prices",
+      pricesPath,
+      "--runs-dir",
+      join(runsDir, "no-search-price"),
+    ])
+  } catch (error) {
+    refusal = String(error)
+  }
+  const refusedRows = await readJSONL<ResultRow>(
+    join(runsDir, "no-search-price", "mock-reference", "sosumi", "baseline", "results.jsonl"),
+  )
+  check(
+    refusal.includes("no web search price for mock") && refusedRows.length === 0,
+    "the web condition refuses to run for a provider without a web search price, before any attempt",
   )
 
   // 3. Resume: a second run of the same flow adds no rows; a failed attempt runs again.

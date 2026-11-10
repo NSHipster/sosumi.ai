@@ -24,7 +24,7 @@ const DOCS_TOOL = {
   inputSchema: { type: "object", properties: { path: { type: "string" } } },
 }
 
-function makeContext(): AgentContext {
+function makeContext(condition: "sosumi" | "web" = "sosumi"): AgentContext {
   const progress: AttemptProgress = {
     model: null,
     usage: emptyUsage(),
@@ -33,18 +33,21 @@ function makeContext(): AgentContext {
     toolCalls: 0,
     sosumiCalls: 0,
     cutResults: 0,
+    webSearches: 0,
+    webFetches: 0,
+    leaks: [],
   }
   const trace: Turn[] = []
   return {
-    condition: "sosumi",
+    condition,
     system: "system",
     task: "task",
-    tools: [DOCS_TOOL, SUBMIT_TOOL],
+    tools: condition === "web" ? [SUBMIT_TOOL] : [DOCS_TOOL, SUBMIT_TOOL],
     signal: new AbortController().signal,
     trace,
     progress,
     session: new ToolSession({
-      sosumiTools: [DOCS_TOOL.name],
+      sosumiTools: condition === "web" ? [] : [DOCS_TOOL.name],
       progress,
       maxToolCalls: MAX_CALLS,
       callSosumi: async () => ({ text: "# Page", isError: false }),
@@ -424,4 +427,273 @@ export async function checkProviderEdgeCases(check: (condition: boolean, message
       context.trace.at(-1)?.content === short.text,
     "a tool result longer than 100,000 characters is cut, noted, counted, and traced as cut",
   )
+}
+
+const APPLE = "https://developer.apple.com/documentation/foundationmodels/languagemodel"
+const REPOSITORY = "https://github.com/NSHipster/sosumi.ai/pull/128"
+
+/** Checks the web condition: server tool blocks, pause_turn, call counting, and the leak flag. */
+export async function checkWebLoops(check: (condition: boolean, message: string) => void) {
+  // Anthropic: a search that pauses, a resumed request with more searches and a fetch that
+  // reach the limit, then the final turn, in which the agent submits.
+  {
+    const requests: Anthropic.MessageCreateParams[] = []
+    const usage = (searches: number, fetches: number) => ({
+      input_tokens: 10,
+      output_tokens: 5,
+      cache_read_input_tokens: 0,
+      cache_creation_input_tokens: 0,
+      server_tool_use: { web_search_requests: searches, web_fetch_requests: fetches },
+    })
+    const responses = [
+      {
+        stop_reason: "pause_turn",
+        usage: usage(1, 0),
+        content: [
+          {
+            type: "server_tool_use",
+            id: "srvtoolu_1",
+            name: "web_search",
+            input: { query: "FoundationModels LanguageModel protocol" },
+            caller: { type: "direct" },
+          },
+          {
+            type: "web_search_tool_result",
+            tool_use_id: "srvtoolu_1",
+            content: [
+              {
+                type: "web_search_result",
+                url: APPLE,
+                title: "LanguageModel",
+                encrypted_content: "e1",
+              },
+              {
+                type: "web_search_result",
+                url: REPOSITORY,
+                title: "Add a Swift API eval",
+                encrypted_content: "e2",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        stop_reason: "end_turn",
+        usage: usage(10, 1),
+        content: [
+          {
+            type: "server_tool_use",
+            id: "srvtoolu_2",
+            name: "web_fetch",
+            input: { url: APPLE },
+            caller: { type: "direct" },
+          },
+          {
+            type: "web_fetch_tool_result",
+            tool_use_id: "srvtoolu_2",
+            content: {
+              type: "web_fetch_result",
+              url: APPLE,
+              content: {
+                type: "document",
+                source: { type: "text", media_type: "text/plain", data: "protocol LanguageModel" },
+                title: "LanguageModel",
+              },
+              retrieved_at: "2026-11-10T00:00:00Z",
+            },
+          },
+          { type: "text", text: "I have what I need.", citations: null },
+        ],
+      },
+      {
+        stop_reason: "tool_use",
+        usage: usage(0, 0),
+        content: [
+          { type: "tool_use", id: "submit", name: "submit_answer", input: { code: "let x = 1" } },
+        ],
+      },
+    ]
+    const fake = {
+      messages: {
+        stream: (params: Anthropic.MessageCreateParams) => ({
+          finalMessage: async () => {
+            requests.push(structuredClone(params))
+            return { model: "claude-sonnet-5-5", ...responses[requests.length - 1] }
+          },
+        }),
+      },
+    } as unknown as Anthropic
+    const context = makeContext("web")
+    const outcome = await runAnthropic(
+      fake,
+      { model: "claude-sonnet-5-5", effort: "medium", maxTokens: 1000 },
+      context,
+    )
+    const firstTools = (requests[0]?.tools ?? []) as {
+      type?: string
+      name: string
+      blocked_domains?: string[]
+      max_uses?: number
+    }[]
+    const search = firstTools.find((tool) => tool.type === "web_search_20260209")
+    const fetch = firstTools.find((tool) => tool.type === "web_fetch_20260209")
+    check(
+      search?.name === "web_search" &&
+        fetch?.name === "web_fetch" &&
+        JSON.stringify(search.blocked_domains) === '["sosumi.ai"]' &&
+        JSON.stringify(fetch.blocked_domains) === '["sosumi.ai"]' &&
+        search.max_uses === MAX_CALLS &&
+        fetch.max_uses === MAX_CALLS,
+      "Anthropic web: both server tools block sosumi.ai and are limited to the call budget",
+    )
+    check(
+      requests.length === 3 &&
+        requests[1].messages.length === 2 &&
+        requests[1].messages.at(-1)?.role === "assistant" &&
+        JSON.stringify(requests[1].tools) === JSON.stringify(requests[0].tools),
+      "Anthropic web: pause_turn resumes with the paused content and the same tools, and no new message",
+    )
+    const finalTools = (requests[2]?.tools ?? []) as { name: string }[]
+    const finalMessage = requests[2]?.messages.at(-1)
+    check(
+      finalTools.length === 1 &&
+        finalTools[0].name === "submit_answer" &&
+        String(finalMessage?.content).includes("You have used all 12 tool calls"),
+      "Anthropic web: 11 searches and 1 fetch reach the limit, and the final turn offers only submit_answer",
+    )
+    check(
+      outcome.endReason === "submitted" &&
+        context.session.finalTurnReason === "tool_limit" &&
+        context.progress.webSearches === 11 &&
+        context.progress.webFetches === 1 &&
+        outcome.toolCalls === 13 &&
+        JSON.stringify(context.progress.leaks) === JSON.stringify([REPOSITORY]),
+      "Anthropic web: searches and fetches count as calls, and the repository result is flagged",
+    )
+    const traced = context.trace
+      .map((turn) => `${turn.role} ${turn.name ?? ""} ${turn.content}`)
+      .join("\n")
+    check(
+      traced.includes("FoundationModels LanguageModel protocol") &&
+        traced.includes(`- LanguageModel: ${APPLE}`) &&
+        traced.includes(`- Add a Swift API eval: ${REPOSITORY}`) &&
+        traced.includes(`Fetched ${APPLE} (LanguageModel)`),
+      "Anthropic web: the trace records each query, each result's title and URL, and each fetched URL",
+    )
+  }
+
+  // OpenAI: one response with a search (whose sources include Sosumi), an opened page,
+  // a citation, and the submission; then a response that ends without submitting.
+  for (const submit of [true, false]) {
+    const requests: OpenAI.Responses.ResponseCreateParams[] = []
+    const call = (id: string, name: string, args: unknown) => ({
+      type: "function_call",
+      call_id: id,
+      name,
+      arguments: JSON.stringify(args),
+    })
+    const webOutput = [
+      {
+        type: "web_search_call",
+        id: "ws_1",
+        status: "completed",
+        action: {
+          type: "search",
+          query: "FoundationModels LanguageModel protocol",
+          sources: [{ type: "url", url: "https://sosumi.ai/documentation/foundationmodels" }],
+        },
+      },
+      {
+        type: "web_search_call",
+        id: "ws_2",
+        status: "completed",
+        action: { type: "open_page", url: APPLE },
+      },
+      {
+        type: "message",
+        role: "assistant",
+        content: [
+          {
+            type: "output_text",
+            text: "LanguageModel is a protocol.",
+            annotations: [
+              {
+                type: "url_citation",
+                url: APPLE,
+                title: "LanguageModel",
+                start_index: 0,
+                end_index: 5,
+              },
+            ],
+          },
+        ],
+      },
+    ]
+    const fake = {
+      responses: {
+        create: async (params: OpenAI.Responses.ResponseCreateParams) => {
+          requests.push(structuredClone(params))
+          const first = requests.length === 1
+          return {
+            model: "gpt-6.1-sol",
+            status: "completed",
+            incomplete_details: null,
+            usage: {
+              input_tokens: 10,
+              output_tokens: 5,
+              total_tokens: 15,
+              input_tokens_details: { cached_tokens: 0 },
+              output_tokens_details: { reasoning_tokens: 0 },
+            },
+            output: first
+              ? [
+                  ...webOutput,
+                  ...(submit ? [call("c1", "submit_answer", { code: "let x = 1" })] : []),
+                ]
+              : [call("c2", "submit_answer", { code: "let x = 2" })],
+          }
+        },
+      },
+    } as unknown as OpenAI
+    const context = makeContext("web")
+    const outcome = await runOpenAI(
+      fake,
+      { model: "gpt-6.1-sol", effort: "medium", maxTokens: 1000 },
+      context,
+    )
+    const first = requests[0] as OpenAI.Responses.ResponseCreateParams & { max_tool_calls?: number }
+    const webTool = (first?.tools ?? []).find((tool) => tool.type === "web_search") as
+      | { filters?: { blocked_domains?: string[] } }
+      | undefined
+    if (submit) {
+      check(
+        JSON.stringify(webTool?.filters?.blocked_domains) === '["sosumi.ai"]' &&
+          first.max_tool_calls === MAX_CALLS &&
+          (first.include ?? []).includes("web_search_call.action.sources"),
+        "OpenAI web: the web search tool blocks sosumi.ai, asks for sources, and caps built-in calls at the budget",
+      )
+      check(
+        outcome.endReason === "submitted" &&
+          context.progress.webSearches === 1 &&
+          context.progress.webFetches === 1 &&
+          outcome.toolCalls === 3 &&
+          JSON.stringify(context.progress.leaks) ===
+            JSON.stringify(["https://sosumi.ai/documentation/foundationmodels"]),
+        "OpenAI web: a search and an opened page count as calls, and a Sosumi source is flagged",
+      )
+    } else {
+      const second = requests[1] as OpenAI.Responses.ResponseCreateParams & {
+        max_tool_calls?: number
+      }
+      check(
+        requests.length === 2 &&
+          second.tools?.length === 1 &&
+          (second.tools[0] as OpenAI.Responses.FunctionTool).name === "submit_answer" &&
+          second.max_tool_calls === undefined &&
+          outcome.endReason === "submitted" &&
+          context.session.finalTurnReason === "end_turn",
+        "OpenAI web: after an end_turn without a submission, the final turn drops the web tool",
+      )
+    }
+  }
 }

@@ -13,6 +13,7 @@ import {
   type AgentOutcome,
   AttemptError,
   type AttemptProgress,
+  CONDITIONS,
   type Condition,
   describeError,
   emptyUsage,
@@ -54,7 +55,8 @@ const usage = `Usage: npm run eval -- [options]
 
   --model <id>              Model ID to run (required unless --provider mock)
   --provider <name>         anthropic, openai, or mock (default: from the model ID)
-  --condition <name>        sosumi, none, or both (default: both)
+  --condition <names>       sosumi, none, web, or a comma-separated list such as sosumi,web;
+                            both means sosumi,none (default: both)
   --reps <n>                Attempts per case and condition (default: 1)
   --split <half>            Run only the train or the test cases of split.json
   --case <id>               Run only this case; repeat for more
@@ -74,6 +76,8 @@ const usage = `Usage: npm run eval -- [options]
                             or server-error-once (mock provider)
   --mock-behavior <name>    submit, exhaust, exhaust-no-submit, end-turn,
                             or end-turn-no-submit (mock provider)
+  --mock-web-leak           The mock's web results include a page from the eval's repository
+  --prices <path>           Use this price table instead of prices.json
   --mock-usd-per-attempt <n>  Spend that each mock attempt counts (default: 0)
   --max-usd-mock <n>        Spend cap for the mock provider, to test the caps
 
@@ -132,6 +136,8 @@ async function main() {
       "mock-failure": { type: "string", default: "none" },
       "mock-behavior": { type: "string", default: "submit" },
       "mock-usd-per-attempt": { type: "string", default: "0" },
+      "mock-web-leak": { type: "boolean", default: false },
+      prices: { type: "string" },
       help: { type: "boolean", default: false },
     },
   })
@@ -173,10 +179,18 @@ async function main() {
   if (!/^(baseline|v\d+)$/.test(values.variant))
     throw new Error("--variant must be baseline or v<N>")
 
-  const conditions: Condition[] =
-    values.condition === "both" ? ["sosumi", "none"] : [values.condition as Condition]
-  if (conditions.some((c) => c !== "sosumi" && c !== "none"))
-    throw new Error(`Unknown condition ${values.condition}`)
+  const conditions = [
+    ...new Set(
+      values.condition
+        .split(",")
+        .map((name) => name.trim())
+        .flatMap((name) => (name === "both" ? ["sosumi", "none"] : [name])),
+    ),
+  ] as Condition[]
+  const unknownConditions = conditions.filter((name) => !CONDITIONS.includes(name))
+  if (conditions.length === 0 || unknownConditions.length > 0) {
+    throw new Error(`Unknown condition ${unknownConditions.join(", ") || values.condition}`)
+  }
   const runsDir = values["runs-dir"] as string
   const reps = Number(values.reps)
   const maxToolCalls = Number(values["max-tool-calls"])
@@ -186,7 +200,7 @@ async function main() {
   const maxTokens = Number(values["max-tokens"])
 
   // Prices: refuse to run a paid model whose price is unknown.
-  const prices = await loadPrices()
+  const prices = await loadPrices(values.prices)
   let price: Price | null = null
   if (provider === "anthropic" || provider === "openai") {
     price = prices[provider][model] ?? null
@@ -196,11 +210,19 @@ async function main() {
       )
     }
   }
+  // The web condition also pays per search: refuse it for a provider without that price.
+  const searchPrice = prices.web_search?.[provider]?.usd_per_1000
+  if (conditions.includes("web") && typeof searchPrice !== "number") {
+    throw new Error(
+      `The price table has no web search price for ${provider}; add web_search.${provider}.usd_per_1000 before running the web condition.`,
+    )
+  }
   const mockUSD = Number(values["mock-usd-per-attempt"])
-  const attemptCost = (requests: AttemptProgress["requests"]) =>
-    provider === "mock"
+  const attemptCost = (progress: AttemptProgress) =>
+    (provider === "mock"
       ? mockUSD
-      : attemptCostUSD(requests, price as Price, prices.cache_write_multiplier)
+      : attemptCostUSD(progress.requests, price as Price, prices.cache_write_multiplier)) +
+    (progress.webSearches * (searchPrice ?? 0)) / 1_000
   const capFlag = {
     anthropic: values["max-usd-anthropic"],
     openai: values["max-usd-openai"],
@@ -225,6 +247,7 @@ async function main() {
           model,
           mockFailure !== "none" ? mockFailure : "",
           mockBehavior !== "submit" ? mockBehavior : "",
+          values["mock-web-leak"] ? "web-leak" : "",
         ]
           .filter(Boolean)
           .join("-")
@@ -329,6 +352,9 @@ async function main() {
       toolCalls: 0,
       sosumiCalls: 0,
       cutResults: 0,
+      webSearches: 0,
+      webFetches: 0,
+      leaks: [],
     }
     const tools = toolsFor(condition)
     const controller = new AbortController()
@@ -370,6 +396,7 @@ async function main() {
           answer: mockAnswer,
           failure: mockFailure,
           behavior: mockBehavior,
+          webLeak: values["mock-web-leak"],
           caseDir: evalCase.dir,
           docsPath: meta.docs[0].replace("https://sosumi.ai", ""),
         },
@@ -378,7 +405,7 @@ async function main() {
     }
 
     const recordError = async (failure: AttemptError) => {
-      const cost = attemptCost(progress.requests)
+      const cost = attemptCost(progress)
       charge(cost)
       const row: ErrorRow = {
         prompt_id: meta.id,
@@ -443,7 +470,7 @@ async function main() {
       max_tokens: "truncated",
       context_overflow: "context_overflow",
     }[outcome.endReason]
-    const cost = attemptCost(progress.requests)
+    const cost = attemptCost(progress)
     const base = {
       prompt_id: meta.id,
       prompt: evalCase.task,
@@ -457,6 +484,8 @@ async function main() {
       tool_calls: outcome.toolCalls,
       sosumi_calls: outcome.sosumiCalls,
       cut_tool_results: progress.cutResults,
+      web_searches: progress.webSearches,
+      web_fetches: progress.webFetches,
       retries: outcome.retries,
     }
     const rowMeta = {
@@ -464,6 +493,9 @@ async function main() {
       condition,
       end_reason: outcome.endReason,
       final_turn: outcome.finalTurn,
+      ...(condition === "web" || progress.leaks.length > 0
+        ? { web_leak: progress.leaks.length > 0, web_leak_urls: progress.leaks }
+        : {}),
       ...(context.session.finalTurnReason
         ? { final_turn_reason: context.session.finalTurnReason }
         : {}),

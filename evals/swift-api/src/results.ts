@@ -31,6 +31,9 @@ export interface ResultRow {
   latency_s: number
   tool_calls: number
   sosumi_calls: number
+  /** Server-side web searches and page actions, in the web condition. */
+  web_searches?: number
+  web_fetches?: number
   /** Tool results cut at 100,000 characters. */
   cut_tool_results?: number
   retries: number
@@ -40,6 +43,9 @@ export interface ResultRow {
     end_reason: string
     /** The agent reached the tool-call limit and was given one final turn to submit. */
     final_turn?: boolean
+    /** True when a web search, fetched page, or citation came from Sosumi or its repository. */
+    web_leak?: boolean
+    web_leak_urls?: string[]
     /** Why the final turn was given: tool_limit or end_turn. */
     final_turn_reason?: string
     failure_class?: string
@@ -80,6 +86,8 @@ export const flowState = {
     { id: "tool_calls", label: "Tool calls" },
     { id: "sosumi_calls", label: "Sosumi calls" },
     { id: "cut_tool_results", label: "Cut results" },
+    { id: "web_searches", label: "Web searches" },
+    { id: "web_fetches", label: "Web fetches" },
     { id: "latency_s", label: "Latency", unit: "s" },
   ],
 }
@@ -134,12 +142,14 @@ export interface Price {
 
 interface PriceTable {
   cache_write_multiplier: number
+  /** USD per 1,000 web searches, by provider. */
+  web_search?: Record<string, { usd_per_1000: number | null; source?: string } | undefined>
   anthropic: Record<string, Price | null>
   openai: Record<string, Price | null>
 }
 
-export async function loadPrices(): Promise<PriceTable> {
-  return JSON.parse(await readFile(join(evalDir, "prices.json"), "utf8")) as PriceTable
+export async function loadPrices(path = join(evalDir, "prices.json")): Promise<PriceTable> {
+  return JSON.parse(await readFile(path, "utf8")) as PriceTable
 }
 
 /** The prompt size of one request: uncached, cached, and newly cached input tokens. */
@@ -257,6 +267,8 @@ export interface FlowSummary {
   bySplit: Record<Split, Headline>
   cases: number
   rows: number
+  /** Rows left out of every mean because a web tool reached Sosumi or its repository. */
+  leaked: number
   truncated: number
   errors: number
   errorsByClass: Record<string, number>
@@ -278,8 +290,10 @@ export async function summarize(variantDir: string): Promise<FlowSummary> {
   const scored = new Set(rows.map((row) => `${row.prompt_id}#${row.rep}`))
   const openErrors = errors.filter((row) => !scored.has(`${row.prompt_id}#${row.rep}`))
 
+  // A row whose web tools reached Sosumi or the eval's repository may have seen the answers.
+  const leaked = rows.filter((row) => row.meta.web_leak)
   const perCase = new Map<string, ResultRow[]>()
-  for (const row of rows.filter((row) => row.status === "ok")) {
+  for (const row of rows.filter((row) => row.status === "ok" && !row.meta.web_leak)) {
     perCase.set(row.prompt_id, [...(perCase.get(row.prompt_id) ?? []), row])
   }
   const caseMean = (metric: "typechecks" | "passes" | "deprecations") =>
@@ -326,6 +340,7 @@ export async function summarize(variantDir: string): Promise<FlowSummary> {
     },
     cases: perCase.size,
     rows: rows.length,
+    leaked: leaked.length,
     truncated: rows.filter((row) => row.status === "truncated").length,
     errors: openErrors.length,
     errorsByClass,
@@ -352,5 +367,8 @@ export function formatSummary(summary: FlowSummary): string {
     `  typechecks ${interval(summary.typechecks)}`,
     `  deprecations per answer: ${Number.isNaN(summary.deprecations) ? "n/a" : summary.deprecations.toFixed(2)}`,
     `  scored rows ${summary.rows}, truncated ${summary.truncated}, unscored errors ${summary.errors}${errorDetail ? ` (${errorDetail})` : ""}`,
+    ...(summary.leaked > 0
+      ? [`  left out for a Sosumi or repository leak: ${summary.leaked} rows`]
+      : []),
   ].join("\n")
 }
