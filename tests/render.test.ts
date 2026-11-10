@@ -165,6 +165,69 @@ describe("Render Function", () => {
     })
   })
 
+  describe("Objective-C pages", () => {
+    const swiftVariant = {
+      paths: ["/documentation/foundation/datecomponents"],
+      traits: [{ interfaceLanguage: "swift" }],
+    }
+    const objcVariant = {
+      paths: ["/documentation/foundation/nsdatecomponents"],
+      traits: [{ interfaceLanguage: "occ" }],
+    }
+
+    it("should link the Swift version of an Objective-C page", async () => {
+      const result = await renderFromJSON(
+        {
+          metadata: { title: "NSDateComponents" },
+          identifier: {
+            url: "doc://com.apple.foundation/documentation/Foundation/NSDateComponents",
+            interfaceLanguage: "occ",
+          },
+          variants: [swiftVariant, objcVariant],
+        } as any,
+        "https://developer.apple.com/documentation/foundation/nsdatecomponents",
+      )
+
+      expect(result).toContain(
+        "> [!NOTE]\n> This page documents the Objective-C API. For the Swift API, see [/documentation/foundation/datecomponents](/documentation/foundation/datecomponents).",
+      )
+    })
+
+    it("should say when an Objective-C page has no Swift version", async () => {
+      const result = await renderFromJSON(
+        {
+          metadata: { title: "era" },
+          identifier: {
+            url: "doc://com.apple.foundation/documentation/Foundation/NSDateComponents/era",
+            interfaceLanguage: "occ",
+          },
+          variants: [objcVariant],
+        } as any,
+        "https://developer.apple.com/documentation/foundation/nsdatecomponents/era",
+      )
+
+      expect(result).toContain(
+        "> This page documents the Objective-C API. Apple's documentation doesn't link a Swift version of this symbol",
+      )
+    })
+
+    it("should not add a note to a Swift page", async () => {
+      const result = await renderFromJSON(
+        {
+          metadata: { title: "DateComponents" },
+          identifier: {
+            url: "doc://com.apple.foundation/documentation/Foundation/DateComponents",
+            interfaceLanguage: "swift",
+          },
+          variants: [swiftVariant, objcVariant],
+        } as any,
+        "https://developer.apple.com/documentation/foundation/datecomponents",
+      )
+
+      expect(result).not.toContain("Objective-C")
+    })
+  })
+
   describe("Declaration Rendering", () => {
     it("should render Swift declarations with proper formatting", async () => {
       const data = {
