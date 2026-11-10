@@ -18,6 +18,7 @@ interface CaseMeta {
   required_symbols: string[]
   docs: string[]
   notes: string
+  round?: number
 }
 
 // Returns a backtick fence longer than any backtick run in the text.
@@ -60,9 +61,21 @@ const lines: string[] = [
   "`scripts/verify-cases` type-checks every case against the SDK;",
   "`scripts/render-cases.ts` regenerates this file.",
   "",
+]
+
+const latestRound = Math.max(...cases.map(({ meta }) => meta.round ?? 1))
+if (latestRound > 1) {
+  const changed = cases.filter(({ meta }) => (meta.round ?? 1) === latestRound)
+  lines.push(`## New in round ${latestRound}`, "")
+  lines.push(`These ${changed.length} cases have \`"round": ${latestRound}\` in \`meta.json\`.`, "")
+  for (const { meta } of changed) lines.push(`- [${meta.id}](#${meta.id}) (${meta.framework})`)
+  lines.push("")
+}
+
+lines.push(
   "| ID | Framework | Source | Target | Required symbols |",
   "| --- | --- | --- | --- | --- |",
-]
+)
 for (const { meta } of cases) {
   const symbols = meta.required_symbols.map(code).join(", ")
   lines.push(
@@ -75,6 +88,7 @@ for (const { meta, task, reference } of cases) {
   lines.push(`- Framework: ${meta.framework}`)
   lines.push(`- Source: ${meta.source}`)
   lines.push(`- Target: ${code(meta.target)}`)
+  if (meta.round) lines.push(`- Round: ${meta.round}`)
   if (meta.swift_flags?.length) lines.push(`- Compiler flags: ${code(meta.swift_flags.join(" "))}`)
   lines.push(`- Documentation: ${meta.docs.map((url) => `<${url}>`).join(", ")}`)
   lines.push("", meta.notes, "", "### task.md", "", block("markdown", task))

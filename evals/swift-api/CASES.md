@@ -6,6 +6,19 @@ a stale answer, a stub answer, and metadata.
 `scripts/verify-cases` type-checks every case against the SDK;
 `scripts/render-cases.ts` regenerates this file.
 
+## New in round 2
+
+These 8 cases have `"round": 2` in `meta.json`.
+
+- [ios-appintents-execution-targets](#ios-appintents-execution-targets) (AppIntents)
+- [ios-nowplaying-media-commands](#ios-nowplaying-media-commands) (NowPlaying)
+- [ios-photosui-picker-search](#ios-photosui-picker-search) (PhotosUI)
+- [ios-uikit-bar-minimization](#ios-uikit-bar-minimization) (UIKit)
+- [ios-uikit-grammar-checking](#ios-uikit-grammar-checking) (UIKit)
+- [ios-uikit-reduced-resource-usage](#ios-uikit-reduced-resource-usage) (UIKit)
+- [ios-uikit-scene-closure-confirmation](#ios-uikit-scene-closure-confirmation) (UIKit)
+- [ios-uikit-sheet-placement](#ios-uikit-sheet-placement) (UIKit)
+
 | ID | Framework | Source | Target | Required symbols |
 | --- | --- | --- | --- | --- |
 | [appkit-window-key-message](#appkit-window-key-message) | AppKit | sdk-diff | `arm64-apple-macos27.0` | `addObserver(of`, `didBecomeKey` |
@@ -18,7 +31,7 @@ a stale answer, a stub answer, and metadata.
 | [coredata-remote-change-message](#coredata-remote-change-message) | CoreData | sdk-diff | `arm64-apple-macos27.0` | `messages(of`, `remoteChange` |
 | [cryptokit-one-time-kem](#cryptokit-one-time-kem) | CryptoKit | sdk-diff | `arm64-apple-macos26.0` | `OneTimePrivateKey`, `decapsulate` |
 | [fm-context-size-exceeded](#fm-context-size-exceeded) | FoundationModels | sdk-diff | `arm64-apple-macos27.0` | `contextSizeExceeded`, `LanguageModelError` |
-| [fm-custom-language-model](#fm-custom-language-model) | FoundationModels | failure | `arm64-apple-macos27.0` | `LanguageModelExecutor`, `LanguageModelCapabilities`, `channel.send` |
+| [fm-custom-language-model](#fm-custom-language-model) | FoundationModels | failure | `arm64-apple-macos27.0` | `LanguageModelExecutor`, `LanguageModelCapabilities`, `.send(` |
 | [fm-image-attachment](#fm-image-attachment) | FoundationModels | failure | `arm64-apple-macos27.0` | `capabilities`, `vision`, `AttachmentSegment`, `ImageAttachment` |
 | [fm-session-property-sendable](#fm-session-property-sendable) | FoundationModels | failure | `arm64-apple-macos27.0` | `SessionProperty` |
 | [fm-token-budget](#fm-token-budget) | FoundationModels | failure | `arm64-apple-macos26.0` | `contextSize`, `tokenCount` |
@@ -26,6 +39,14 @@ a stale answer, a stub answer, and metadata.
 | [foundation-progress-manager](#foundation-progress-manager) | Foundation | sdk-diff | `arm64-apple-macos27.0` | `start(totalCount`, `complete(count` |
 | [healthkit-earliest-authorized-date](#healthkit-earliest-authorized-date) | HealthKit | sdk-diff | `arm64-apple-macos26.0` | `earliestAuthorizedSampleDate`, `earliestPermittedSampleDate` |
 | [imageplayground-creation-strategy](#imageplayground-creation-strategy) | ImagePlayground | sdk-diff | `arm64-apple-macos26.4` | `creationStrategy`, `editExisting` |
+| [ios-appintents-execution-targets](#ios-appintents-execution-targets) | AppIntents | sdk-diff | `arm64-apple-ios27.0` | `allowedExecutionTargets`, `refresh` |
+| [ios-nowplaying-media-commands](#ios-nowplaying-media-commands) | NowPlaying | sdk-diff | `arm64-apple-ios27.0` | `skipForward`, `skipBackward`, `preferredIntervals` |
+| [ios-photosui-picker-search](#ios-photosui-picker-search) | PhotosUI | sdk-diff | `arm64-apple-ios27.0` | `searchText`, `PHPickerSearchText` |
+| [ios-uikit-bar-minimization](#ios-uikit-bar-minimization) | UIKit | sdk-diff | `arm64-apple-ios27.0` | `navigationBarMinimization`, `onScrollDown`, `atScrollEdge` |
+| [ios-uikit-grammar-checking](#ios-uikit-grammar-checking) | UIKit | sdk-diff | `arm64-apple-ios27.0` | `grammarCheckingType`, `spellCheckingType`, `autocorrectionType`, `smartQuotesType` |
+| [ios-uikit-reduced-resource-usage](#ios-uikit-reduced-resource-usage) | UIKit | sdk-diff | `arm64-apple-ios26.0` | `systemPrefersReducedResourceUsage`, `isLowPowerModeEnabled` |
+| [ios-uikit-scene-closure-confirmation](#ios-uikit-scene-closure-confirmation) | UIKit | sdk-diff | `arm64-apple-ios27.0` | `closureConfirmation`, `UISceneClosureConfirmation` |
+| [ios-uikit-sheet-placement](#ios-uikit-sheet-placement) | UIKit | sdk-diff | `arm64-apple-ios26.0` | `preferredPlacement`, `trailing` |
 | [metrickit-diagnostic-reports](#metrickit-diagnostic-reports) | MetricKit | sdk-diff | `arm64-apple-macos27.0` | `diagnosticReports`, `crash` |
 | [network-dtls](#network-dtls) | Network | sdk-diff | `arm64-apple-macos27.0` | `NetworkConnection`, `DTLS`, `UDP`, `DTLSv12` |
 | [observation-continuous](#observation-continuous) | Observation | sdk-diff | `arm64-apple-macos27.0` | `withContinuousObservation` |
@@ -990,6 +1011,441 @@ func editingOptions() -> ImagePlaygroundOptions {
         options.creationStrategy = .editExisting
     }
     return options
+}
+```
+
+## ios-appintents-execution-targets
+
+- Framework: AppIntents
+- Source: sdk-diff
+- Target: `arm64-apple-ios27.0`
+- Round: 2
+- Documentation: <https://sosumi.ai/documentation/appintents/appintent/allowedexecutiontargets>, <https://sosumi.ai/documentation/appintents/intentexecutiontargets>
+
+The iOS 27 SDK adds AppIntent.allowedExecutionTargets and the IntentExecutionTargets option set (default, main, appIntentsExtension, widgetKitExtension). The check cannot see which targets an answer allows, because the protocol supplies a default; the required_symbols check rejects an answer that never sets allowedExecutionTargets.
+
+### task.md
+
+````markdown
+# Run an App Intent only in the main app
+
+- Platform: iOS
+- Deployment target: iOS 27.0 (`arm64-apple-ios27.0`)
+- Framework: AppIntents
+
+A news app offers a Shortcuts action that refreshes the feed.
+The refresh needs the app's in-memory caches,
+so the system must run this intent only in the app's main process,
+never in an App Intents extension or a widget extension.
+The check file declares the feed store:
+
+```swift
+actor FeedStore {
+    static let shared: FeedStore
+    func refresh() async throws
+}
+```
+
+The intent's title is `Refresh Feed`.
+Running it refreshes the shared feed store and returns an empty result.
+
+Declare:
+
+```swift
+struct RefreshFeedIntent: AppIntent {
+    init()
+    func perform() async throws -> some IntentResult
+}
+```
+
+Implement the behavior completely.
+Do not use placeholder bodies such as `fatalError()`.
+````
+
+### reference.swift
+
+```swift
+import AppIntents
+
+struct RefreshFeedIntent: AppIntent {
+    static let title: LocalizedStringResource = "Refresh Feed"
+    static let allowedExecutionTargets: IntentExecutionTargets = .main
+
+    init() {}
+
+    func perform() async throws -> some IntentResult {
+        try await FeedStore.shared.refresh()
+        return .result()
+    }
+}
+```
+
+## ios-nowplaying-media-commands
+
+- Framework: NowPlaying
+- Source: sdk-diff
+- Target: `arm64-apple-ios27.0`
+- Round: 2
+- Documentation: <https://sosumi.ai/documentation/nowplaying/mediacommand>, <https://sosumi.ai/documentation/nowplaying/mediacommand/skipforward(preferredintervals:_:)>
+
+NowPlaying is a new framework in the iOS 27 SDK. MediaCommand has static factories such as play(_:), pause(_:), skipForward(preferredIntervals:_:), and skipBackward(preferredIntervals:_:). Before it, apps registered handlers on MPRemoteCommandCenter, whose commands are MPRemoteCommand objects.
+
+### task.md
+
+````markdown
+# Offer playback controls with the NowPlaying framework
+
+- Platform: iOS
+- Deployment target: iOS 27.0 (`arm64-apple-ios27.0`)
+- Framework: NowPlaying
+
+A podcast app publishes its playback controls to the system
+(Lock Screen, Control Center, headphones) with the NowPlaying framework.
+It offers play, pause, skip forward by 30 seconds, and skip back by 15 seconds.
+The check file declares the player:
+
+```swift
+@MainActor protocol AudioPlayer: AnyObject {
+    func play() async throws
+    func pause() async throws
+    func skip(by seconds: TimeInterval) async throws  // negative values skip back
+}
+```
+
+Each control calls the matching player method.
+The skip controls pass the interval that the system requests.
+
+Declare:
+
+```swift
+@MainActor
+func transportCommands(for player: any AudioPlayer) -> [MediaCommand]
+```
+
+Implement the behavior completely.
+Do not use placeholder bodies such as `fatalError()`.
+````
+
+### reference.swift
+
+```swift
+import Foundation
+import NowPlaying
+
+@MainActor
+func transportCommands(for player: any AudioPlayer) -> [MediaCommand] {
+    [
+        .play { try await player.play() },
+        .pause { try await player.pause() },
+        .skipForward(preferredIntervals: [30]) { interval in
+            try await player.skip(by: interval)
+        },
+        .skipBackward(preferredIntervals: [15]) { interval in
+            try await player.skip(by: -interval)
+        },
+    ]
+}
+```
+
+## ios-photosui-picker-search
+
+- Framework: PhotosUI
+- Source: sdk-diff
+- Target: `arm64-apple-ios27.0`
+- Round: 2
+- Documentation: <https://sosumi.ai/documentation/photosui/phpickerconfiguration-swift.struct/searchtext>, <https://sosumi.ai/documentation/photosui/phpickersearchtext-swift.struct>
+
+The iOS 27 SDK adds PHPickerConfiguration.searchText of type PHPickerSearchText?, created from a string or a UIPhotoSearchSuggestion.
+
+### task.md
+
+````markdown
+# Open the photo picker with a search already filled in
+
+- Platform: iOS
+- Deployment target: iOS 27.0 (`arm64-apple-ios27.0`)
+- Framework: PhotosUI
+
+A travel journal app lets the user add photos to a trip.
+It opens the system photo picker showing only images,
+with the picker's search already filled in with the trip's destination,
+so the user starts from matching photos.
+
+Declare:
+
+```swift
+func photoPickerConfiguration(searchingFor destination: String) -> PHPickerConfiguration
+```
+
+Implement the behavior completely.
+Do not use placeholder bodies such as `fatalError()`.
+````
+
+### reference.swift
+
+```swift
+import PhotosUI
+
+func photoPickerConfiguration(searchingFor destination: String) -> PHPickerConfiguration {
+    var configuration = PHPickerConfiguration()
+    configuration.filter = .images
+    configuration.searchText = PHPickerSearchText(destination)
+    return configuration
+}
+```
+
+## ios-uikit-bar-minimization
+
+- Framework: UIKit
+- Source: sdk-diff
+- Target: `arm64-apple-ios27.0`
+- Round: 2
+- Documentation: <https://sosumi.ai/documentation/uikit/uinavigationitem/navigationbarminimization-1kj9z>, <https://sosumi.ai/documentation/uikit/uibarminimization-swift.struct>
+
+The iOS 27 SDK adds UIBarMinimization (a Swift struct refined from the Objective-C class) with minimizationBehavior, safeAreaAdjustment, and restorationBehavior, and UINavigationItem.navigationBarMinimization. iOS 26 has UITabBarController.tabBarMinimizeBehavior but no navigation bar equivalent.
+
+### task.md
+
+````markdown
+# Minimize the navigation bar while reading
+
+- Platform: iOS
+- Deployment target: iOS 27.0 (`arm64-apple-ios27.0`)
+- Framework: UIKit
+
+A reading app shows long articles in a navigation controller.
+As the reader scrolls down through an article, the navigation bar minimizes
+to give the text more room.
+The bar comes back only when the reader scrolls back to the top of the article,
+not as soon as the reader changes scroll direction.
+
+Declare:
+
+```swift
+@MainActor
+func configureReadingNavigationBar(for item: UINavigationItem)
+```
+
+Implement the behavior completely.
+Do not use placeholder bodies such as `fatalError()`.
+````
+
+### reference.swift
+
+```swift
+import UIKit
+
+@MainActor
+func configureReadingNavigationBar(for item: UINavigationItem) {
+    var minimization = UIBarMinimization()
+    minimization.minimizationBehavior = .onScrollDown
+    minimization.restorationBehavior = .atScrollEdge
+    item.navigationBarMinimization = minimization
+}
+```
+
+## ios-uikit-grammar-checking
+
+- Framework: UIKit
+- Source: sdk-diff
+- Target: `arm64-apple-ios27.0`
+- Round: 2
+- Documentation: <https://sosumi.ai/documentation/uikit/uitextinputtraits/grammarcheckingtype>, <https://sosumi.ai/documentation/uikit/uitextgrammarcheckingtype>
+
+The iOS 27 SDK adds UITextGrammarCheckingType (default, no, yes) and the grammarCheckingType text input trait. NSTextView on macOS uses isGrammarCheckingEnabled, which UITextView does not have.
+
+### task.md
+
+````markdown
+# Turn off writing corrections in a code editor
+
+- Platform: iOS
+- Deployment target: iOS 27.0 (`arm64-apple-ios27.0`)
+- Framework: UIKit
+
+A code snippet app edits source code in a text view.
+Writing aids that help with prose get in the way of code,
+so the text view turns off autocorrection, spell checking, grammar checking,
+and smart quotes.
+
+Declare:
+
+```swift
+@MainActor
+func makeCodeTextView() -> UITextView
+```
+
+Implement the behavior completely.
+Do not use placeholder bodies such as `fatalError()`.
+````
+
+### reference.swift
+
+```swift
+import UIKit
+
+@MainActor
+func makeCodeTextView() -> UITextView {
+    let textView = UITextView()
+    textView.autocorrectionType = .no
+    textView.spellCheckingType = .no
+    textView.grammarCheckingType = .no
+    textView.smartQuotesType = .no
+    return textView
+}
+```
+
+## ios-uikit-reduced-resource-usage
+
+- Framework: UIKit
+- Source: sdk-diff
+- Target: `arm64-apple-ios26.0`
+- Round: 2
+- Documentation: <https://sosumi.ai/documentation/uikit/uiapplication/systemprefersreducedresourceusage>, <https://sosumi.ai/documentation/foundation/processinfo/islowpowermodeenabled>
+
+The iOS 27 SDK adds UIApplication.systemPrefersReducedResourceUsage, a matching trait, and a change notification. At an iOS 26.0 deployment target the property needs #available(iOS 27.0, *); the fallback is ProcessInfo.isLowPowerModeEnabled.
+
+### task.md
+
+````markdown
+# Do less background work when the system asks for it
+
+- Platform: iOS
+- Deployment target: iOS 26.0 (`arm64-apple-ios26.0`)
+- Framework: UIKit
+
+A photo app runs optional background work, such as generating thumbnails ahead of time.
+On iOS versions where the system reports that it prefers apps to reduce their resource usage,
+the app follows that preference.
+On older versions in the deployment range, it reduces work when Low Power Mode is on.
+
+Declare:
+
+```swift
+@MainActor
+func shouldReduceBackgroundWork() -> Bool
+```
+
+Implement the behavior completely.
+Do not use placeholder bodies such as `fatalError()`.
+````
+
+### reference.swift
+
+```swift
+import UIKit
+
+@MainActor
+func shouldReduceBackgroundWork() -> Bool {
+    if #available(iOS 27.0, *) {
+        return UIApplication.shared.systemPrefersReducedResourceUsage
+    }
+    return ProcessInfo.processInfo.isLowPowerModeEnabled
+}
+```
+
+## ios-uikit-scene-closure-confirmation
+
+- Framework: UIKit
+- Source: sdk-diff
+- Target: `arm64-apple-ios27.0`
+- Round: 2
+- Documentation: <https://sosumi.ai/documentation/uikit/uiwindowscene/closureconfirmation>, <https://sosumi.ai/documentation/uikit/uisceneclosureconfirmation>
+
+The iOS 27 SDK adds UISceneClosureConfirmation, created with init(title:message:actions:) from UIAlertAction values, and UIWindowScene.closureConfirmation. Both are unavailable on tvOS, watchOS, and visionOS.
+
+### task.md
+
+````markdown
+# Confirm before closing a window with unsaved changes
+
+- Platform: iOS
+- Deployment target: iOS 27.0 (`arm64-apple-ios27.0`)
+- Framework: UIKit
+
+On iPad, a document editor runs in several windows.
+When a window has unsaved changes, closing it must first ask the user to confirm.
+The confirmation has the title `Discard changes?`,
+the message `This window has unsaved changes.`,
+a destructive `Discard` action that calls `discard`,
+and a cancel action titled `Keep Editing`.
+
+Declare:
+
+```swift
+@MainActor
+func requireClosureConfirmation(for scene: UIWindowScene, discard: @escaping () -> Void)
+```
+
+Implement the behavior completely.
+Do not use placeholder bodies such as `fatalError()`.
+````
+
+### reference.swift
+
+```swift
+import UIKit
+
+@MainActor
+func requireClosureConfirmation(for scene: UIWindowScene, discard: @escaping () -> Void) {
+    scene.closureConfirmation = UISceneClosureConfirmation(
+        title: "Discard changes?",
+        message: "This window has unsaved changes.",
+        actions: [
+            UIAlertAction(title: "Discard", style: .destructive) { _ in discard() },
+            UIAlertAction(title: "Keep Editing", style: .cancel),
+        ]
+    )
+}
+```
+
+## ios-uikit-sheet-placement
+
+- Framework: UIKit
+- Source: sdk-diff
+- Target: `arm64-apple-ios26.0`
+- Round: 2
+- Documentation: <https://sosumi.ai/documentation/uikit/uisheetpresentationcontroller/preferredplacement>, <https://sosumi.ai/documentation/uikit/uisheetpresentationcontroller/placement>
+
+The iOS 27 SDK adds UISheetPresentationController.Placement (automatic, leading, center, trailing) and preferredPlacement. At an iOS 26.0 deployment target the property needs #available(iOS 27.0, *).
+
+### task.md
+
+````markdown
+# Show an inspector sheet on the trailing edge
+
+- Platform: iOS
+- Deployment target: iOS 26.0 (`arm64-apple-ios26.0`)
+- Framework: UIKit
+
+A drawing app shows its inspector as a sheet over the canvas.
+On iOS versions that let an app choose where a sheet appears,
+the inspector sheet appears on the trailing edge of the presenting view.
+On older versions in the deployment range, it uses the default sheet placement.
+
+Declare:
+
+```swift
+@MainActor
+func presentInspector(_ inspector: UIViewController, from presenter: UIViewController)
+```
+
+Implement the behavior completely.
+Do not use placeholder bodies such as `fatalError()`.
+````
+
+### reference.swift
+
+```swift
+import UIKit
+
+@MainActor
+func presentInspector(_ inspector: UIViewController, from presenter: UIViewController) {
+    inspector.modalPresentationStyle = .pageSheet
+    if #available(iOS 27.0, *), let sheet = inspector.sheetPresentationController {
+        sheet.preferredPlacement = .trailing
+    }
+    presenter.present(inspector, animated: true)
 }
 ```
 
