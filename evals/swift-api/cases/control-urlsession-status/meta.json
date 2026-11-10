@@ -1,0 +1,21 @@
+{
+  "id": "control-urlsession-status",
+  "framework": "Foundation",
+  "source": "control",
+  "tags": [
+    "Foundation",
+    "networking",
+    "async"
+  ],
+  "target": "arm64-apple-macos27.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "URLSession",
+    "HTTPURLResponse"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/foundation/urlsession/data(from:delegate:)",
+    "https://sosumi.ai/documentation/foundation/httpurlresponse/statuscode"
+  ],
+  "notes": "Control case. URLSession.data(from:delegate:) has been available since macOS 12. data(for:delegate:) takes a URLRequest, not a URL."
+}
