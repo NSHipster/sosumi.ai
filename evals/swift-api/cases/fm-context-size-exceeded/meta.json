@@ -1,0 +1,21 @@
+{
+  "id": "fm-context-size-exceeded",
+  "framework": "FoundationModels",
+  "source": "sdk-diff",
+  "tags": [
+    "FoundationModels",
+    "errors",
+    "deprecation"
+  ],
+  "target": "arm64-apple-macos27.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "contextSizeExceeded",
+    "LanguageModelError"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/foundationmodels/languagemodelerror",
+    "https://sosumi.ai/documentation/foundationmodels/languagemodelerror/contextsizeexceeded"
+  ],
+  "notes": "OS 27 adds LanguageModelError.contextSizeExceeded(ContextSizeExceeded), whose payload has contextSize and tokenCount. LanguageModelSession.GenerationError.exceededContextWindowSize is deprecated in 27.0 and its Context has no size."
+}

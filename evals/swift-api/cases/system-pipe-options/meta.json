@@ -1,0 +1,21 @@
+{
+  "id": "system-pipe-options",
+  "framework": "System",
+  "source": "sdk-diff",
+  "tags": [
+    "System",
+    "typed-throws",
+    "file-descriptors"
+  ],
+  "target": "arm64-apple-macos27.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "pipe(options",
+    "closeOnExec"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/system/filedescriptor/pipe(options:)",
+    "https://sosumi.ai/documentation/system/filedescriptor/pipeoptions"
+  ],
+  "notes": "The macOS 27 SDK adds FileDescriptor.pipe(options:) throws(Errno) and FileDescriptor.PipeOptions with closeOnExec, nonBlocking, and closeOnFork. The older FileDescriptor.pipe() throws an untyped error, so it cannot be called from a throws(Errno) function without handling the error."
+}

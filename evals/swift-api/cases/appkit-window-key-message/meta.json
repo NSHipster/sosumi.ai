@@ -1,0 +1,21 @@
+{
+  "id": "appkit-window-key-message",
+  "framework": "AppKit",
+  "source": "sdk-diff",
+  "tags": [
+    "AppKit",
+    "notifications",
+    "concurrency"
+  ],
+  "target": "arm64-apple-macos27.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "addObserver(of",
+    "didBecomeKey"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/appkit/nswindow/didbecomekeymessage",
+    "https://sosumi.ai/documentation/foundation/notificationcenter/addobserver(of:for:using:)-4d19x"
+  ],
+  "notes": "The macOS 27 SDK adds typed AppKit messages such as NSWindow.DidBecomeKeyMessage (a NotificationCenter.MainActorMessage) with the identifier .didBecomeKey; MacOSX26.5.sdk has none of these NSWindow messages. NotificationCenter.addObserver(of:for:using:) returns an ObservationToken; the name-based addObserver(forName:object:queue:using:) returns NSObjectProtocol."
+}

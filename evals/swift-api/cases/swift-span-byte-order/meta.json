@@ -1,0 +1,23 @@
+{
+  "id": "swift-span-byte-order",
+  "framework": "Swift",
+  "source": "sdk-diff",
+  "tags": [
+    "Swift",
+    "availability",
+    "span",
+    "binary-parsing"
+  ],
+  "target": "arm64-apple-macos26.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "bigEndian",
+    "load"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/swift/rawspan/load(frombyteoffset:as:_:)",
+    "https://sosumi.ai/documentation/swift/byteorder",
+    "https://sosumi.ai/documentation/swift/rawspan/unsafeloadunaligned(frombyteoffset:as:)"
+  ],
+  "notes": "The macOS 27 SDK adds the ByteOrder enum and RawSpan.load(fromByteOffset:as:_:) for fixed-width integers, both @available(anyAppleOS 27.0, *). At a macOS 26.0 deployment target the overload needs #available; the fallback loads with unsafeLoadUnaligned(fromByteOffset:as:) and converts with UInt32(bigEndian:)."
+}

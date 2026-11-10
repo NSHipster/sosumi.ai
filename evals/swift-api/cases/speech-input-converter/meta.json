@@ -1,0 +1,22 @@
+{
+  "id": "speech-input-converter",
+  "framework": "Speech",
+  "source": "sdk-diff",
+  "tags": [
+    "Speech",
+    "availability",
+    "audio"
+  ],
+  "target": "arm64-apple-macos26.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "AnalyzerInputConverter",
+    "bestAvailableAudioFormat"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/speech/analyzerinputconverter",
+    "https://sosumi.ai/documentation/speech/analyzerinputconverter/converter(compatiblewith:)",
+    "https://sosumi.ai/documentation/speech/speechanalyzer/bestavailableaudioformat(compatiblewith:)"
+  ],
+  "notes": "The macOS 27 SDK adds AnalyzerInputConverter, created with converter(compatibleWith:) and used with convert(_:at:), which returns [AnalyzerInput]. At a macOS 26.0 deployment target it needs #available(macOS 27.0, *); the fallback converts with AVAudioConverter to SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith:)."
+}

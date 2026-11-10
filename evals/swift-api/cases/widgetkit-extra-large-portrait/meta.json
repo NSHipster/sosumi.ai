@@ -1,0 +1,19 @@
+{
+  "id": "widgetkit-extra-large-portrait",
+  "framework": "WidgetKit",
+  "source": "sdk-diff",
+  "tags": [
+    "WidgetKit",
+    "availability",
+    "enums"
+  ],
+  "target": "arm64-apple-macos26.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "systemExtraLargePortrait"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/widgetkit/widgetfamily/systemextralargeportrait"
+  ],
+  "notes": "The macOS 27 SDK adds WidgetFamily.systemExtraLargePortrait (iOS and macOS 27.0, visionOS 26.0; unavailable on tvOS and watchOS). At a macOS 26.0 deployment target it needs #available(macOS 27.0, *)."
+}

@@ -1,0 +1,20 @@
+{
+  "id": "swift-unique-array",
+  "framework": "Swift",
+  "source": "sdk-diff",
+  "tags": [
+    "Swift",
+    "noncopyable",
+    "collections"
+  ],
+  "target": "arm64-apple-macos27.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "UniqueArray",
+    "append"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/swift/uniquearray"
+  ],
+  "notes": "The macOS 27 SDK adds UniqueArray<Element: ~Copyable>, a growable array that can hold noncopyable elements, with init(capacity:) and append(_:). Array cannot hold noncopyable elements."
+}

@@ -1,0 +1,22 @@
+{
+  "id": "storekit-store-type",
+  "framework": "StoreKit",
+  "source": "sdk-diff",
+  "tags": [
+    "StoreKit",
+    "app-transaction",
+    "verification"
+  ],
+  "target": "arm64-apple-macos27.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "AppTransaction",
+    "storeType",
+    "education"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/storekit/apptransaction/storetype-swift.property",
+    "https://sosumi.ai/documentation/storekit/apptransaction/storetype-swift.struct"
+  ],
+  "notes": "The macOS 27 SDK adds AppTransaction.storeType of type AppTransaction.StoreType, with consumer, education, and enterprise. AppTransaction.shared returns VerificationResult<AppTransaction>. AppStore.Environment has no education value."
+}

@@ -1,0 +1,21 @@
+{
+  "id": "swiftui-tabs-picker",
+  "framework": "SwiftUI",
+  "source": "sdk-diff",
+  "tags": [
+    "SwiftUI",
+    "availability",
+    "picker"
+  ],
+  "target": "arm64-apple-macos26.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    ".tabs",
+    "pickerStyle"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/swiftui/pickerstyle/tabs",
+    "https://sosumi.ai/documentation/swiftui/tabspickerstyle"
+  ],
+  "notes": "The macOS 27 SDK adds TabsPickerStyle and PickerStyle.tabs (iOS, macOS, tvOS, visionOS 27.0). At a macOS 26.0 deployment target, the style needs #available(macOS 27.0, *)."
+}

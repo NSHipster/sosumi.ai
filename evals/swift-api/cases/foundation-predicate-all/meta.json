@@ -1,0 +1,19 @@
+{
+  "id": "foundation-predicate-all",
+  "framework": "Foundation",
+  "source": "sdk-diff",
+  "tags": [
+    "Foundation",
+    "predicate",
+    "macros"
+  ],
+  "target": "arm64-apple-macos27.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "Predicate"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/foundation/predicate/init(all:)"
+  ],
+  "notes": "The macOS 27 SDK adds Predicate.init(all:) and Predicate.init(any:), which combine a collection of predicates. Before that, an answer can fold the filters with #Predicate and evaluate(_:), which also passes. The #Predicate macro rejects closures and try? inside its body."
+}

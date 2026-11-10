@@ -1,0 +1,21 @@
+{
+  "id": "healthkit-earliest-authorized-date",
+  "framework": "HealthKit",
+  "source": "sdk-diff",
+  "tags": [
+    "HealthKit",
+    "availability",
+    "authorization"
+  ],
+  "target": "arm64-apple-macos26.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "earliestAuthorizedSampleDate",
+    "earliestPermittedSampleDate"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/healthkit/hkhealthstore/getearliestauthorizedsampledate(for:completion:)",
+    "https://sosumi.ai/documentation/healthkit/hkhealthstore/earliestpermittedsampledate()"
+  ],
+  "notes": "The macOS 27 SDK adds HKHealthStore.earliestAuthorizedSampleDate(for:), which returns [HKObjectType: Date]. At a macOS 26.0 deployment target it needs #available(macOS 27.0, *); the fallback is earliestPermittedSampleDate()."
+}

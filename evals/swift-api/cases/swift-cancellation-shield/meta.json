@@ -1,0 +1,21 @@
+{
+  "id": "swift-cancellation-shield",
+  "framework": "Swift",
+  "source": "sdk-diff",
+  "tags": [
+    "Swift",
+    "concurrency",
+    "cancellation"
+  ],
+  "target": "arm64-apple-macos27.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "withTaskCancellationShield",
+    "hasActiveCancellationShield"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/swift/withtaskcancellationshield(operation:)-8zlgh",
+    "https://sosumi.ai/documentation/swift/task/hasactivecancellationshield"
+  ],
+  "notes": "The macOS 27 SDK adds withTaskCancellationShield(operation:) and Task.hasActiveCancellationShield, both @available(anyAppleOS 27.0, *). The stale answer guesses static members on Task. An unstructured Task { } that captures the non-escaping closure type-checks with Swift 6.4, so it cannot serve as the stale answer, but it does not meet the task: cancellation of the outer task does not reach it, and only the required_symbols check rejects it."
+}
