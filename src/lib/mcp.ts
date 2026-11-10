@@ -5,7 +5,7 @@ import type { ExternalPolicyEnv } from "./external"
 import { fetchExternalDocumentationMarkdown } from "./external"
 import { fetchHIGPageData, renderHIGFromJSON } from "./hig"
 import { PUBLISHER_DOMAIN } from "./identity"
-import { fetchJSONData, renderFromJSON } from "./reference"
+import { fetchDocumentationPage, renderFromJSON } from "./reference"
 import { searchAppleDeveloperDocs } from "./search"
 import { generateAppleDocUrl, normalizeDocumentationPath } from "./url"
 import { fetchVideoTranscriptMarkdown } from "./video"
@@ -240,11 +240,8 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
           }
         }
 
-        const normalizedPath = normalizeDocumentationPath(path)
-        const appleUrl = generateAppleDocUrl(normalizedPath)
-
-        const jsonData = await fetchJSONData(normalizedPath)
-        const markdown = await renderFromJSON(jsonData, appleUrl)
+        const page = await fetchDocumentationPage(normalizeDocumentationPath(path))
+        const markdown = await renderFromJSON(page.data, generateAppleDocUrl(page.path))
 
         if (!markdown || markdown.trim().length < 100) {
           throw new Error("Insufficient content in documentation")

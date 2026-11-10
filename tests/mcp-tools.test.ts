@@ -4,7 +4,7 @@ const toolHandlers = new Map<string, (input: unknown) => Promise<unknown>>()
 let serverOptions: { instructions?: string } | undefined
 const fetchVideoTranscriptMarkdown = vi.fn()
 const searchAppleDeveloperDocs = vi.fn()
-const fetchJSONData = vi.fn()
+const fetchDocumentationPage = vi.fn()
 const fetchExternalDocumentationMarkdown = vi.fn()
 
 vi.mock("@modelcontextprotocol/sdk/server/mcp.js", () => {
@@ -36,7 +36,7 @@ vi.mock("../src/lib/search", () => ({
 }))
 
 vi.mock("../src/lib/reference", () => ({
-  fetchJSONData,
+  fetchDocumentationPage,
   renderFromJSON: vi.fn(),
 }))
 
@@ -50,7 +50,7 @@ describe("MCP tools registration", () => {
     serverOptions = undefined
     fetchVideoTranscriptMarkdown.mockReset()
     searchAppleDeveloperDocs.mockReset()
-    fetchJSONData.mockReset()
+    fetchDocumentationPage.mockReset()
     fetchExternalDocumentationMarkdown.mockReset()
   })
 
@@ -177,7 +177,8 @@ describe("MCP tools registration", () => {
     {
       tool: "fetchAppleDocumentation",
       input: { path: "/documentation/notarealframework" },
-      fail: () => fetchJSONData.mockRejectedValue(new Error("Apple documentation page not found")),
+      fail: () =>
+        fetchDocumentationPage.mockRejectedValue(new Error("Apple documentation page not found")),
     },
     {
       tool: "fetchExternalDocumentation",

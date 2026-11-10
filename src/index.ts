@@ -38,7 +38,7 @@ import {
   renderHIGTableOfContents,
 } from "./lib/hig"
 import { createMcpServer, MCP_SERVER_INFO } from "./lib/mcp"
-import { fetchJSONData, renderFromJSON } from "./lib/reference"
+import { fetchDocumentationPage, renderFromJSON } from "./lib/reference"
 import { searchAppleDeveloperDocs } from "./lib/search"
 import {
   createSkillIndex,
@@ -538,8 +538,9 @@ This service only works with Apple Developer documentation URLs:
     throw new HTTPException(400, { res: errorResponse })
   }
 
-  const jsonData = await fetchJSONData(path)
-  const markdown = await renderFromJSON(jsonData, appleUrl)
+  const page = await fetchDocumentationPage(normalizedPath)
+  const pageUrl = generateAppleDocUrl(page.path)
+  const markdown = await renderFromJSON(page.data, pageUrl)
 
   // Validate that we got meaningful content
   if (!markdown || markdown.trim().length < 100) {
@@ -551,7 +552,7 @@ This service only works with Apple Developer documentation URLs:
 
   const headers = {
     "Content-Type": "text/markdown; charset=utf-8",
-    "Content-Location": appleUrl,
+    "Content-Location": pageUrl,
     "Cache-Control": "public, max-age=3600, s-maxage=86400",
     ETag: `"${Buffer.from(markdown).toString("base64").slice(0, 16)}"`,
     "X-Robots-Tag": "noindex, nofollow, noarchive",
@@ -560,7 +561,7 @@ This service only works with Apple Developer documentation URLs:
   if (c.req.header("Accept")?.includes("application/json")) {
     return c.json(
       {
-        url: appleUrl,
+        url: pageUrl,
         content: markdown,
       },
       200,
@@ -767,6 +768,17 @@ This service only works with Apple Developer documentation URLs:
   )
 })
 
+function renderCandidates(candidates: NotFoundError["candidates"]): string {
+  if (candidates.length === 0) {
+    return ""
+  }
+
+  const list = candidates
+    .map((candidate) => `- [${candidate.title}](/documentation/${candidate.path})`)
+    .join("\n")
+  return `\n## Did you mean:\n\n${list}\n`
+}
+
 app.onError((err, c) => {
   console.error("Error occurred:", err)
 
@@ -782,6 +794,12 @@ app.onError((err, c) => {
         {
           error: "Documentation not found",
           message: "The requested Apple Developer documentation page does not exist.",
+          ...(err.candidates.length > 0 && {
+            candidates: err.candidates.map((candidate) => ({
+              title: candidate.title,
+              path: `/documentation/${candidate.path}`,
+            })),
+          }),
         },
         404,
       )
@@ -791,7 +809,7 @@ app.onError((err, c) => {
       `# Not Found
 
 The requested Apple Developer documentation page does not exist.
-
+${renderCandidates(err.candidates)}
 ## What you can try:
 
 1. **Check the URL** - Make sure the path is correct
