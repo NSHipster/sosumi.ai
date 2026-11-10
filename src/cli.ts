@@ -8,7 +8,7 @@ import {
   renderHIGFromJSON,
   renderHIGTableOfContents,
 } from "./lib/hig"
-import { fetchJSONData, renderFromJSON } from "./lib/reference"
+import { fetchDocumentationPage, renderFromJSON } from "./lib/reference"
 import { searchAppleDeveloperDocs } from "./lib/search"
 import { generateAppleDocUrl, normalizeDocumentationPath } from "./lib/url"
 import { fetchVideoTranscriptMarkdown } from "./lib/video"
@@ -40,10 +40,9 @@ async function runFetch(input: string, json: boolean) {
 
   if (endpoint.startsWith("/documentation/")) {
     const documentationPath = endpoint.replace(/^\/documentation\//, "")
-    const normalizedPath = normalizeDocumentationPath(documentationPath)
-    const appleUrl = generateAppleDocUrl(normalizedPath)
-    const jsonData = await fetchJSONData(normalizedPath)
-    const markdown = await renderFromJSON(jsonData, appleUrl)
+    const page = await fetchDocumentationPage(normalizeDocumentationPath(documentationPath))
+    const appleUrl = generateAppleDocUrl(page.path)
+    const markdown = await renderFromJSON(page.data, appleUrl)
     if (json) {
       printJsonOutput({ url: appleUrl, content: markdown })
     } else {

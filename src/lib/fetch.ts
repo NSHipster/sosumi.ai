@@ -3,7 +3,15 @@
  * Contains common utilities used by both HIG and reference documentation
  */
 
-export class NotFoundError extends Error {}
+export class NotFoundError extends Error {
+  /** Pages that the requested path may refer to, if more than one matches */
+  readonly candidates: Array<{ path: string; title: string }>
+
+  constructor(message: string, candidates: Array<{ path: string; title: string }> = []) {
+    super(message)
+    this.candidates = candidates
+  }
+}
 
 const USER_AGENTS = [
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.2.20",
