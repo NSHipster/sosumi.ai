@@ -62,6 +62,80 @@ describe("Render Function", () => {
     })
   })
 
+  describe("Abstract rendering", () => {
+    const references = {
+      "doc://com.apple.SwiftData/documentation/SwiftData/ResultsSection": {
+        title: "ResultsSection",
+        url: "/documentation/swiftdata/resultssection",
+        kind: "symbol",
+      },
+      "doc://com.apple.SwiftData/documentation/SwiftData/SectionedResults/sections": {
+        title: "sections",
+        url: "/documentation/swiftdata/sectionedresults/sections",
+        kind: "symbol",
+        abstract: [
+          { type: "text", text: "The " },
+          { type: "codeVoice", code: "ResultsSection" },
+          { type: "text", text: " values." },
+        ],
+      },
+    }
+    const abstract = [
+      { type: "text", text: "A " },
+      { type: "codeVoice", code: "RandomAccessCollection" },
+      { type: "text", text: " of " },
+      {
+        type: "reference",
+        identifier: "doc://com.apple.SwiftData/documentation/SwiftData/ResultsSection",
+      },
+      { type: "text", text: " instances." },
+    ]
+
+    it("should keep code spans and references in the abstract", async () => {
+      const result = await renderFromJSON(
+        { metadata: { title: "SectionedResults" }, abstract, references } as any,
+        "https://developer.apple.com/documentation/swiftdata/sectionedresults",
+      )
+
+      expect(result).toContain(
+        "> A `RandomAccessCollection` of [ResultsSection](/documentation/swiftdata/resultssection) instances.",
+      )
+    })
+
+    it("should keep code and reference titles as plain text in the description", async () => {
+      const result = await renderFromJSON(
+        { metadata: { title: "SectionedResults" }, abstract, references } as any,
+        "https://developer.apple.com/documentation/swiftdata/sectionedresults",
+      )
+
+      expect(result).toContain(
+        "description: A RandomAccessCollection of ResultsSection instances.\n",
+      )
+    })
+
+    it("should keep code spans in topic abstracts", async () => {
+      const result = await renderFromJSON(
+        {
+          metadata: { title: "SectionedResults" },
+          references,
+          topicSections: [
+            {
+              title: "Instance Properties",
+              identifiers: [
+                "doc://com.apple.SwiftData/documentation/SwiftData/SectionedResults/sections",
+              ],
+            },
+          ],
+        } as any,
+        "https://developer.apple.com/documentation/swiftdata/sectionedresults",
+      )
+
+      expect(result).toContain(
+        "- [sections](/documentation/swiftdata/sectionedresults/sections) The `ResultsSection` values.",
+      )
+    })
+  })
+
   describe("Deprecation", () => {
     it("should render deprecation summary from Apple DocC JSON", async () => {
       const result = await renderFromJSON(
