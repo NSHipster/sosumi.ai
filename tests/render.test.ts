@@ -192,6 +192,27 @@ describe("Render Function", () => {
     })
   })
 
+  describe("Platform availability", () => {
+    it("should show a platform without a version by its name only", async () => {
+      const result = await renderFromJSON(
+        {
+          metadata: {
+            title: "autocorrectionType",
+            platforms: [
+              { name: "iOS", introducedAt: "2.0" },
+              { name: "visionOS", beta: true },
+              { name: "tvOS" },
+            ],
+          },
+        } as any,
+        "https://developer.apple.com/documentation/uikit/uitextinputtraits/autocorrectiontype",
+      )
+
+      expect(result).toContain("**Available on:** iOS 2.0+, visionOS Beta, tvOS\n")
+      expect(result).not.toContain("undefined")
+    })
+  })
+
   describe("Breadcrumb Navigation", () => {
     it("should generate breadcrumbs for documentation URLs", async () => {
       const testCases = [

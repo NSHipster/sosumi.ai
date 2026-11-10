@@ -63,7 +63,7 @@ export async function renderFromJSON(
   // Add platform availability
   if (jsonData.metadata?.platforms && jsonData.metadata.platforms.length > 0) {
     const platforms = jsonData.metadata.platforms
-      .map((p) => `${p.name} ${p.introducedAt}+${p.beta ? " Beta" : ""}`)
+      .map((p) => `${p.name}${p.introducedAt ? ` ${p.introducedAt}+` : ""}${p.beta ? " Beta" : ""}`)
       .join(", ")
     markdown += `**Available on:** ${platforms}\n\n`
   }
