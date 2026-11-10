@@ -137,6 +137,41 @@ try {
     "none rows record no Sosumi call",
   )
 
+  // The split: every row carries its half of split.json, and --split runs one half.
+  const splitFile = JSON.parse(await readFile(join(evalDir, "split.json"), "utf8")) as {
+    train: string[]
+    test: string[]
+  }
+  check(
+    noneRows.every((row) =>
+      row.split === "train"
+        ? splitFile.train.includes(row.prompt_id)
+        : splitFile.test.includes(row.prompt_id),
+    ),
+    "each row records the half of split.json that its case belongs to",
+  )
+  const testOnly = await runEval([
+    ...common,
+    "--mock-answer",
+    "reference",
+    "--condition",
+    "none",
+    "--split",
+    "test",
+    "--runs-dir",
+    join(runsDir, "split-test"),
+  ])
+  const testRows = await readJSONL<ResultRow>(
+    join(runsDir, "split-test", "mock-reference", "none", "baseline", "results.jsonl"),
+  )
+  check(
+    testRows.length === splitFile.test.length &&
+      testRows.every((row) => row.split === "test") &&
+      testOnly.includes(`test     100.0%`) &&
+      testOnly.includes("over 0 cases"),
+    `--split test runs only the ${splitFile.test.length} test cases, and the summary prints each half`,
+  )
+
   // 2. Induced failures land in errors.jsonl with a failure class, not in results.jsonl.
   const one = ["--case", "control-sha256-hex", "--condition", "none"]
   await runEval([...common, ...one, "--mock-failure", "error"])

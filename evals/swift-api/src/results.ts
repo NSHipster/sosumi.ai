@@ -11,13 +11,15 @@
 import { appendFile, mkdir, readdir, readFile, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import type { FailureClass, Usage } from "./agent.ts"
-import { evalDir } from "./cases.ts"
+import { evalDir, loadSplit, type Split } from "./cases.ts"
 
 export type Provider = "anthropic" | "openai" | "mock"
 
 export interface ResultRow {
   prompt_id: string
   prompt: string
+  /** The half of split.json that the case belongs to. */
+  split?: Split
   tags: string[]
   rep: number
   status: "ok" | "truncated"
@@ -242,8 +244,17 @@ export function wilson(mean: number, n: number): Interval {
   return { mean, low: Math.max(0, center - margin), high: Math.min(1, center + margin), n }
 }
 
+/** The headline for one set of cases. */
+export interface Headline {
+  cases: number
+  passes: Interval
+  typechecks: Interval
+}
+
 export interface FlowSummary {
   variantDir: string
+  /** The headline for each half of split.json. */
+  bySplit: Record<Split, Headline>
   cases: number
   rows: number
   truncated: number
@@ -261,6 +272,7 @@ export interface FlowSummary {
  * Errors and truncated rows are counted beside the means, never in them.
  */
 export async function summarize(variantDir: string): Promise<FlowSummary> {
+  const split = await loadSplit()
   const rows = await readJSONL<ResultRow>(join(variantDir, "results.jsonl"))
   const errors = await readJSONL<ErrorRow>(join(variantDir, "errors.jsonl"))
   const scored = new Set(rows.map((row) => `${row.prompt_id}#${row.rep}`))
@@ -289,9 +301,29 @@ export async function summarize(variantDir: string): Promise<FlowSummary> {
   for (const row of openErrors) {
     errorsByClass[row.failure_class] = (errorsByClass[row.failure_class] ?? 0) + 1
   }
+  const headline = (ids: string[]): Headline => {
+    const means = (metric: "typechecks" | "passes") =>
+      ids.map((id) => {
+        const reps = perCase.get(id) as ResultRow[]
+        return reps.reduce((sum, row) => sum + (row.grade[metric] ?? 0), 0) / reps.length
+      })
+    return {
+      cases: ids.length,
+      passes: wilson(mean(means("passes")), ids.length),
+      typechecks: wilson(mean(means("typechecks")), ids.length),
+    }
+  }
+  const caseIDs = [...perCase.keys()]
+  // Rows record their split; older rows without one take it from split.json.
+  const splitOf = (id: string) =>
+    (perCase.get(id)?.[0]?.split as Split | undefined) ?? split.get(id)
 
   return {
     variantDir,
+    bySplit: {
+      train: headline(caseIDs.filter((id) => splitOf(id) === "train")),
+      test: headline(caseIDs.filter((id) => splitOf(id) === "test")),
+    },
     cases: perCase.size,
     rows: rows.length,
     truncated: rows.filter((row) => row.status === "truncated").length,
@@ -315,6 +347,8 @@ export function formatSummary(summary: FlowSummary): string {
   return [
     `${summary.variantDir}`,
     `  passes     ${interval(summary.passes)} over ${summary.cases} cases`,
+    `    train    ${interval(summary.bySplit.train.passes)} over ${summary.bySplit.train.cases} cases`,
+    `    test     ${interval(summary.bySplit.test.passes)} over ${summary.bySplit.test.cases} cases`,
     `  typechecks ${interval(summary.typechecks)}`,
     `  deprecations per answer: ${Number.isNaN(summary.deprecations) ? "n/a" : summary.deprecations.toFixed(2)}`,
     `  scored rows ${summary.rows}, truncated ${summary.truncated}, unscored errors ${summary.errors}${errorDetail ? ` (${errorDetail})` : ""}`,

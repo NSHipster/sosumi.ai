@@ -56,6 +56,7 @@ const usage = `Usage: npm run eval -- [options]
   --provider <name>         anthropic, openai, or mock (default: from the model ID)
   --condition <name>        sosumi, none, or both (default: both)
   --reps <n>                Attempts per case and condition (default: 1)
+  --split <half>            Run only the train or the test cases of split.json
   --case <id>               Run only this case; repeat for more
   --effort <level>          Reasoning effort (default: medium)
   --max-tokens <n>          Output token limit per model response (default: 32000)
@@ -113,6 +114,7 @@ async function main() {
       provider: { type: "string" },
       condition: { type: "string", default: "both" },
       reps: { type: "string", default: "1" },
+      split: { type: "string" },
       case: { type: "string", multiple: true, default: [] },
       effort: { type: "string", default: "medium" },
       "max-tokens": { type: "string", default: "32000" },
@@ -210,7 +212,13 @@ async function main() {
   const anthropic = provider === "anthropic" ? anthropicClient() : null
   const openai = provider === "openai" ? openAIClient() : null
 
-  const cases = await loadCases(values.case)
+  if (values.split !== undefined && values.split !== "train" && values.split !== "test") {
+    throw new Error("--split must be train or test")
+  }
+  const cases = (await loadCases(values.case)).filter(
+    (evalCase) => values.split === undefined || evalCase.split === values.split,
+  )
+  if (cases.length === 0) throw new Error("No cases to run")
   const modelDir =
     provider === "mock"
       ? [
@@ -439,6 +447,7 @@ async function main() {
     const base = {
       prompt_id: meta.id,
       prompt: evalCase.task,
+      split: evalCase.split,
       tags: [meta.framework, meta.source, platform(meta.target)],
       rep,
       stop_reason: outcome.stopReason,
