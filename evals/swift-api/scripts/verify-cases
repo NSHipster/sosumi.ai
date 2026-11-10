@@ -1,0 +1,8 @@
+#!/bin/bash
+# Checks every Swift API eval case against the grader's rules.
+# The checks live in verify-cases.ts; Node 22.6 or later runs it directly.
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec node --experimental-strip-types --disable-warning=ExperimentalWarning \
+  "$script_dir/verify-cases.ts" "$@"
