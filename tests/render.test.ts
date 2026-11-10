@@ -27,18 +27,6 @@ describe("Render Function", () => {
       )
     })
 
-    it("should use interfaceLanguages title as fallback", async () => {
-      const data = {
-        interfaceLanguages: {
-          swift: [{ title: "Interface Title" }],
-        },
-      }
-
-      const result = await renderFromJSON(data as any, "https://test.com")
-
-      expect(result).toContain("title: Interface Title")
-    })
-
     it("should include description from abstract", async () => {
       const data = {
         metadata: { title: "Test Title" },

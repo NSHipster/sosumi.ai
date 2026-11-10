@@ -13,21 +13,11 @@ export async function fetchJSONData(path: string): Promise<AppleDocJSON> {
   // Normalize the path using the shared function
   const normalizedPath = normalizeDocumentationPath(path)
 
-  // Add back the documentation/ prefix for the JSON API
-  const jsonPath = `documentation/${normalizedPath}`
-
-  // Split path into parts
-  const parts = jsonPath.split("/")
-
-  let jsonUrl: string
-  if (parts.length === 2) {
-    // Top-level framework index (e.g., /documentation/swiftui)
-    const framework = parts[1]
-    jsonUrl = `https://developer.apple.com/tutorials/data/index/${framework}`
-  } else {
-    // Individual page (e.g., /documentation/swiftui/view)
-    jsonUrl = `https://developer.apple.com/tutorials/data/${jsonPath}.json`
-  }
+  // Framework roots use the same page JSON as other pages.
+  // Apple's navigator index (`tutorials/data/index/<framework>`) lists every
+  // symbol in the documentation bundle, which renders to megabytes of Markdown,
+  // and for a module such as Observation it returns the whole Swift bundle.
+  const jsonUrl = `https://developer.apple.com/tutorials/data/documentation/${normalizedPath}.json`
 
   // Generate a random Safari user agent with uniform selection
   const userAgent = getRandomUserAgent()
