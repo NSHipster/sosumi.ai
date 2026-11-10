@@ -70,10 +70,12 @@ export async function renderFromJSON(
 
   // Add abstract
   if (jsonData.abstract && Array.isArray(jsonData.abstract)) {
-    const abstractText = jsonData.abstract
-      .filter((item) => item.type === "text")
-      .map((item) => item.text)
-      .join("")
+    const abstractText = renderInlineContent(
+      jsonData.abstract,
+      jsonData.references,
+      0,
+      options.externalOrigin,
+    )
 
     if (abstractText.trim()) {
       markdown += `> ${abstractText}\n\n`
@@ -196,11 +198,7 @@ function generateFrontMatterFromJSON(jsonData: AppleDocJSON, sourceUrl: string):
   }
 
   if (jsonData.abstract && Array.isArray(jsonData.abstract)) {
-    const description = jsonData.abstract
-      .filter((item) => item.type === "text")
-      .map((item) => item.text)
-      .join("")
-      .trim()
+    const description = renderPlainText(jsonData.abstract, jsonData.references).trim()
     if (description) {
       frontMatter.description = description
     }
@@ -550,6 +548,42 @@ function renderInlineContent(
 }
 
 /**
+ * Render inline content as plain text, for front matter.
+ * Code spans keep their code, and symbol references keep their title,
+ * without Markdown syntax.
+ */
+function renderPlainText(
+  inlineContent: ContentItem[],
+  references?: Record<string, ContentItem>,
+  depth: number = 0,
+): string {
+  if (depth > MAX_INLINE_DEPTH) {
+    return ""
+  }
+
+  return inlineContent
+    .map((item) => {
+      if (item.type === "codeVoice") {
+        return item.code ?? ""
+      }
+      if (item.type === "reference") {
+        const reference = item.identifier ? references?.[item.identifier] : undefined
+        return (
+          item.title ||
+          item.text ||
+          reference?.title ||
+          (item.identifier ? extractTitleFromIdentifier(item.identifier) : "")
+        )
+      }
+      if (item.inlineContent) {
+        return renderPlainText(item.inlineContent, references, depth + 1)
+      }
+      return item.text ?? ""
+    })
+    .join("")
+}
+
+/**
  * Resolve the display title for a reference, preferring its rich
  * `titleInlineContent` (which preserves code spans) over the flat `title`.
  * When there is no rich title, wrap symbol titles in backticks so older DocC
@@ -595,7 +629,10 @@ function resolveLink(
     resolveReferenceTitle(reference, references, 0, externalOrigin) ||
     extractTitleFromIdentifier(id)
   const url = convertIdentifierToURL(id, references, externalOrigin)
-  const abstract = (info?.abstract ?? reference?.abstract)?.map((a) => a.text).join("") ?? ""
+  const abstractContent = info?.abstract ?? reference?.abstract
+  const abstract = abstractContent
+    ? renderInlineContent(abstractContent, references, 0, externalOrigin)
+    : ""
   return { title, url, abstract, deprecated: reference?.deprecated === true }
 }
 
