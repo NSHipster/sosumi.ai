@@ -51,6 +51,19 @@ export interface Usage {
   reasoning_tokens?: number
 }
 
+/** Adds one request's usage to the attempt's totals and keeps it for pricing. */
+export function recordRequest(progress: AttemptProgress, usage: Usage): void {
+  progress.requests.push(usage)
+  progress.usage.input_tokens += usage.input_tokens
+  progress.usage.output_tokens += usage.output_tokens
+  progress.usage.cache_read_input_tokens += usage.cache_read_input_tokens
+  progress.usage.cache_creation_input_tokens += usage.cache_creation_input_tokens
+  if (usage.reasoning_tokens !== undefined) {
+    progress.usage.reasoning_tokens =
+      (progress.usage.reasoning_tokens ?? 0) + usage.reasoning_tokens
+  }
+}
+
 export function emptyUsage(): Usage {
   return {
     input_tokens: 0,
@@ -78,6 +91,8 @@ export interface AgentOutcome {
 export interface AttemptProgress {
   model: string | null
   usage: Usage
+  /** The usage of each model request, for prices that depend on the size of one request. */
+  requests: Usage[]
   retries: number
   toolCalls: number
   sosumiCalls: number

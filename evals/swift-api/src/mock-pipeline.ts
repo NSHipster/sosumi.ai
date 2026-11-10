@@ -88,7 +88,7 @@ try {
   }
   console.log(`Full mock pass: ${((performance.now() - started) / 1_000).toFixed(1)} s\n`)
 
-  console.log("| Answer | Condition | Cases | typechecks | passes | Errors |")
+  console.log("| Answer | Condition | Cases | passes | typechecks | Errors |")
   console.log("| --- | --- | --- | --- | --- | --- |")
   const summaries = new Map<string, Awaited<ReturnType<typeof summarize>>>()
   for (const answer of ["reference", "stale", "stub", "empty"]) {
@@ -96,7 +96,7 @@ try {
       const summary = await summarize(flow(answer, condition))
       summaries.set(`${answer}/${condition}`, summary)
       console.log(
-        `| ${answer} | ${condition} | ${summary.cases} | ${percent(summary.typechecks.mean)} | ${percent(summary.passes.mean)} | ${summary.errors} |`,
+        `| ${answer} | ${condition} | ${summary.cases} | ${percent(summary.passes.mean)} | ${percent(summary.typechecks.mean)} | ${summary.errors} |`,
       )
     }
   }
@@ -200,6 +200,42 @@ try {
   check(
     cappedRows.length === 2 && capped.includes("Stopped before the spend cap"),
     `a cap of 2.5 USD at 1 USD per attempt stops after ${cappedRows.length} attempts`,
+  )
+  check(
+    capped.includes("Cumulative spend under") && capped.includes("mock 2.0000 USD (2 attempts)"),
+    "the summary prints the cumulative spend by provider",
+  )
+
+  // The cap counts spend already on disk: a second run of the same flow starts nothing,
+  // and neither does a run of another flow under the same runs directory.
+  const cappedArgs = (answer: string) => [
+    ...common,
+    "--mock-answer",
+    answer,
+    "--condition",
+    "none",
+    "--runs-dir",
+    join(runsDir, "capped"),
+    "--mock-usd-per-attempt",
+    "1",
+    "--max-usd-mock",
+    "2.5",
+  ]
+  const again = await runEval(cappedArgs("stub"))
+  const otherFlow = await runEval(cappedArgs("reference"))
+  const cappedAfter = await readJSONL<ResultRow>(
+    join(runsDir, "capped", "mock-stub", "none", "baseline", "results.jsonl"),
+  )
+  const otherRows = await readJSONL<ResultRow>(
+    join(runsDir, "capped", "mock-reference", "none", "baseline", "results.jsonl"),
+  )
+  check(
+    cappedAfter.length === 2 && again.includes("Stopped before the spend cap"),
+    "a second run of the capped flow starts no attempt",
+  )
+  check(
+    otherRows.length === 0 && otherFlow.includes("Stopped before the spend cap"),
+    "a run of another flow counts the spend of the first and starts no attempt",
   )
 
   // 5. Grading the same answers again gives the same verdicts, twice.

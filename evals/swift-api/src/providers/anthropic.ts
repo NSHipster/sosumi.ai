@@ -6,6 +6,7 @@ import {
   type AgentOutcome,
   assertModel,
   type EndReason,
+  recordRequest,
   retryAfterFromHeaders,
   withRetries,
 } from "../agent.ts"
@@ -78,10 +79,12 @@ export async function runAnthropic(
 
     progress.model = response.model
     const usage = response.usage
-    progress.usage.input_tokens += usage.input_tokens
-    progress.usage.output_tokens += usage.output_tokens
-    progress.usage.cache_read_input_tokens += usage.cache_read_input_tokens ?? 0
-    progress.usage.cache_creation_input_tokens += usage.cache_creation_input_tokens ?? 0
+    recordRequest(progress, {
+      input_tokens: usage.input_tokens,
+      output_tokens: usage.output_tokens,
+      cache_read_input_tokens: usage.cache_read_input_tokens ?? 0,
+      cache_creation_input_tokens: usage.cache_creation_input_tokens ?? 0,
+    })
     assertModel(options.model, response.model)
 
     let thinking = ""

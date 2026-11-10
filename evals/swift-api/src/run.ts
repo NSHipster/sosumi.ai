@@ -28,15 +28,17 @@ import { type MockAnswer, type MockFailure, mockModelID, runMock } from "./provi
 import { openAIClient, runOpenAI } from "./providers/openai.ts"
 import {
   appendJSONL,
-  costUSD,
+  attemptCostUSD,
   type ErrorRow,
   ensureFlowState,
+  formatSpend,
   formatSummary,
   loadPrices,
   type Price,
   type Provider,
   type ResultRow,
   readJSONL,
+  recordedSpend,
   summarize,
 } from "./results.ts"
 import { type LocalServer, SosumiClient, startLocalServer, type ToolSpec } from "./sosumi.ts"
@@ -142,6 +144,7 @@ async function main() {
     values.condition === "both" ? ["sosumi", "none"] : [values.condition as Condition]
   if (conditions.some((c) => c !== "sosumi" && c !== "none"))
     throw new Error(`Unknown condition ${values.condition}`)
+  const runsDir = values["runs-dir"] as string
   const reps = Number(values.reps)
   const maxToolCalls = Number(values["max-tool-calls"])
   const timeoutMs = Number(values["timeout-s"]) * 1_000
@@ -161,8 +164,10 @@ async function main() {
     }
   }
   const mockUSD = Number(values["mock-usd-per-attempt"])
-  const attemptCost = (u: AgentOutcome["usage"]) =>
-    provider === "mock" ? mockUSD : costUSD(u, price as Price, prices.cache_write_multiplier)
+  const attemptCost = (requests: AttemptProgress["requests"]) =>
+    provider === "mock"
+      ? mockUSD
+      : attemptCostUSD(requests, price as Price, prices.cache_write_multiplier)
   const capFlag = {
     anthropic: values["max-usd-anthropic"],
     openai: values["max-usd-openai"],
@@ -178,7 +183,7 @@ async function main() {
   const modelDir = provider === "mock" && mockFailure !== "none" ? `${model}-${mockFailure}` : model
   const variantDirs = new Map<Condition, string>()
   for (const condition of conditions) {
-    const flowDir = join(values["runs-dir"], modelDir, condition)
+    const flowDir = join(runsDir, modelDir, condition)
     const variantDir = join(flowDir, values.variant)
     await ensureFlowState(flowDir, model, price)
     await mkdir(join(variantDir, "traces"), { recursive: true })
@@ -214,8 +219,8 @@ async function main() {
   if (conditions.includes("sosumi") && queue.some((item) => item.condition === "sosumi")) {
     let url = values["sosumi-url"]
     if (!url) {
-      await mkdir(values["runs-dir"], { recursive: true })
-      const logPath = join(values["runs-dir"], "sosumi-server.log")
+      await mkdir(runsDir, { recursive: true })
+      const logPath = join(runsDir, "sosumi-server.log")
       console.log(
         `Starting a local Sosumi server on port ${values["sosumi-port"]} (log: ${logPath})`,
       )
@@ -257,6 +262,7 @@ async function main() {
     const progress: AttemptProgress = {
       model: null,
       usage: emptyUsage(),
+      requests: [],
       retries: 0,
       toolCalls: 0,
       sosumiCalls: 0,
@@ -311,7 +317,7 @@ async function main() {
     }
 
     const recordError = async (failure: AttemptError) => {
-      const cost = progress.model ? attemptCost(progress.usage) : provider === "mock" ? mockUSD : 0
+      const cost = attemptCost(progress.requests)
       charge(cost)
       const row: ErrorRow = {
         prompt_id: meta.id,
@@ -375,7 +381,7 @@ async function main() {
       refusal: "refusal",
       max_tokens: "truncated",
     }[outcome.endReason]
-    const cost = attemptCost(outcome.usage)
+    const cost = attemptCost(progress.requests)
     const base = {
       prompt_id: meta.id,
       prompt: evalCase.task,
@@ -440,19 +446,33 @@ async function main() {
     console.log(`  ${condition} ${meta.id} rep ${rep}: ${verdict}`)
   }
 
-  // Before an attempt starts, check that it cannot push spend past the cap.
-  // Until one attempt has finished, the cost of an attempt is unknown, so attempts run one at a time.
-  const mayStart = (): "go" | "wait" | "stop" => {
+  // Before an attempt starts, check that it cannot push the provider's spend past the cap.
+  // Spend is cumulative: every results and error row for the provider under the runs directory,
+  // which includes the attempts of this run that have finished.
+  // Each attempt in flight, and the next one, counts as the costliest attempt seen so far.
+  // While no attempt has a recorded cost, attempts run one at a time.
+  let projection = { spent: 0, maxAttempt: 0 }
+  const mayStart = async (): Promise<"go" | "wait" | "stop"> => {
     if (cap === undefined) return "go"
-    if (ledger.completed === 0) return ledger.inFlight === 0 ? (cap > 0 ? "go" : "stop") : "wait"
-    const projected = ledger.spent + (ledger.inFlight + 1) * ledger.maxAttempt
+    const recorded = (await recordedSpend(runsDir))[provider] ?? {
+      spent: 0,
+      maxAttempt: 0,
+      attempts: 0,
+    }
+    const maxAttempt = Math.max(recorded.maxAttempt, ledger.maxAttempt)
+    projection = { spent: recorded.spent, maxAttempt }
+    if (recorded.attempts === 0 && ledger.completed === 0) {
+      if (ledger.inFlight > 0) return "wait"
+      return cap > 0 ? "go" : "stop"
+    }
+    const projected = recorded.spent + (ledger.inFlight + 1) * maxAttempt
     if (projected <= cap) return "go"
     return ledger.inFlight === 0 ? "stop" : "wait"
   }
 
   const worker = async () => {
     while (queue.length > 0 && !stoppedForCap) {
-      const decision = mayStart()
+      const decision = await mayStart()
       if (decision === "stop") {
         stoppedForCap = true
         break
@@ -461,7 +481,9 @@ async function main() {
         await settled()
         continue
       }
-      const item = queue.shift() as WorkItem
+      // Another worker may have taken the last item while this one checked the cap.
+      const item = queue.shift()
+      if (item === undefined) break
       ledger.inFlight++
       try {
         await attempt(item)
@@ -484,12 +506,12 @@ async function main() {
   if (stoppedForCap) {
     console.log(
       `Stopped before the spend cap of ${cap} USD: ${queue.length} attempts not started ` +
-        `(spent ${ledger.spent.toFixed(4)} USD; the costliest attempt so far was ${ledger.maxAttempt.toFixed(4)} USD).`,
+        `(${provider} spend recorded under ${runsDir}: ${projection.spent.toFixed(4)} USD; ` +
+        `the costliest attempt so far was ${projection.maxAttempt.toFixed(4)} USD).`,
     )
   }
   console.log(`Wall time ${((performance.now() - started) / 1_000).toFixed(1)} s`)
   console.log(`Spend in this run: ${provider} ${ledger.spent.toFixed(4)} USD`)
-  const total: Record<string, number> = {}
   for (const condition of conditions) {
     const summary = await summarize(variantDirs.get(condition) as string)
     const shown = relative(process.cwd(), summary.variantDir)
@@ -499,16 +521,8 @@ async function main() {
         variantDir: shown.startsWith("..") ? summary.variantDir : shown,
       }),
     )
-    for (const [name, spend] of Object.entries(summary.spendByProvider))
-      total[name] = (total[name] ?? 0) + spend
   }
-  console.log(
-    `Spend recorded in these flows: ${
-      Object.entries(total)
-        .map(([name, spend]) => `${name} ${spend.toFixed(4)} USD`)
-        .join(", ") || "none"
-    }`,
-  )
+  console.log(`Cumulative spend under ${runsDir}: ${formatSpend(await recordedSpend(runsDir))}`)
 }
 
 /** Drops the JSON Schema `$schema` keyword, which only names the draft; the schema is otherwise unchanged. */

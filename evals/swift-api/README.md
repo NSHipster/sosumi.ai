@@ -42,6 +42,9 @@ ANTHROPIC_API_KEY=... npm run eval -- --model claude-sonnet-5-5 --max-usd-anthro
 
 The runner reads keys only from `ANTHROPIC_API_KEY` and `OPENAI_API_KEY`.
 It refuses to run a model without a price in `prices.json`.
+The spend caps are cumulative: before each attempt, the runner adds up the spend
+that every flow under `runs/` has recorded for the provider,
+and it starts no attempt that could take that total past the cap.
 Run `npm run eval -- --help` for every option.
 
 Each attempt writes a row to `results.jsonl` (or, when no answer can be scored,
@@ -52,9 +55,11 @@ that already has a result and attempts failed ones again.
 
 ## Metrics
 
+- `passes` (the headline): the answer type-checks, uses no `fatalError`,
+  `preconditionFailure`, `unsafeBitCast`, or force cast,
+  and contains every required symbol.
 - `typechecks`: the answer and the check file type-check together.
-- `passes`: the answer type-checks, uses no `fatalError`, `preconditionFailure`,
-  `unsafeBitCast`, or force cast, and contains every required symbol.
+  A stub with `fatalError()` bodies type-checks, so this metric alone overstates success.
 - `deprecations`: the number of deprecation warnings in the answer.
 
 ## Tests without paid calls

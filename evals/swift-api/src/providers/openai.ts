@@ -6,6 +6,7 @@ import {
   type AgentOutcome,
   assertModel,
   type EndReason,
+  recordRequest,
   retryAfterFromHeaders,
   withRetries,
 } from "../agent.ts"
@@ -75,12 +76,13 @@ export async function runOpenAI(
     const usage = response.usage
     if (usage) {
       const cached = usage.input_tokens_details?.cached_tokens ?? 0
-      progress.usage.input_tokens += usage.input_tokens - cached
-      progress.usage.cache_read_input_tokens += cached
-      progress.usage.output_tokens += usage.output_tokens
-      progress.usage.reasoning_tokens =
-        (progress.usage.reasoning_tokens ?? 0) +
-        (usage.output_tokens_details?.reasoning_tokens ?? 0)
+      recordRequest(progress, {
+        input_tokens: usage.input_tokens - cached,
+        output_tokens: usage.output_tokens,
+        cache_read_input_tokens: cached,
+        cache_creation_input_tokens: 0,
+        reasoning_tokens: usage.output_tokens_details?.reasoning_tokens ?? 0,
+      })
     }
     assertModel(options.model, response.model)
 

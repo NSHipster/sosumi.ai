@@ -8,7 +8,7 @@
 //   runs/<model>/<condition>/<variant>/traces/<case>_rep<k>.json
 //   runs/<model>/<condition>/<variant>/answers/<case>_rep<k>.swift
 
-import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises"
+import { appendFile, mkdir, readdir, readFile, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import type { FailureClass, Usage } from "./agent.ts"
 import { evalDir } from "./cases.ts"
@@ -61,8 +61,8 @@ export interface ErrorRow {
 
 export const flowState = {
   metrics: [
-    { id: "typechecks", label: "Type-checks", kind: "binary" },
     { id: "passes", label: "Passes", kind: "binary" },
+    { id: "typechecks", label: "Type-checks", kind: "binary" },
     { id: "deprecations", label: "Deprecations", kind: "float", scale: 5, better: "lower" },
   ],
   perf_fields: [
@@ -114,6 +114,13 @@ export interface Price {
   input: number
   output: number
   cache_read: number
+  /** A higher tier for any single request whose prompt is longer than `above_prompt_tokens`. */
+  long_context?: {
+    above_prompt_tokens: number
+    input_multiplier: number
+    cache_read_multiplier: number
+    output_multiplier: number
+  }
 }
 
 interface PriceTable {
@@ -126,15 +133,89 @@ export async function loadPrices(): Promise<PriceTable> {
   return JSON.parse(await readFile(join(evalDir, "prices.json"), "utf8")) as PriceTable
 }
 
-/** Prices one usage record in USD. `input_tokens` excludes cached tokens. */
+/** The prompt size of one request: uncached, cached, and newly cached input tokens. */
+export function promptTokens(usage: Usage): number {
+  return usage.input_tokens + usage.cache_read_input_tokens + usage.cache_creation_input_tokens
+}
+
+/**
+ * Prices one request in USD. `input_tokens` excludes cached tokens.
+ * A request whose prompt passes the price's long-context threshold
+ * is priced at the long-context tier as a whole.
+ */
 export function costUSD(usage: Usage, price: Price, cacheWriteMultiplier: number): number {
+  const tier = price.long_context
+  const long = tier !== undefined && promptTokens(usage) > tier.above_prompt_tokens
+  const input = price.input * (long ? tier.input_multiplier : 1)
+  const output = price.output * (long ? tier.output_multiplier : 1)
+  const cacheRead = price.cache_read * (long ? tier.cache_read_multiplier : 1)
   return (
-    (usage.input_tokens * price.input +
-      usage.output_tokens * price.output +
-      usage.cache_read_input_tokens * price.cache_read +
-      usage.cache_creation_input_tokens * price.input * cacheWriteMultiplier) /
+    (usage.input_tokens * input +
+      usage.output_tokens * output +
+      usage.cache_read_input_tokens * cacheRead +
+      usage.cache_creation_input_tokens * input * cacheWriteMultiplier) /
     1_000_000
   )
+}
+
+/** Prices an attempt request by request, so that the long-context tier applies per request. */
+export function attemptCostUSD(
+  requests: Usage[],
+  price: Price,
+  cacheWriteMultiplier: number,
+): number {
+  return requests.reduce((sum, usage) => sum + costUSD(usage, price, cacheWriteMultiplier), 0)
+}
+
+export interface RecordedSpend {
+  /** Total USD in results and error rows. */
+  spent: number
+  /** The costliest single attempt, in USD. */
+  maxAttempt: number
+  /** Attempts with a recorded cost. */
+  attempts: number
+}
+
+/**
+ * Adds up the spend recorded on disk by provider,
+ * across every results.jsonl and errors.jsonl under `runsDir`.
+ */
+export async function recordedSpend(runsDir: string): Promise<Record<string, RecordedSpend>> {
+  const totals: Record<string, RecordedSpend> = {}
+  const add = (provider: string, cost: number) => {
+    totals[provider] ??= { spent: 0, maxAttempt: 0, attempts: 0 }
+    const entry = totals[provider]
+    entry.spent += cost
+    entry.maxAttempt = Math.max(entry.maxAttempt, cost)
+    entry.attempts++
+  }
+  let files: string[]
+  try {
+    files = (await readdir(runsDir, { recursive: true })).map(String)
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return totals
+    throw error
+  }
+  for (const file of files) {
+    if (file.endsWith("results.jsonl")) {
+      for (const row of await readJSONL<ResultRow>(join(runsDir, file))) {
+        add(row.meta.provider, row.meta.cost_usd)
+      }
+    } else if (file.endsWith("errors.jsonl")) {
+      for (const row of await readJSONL<ErrorRow>(join(runsDir, file))) {
+        add(row.provider, row.cost_usd)
+      }
+    }
+  }
+  return totals
+}
+
+export function formatSpend(totals: Record<string, RecordedSpend>): string {
+  const entries = Object.entries(totals).sort(([a], [b]) => a.localeCompare(b))
+  if (entries.length === 0) return "none"
+  return entries
+    .map(([name, entry]) => `${name} ${entry.spent.toFixed(4)} USD (${entry.attempts} attempts)`)
+    .join(", ")
 }
 
 export interface Interval {
@@ -226,8 +307,8 @@ export function formatSummary(summary: FlowSummary): string {
     .join(", ")
   return [
     `${summary.variantDir}`,
-    `  typechecks ${interval(summary.typechecks)} over ${summary.cases} cases`,
-    `  passes     ${interval(summary.passes)}`,
+    `  passes     ${interval(summary.passes)} over ${summary.cases} cases`,
+    `  typechecks ${interval(summary.typechecks)}`,
     `  deprecations per answer: ${Number.isNaN(summary.deprecations) ? "n/a" : summary.deprecations.toFixed(2)}`,
     `  scored rows ${summary.rows}, truncated ${summary.truncated}, unscored errors ${summary.errors}${errorDetail ? ` (${errorDetail})` : ""}`,
   ].join("\n")
