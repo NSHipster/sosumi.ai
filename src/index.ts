@@ -455,6 +455,21 @@ app.get("/webmcp/manifest.json", (c) =>
 app.get("/bot", (c) => c.redirect("/#bot", 302))
 
 app.all("/mcp", async (c) => {
+  // Each request gets a new stateless server and transport,
+  // so there is no standalone SSE stream for `GET` and no session for `DELETE`.
+  // The Streamable HTTP specification lets such a server answer both with 405.
+  if (c.req.method !== "POST") {
+    return c.json(
+      {
+        jsonrpc: "2.0",
+        error: { code: -32000, message: "Method not allowed." },
+        id: null,
+      },
+      405,
+      { Allow: "POST" },
+    )
+  }
+
   const mcpServer = createMcpServer({
     EXTERNAL_DOC_HOST_ALLOWLIST: c.env.EXTERNAL_DOC_HOST_ALLOWLIST,
     EXTERNAL_DOC_HOST_BLOCKLIST: c.env.EXTERNAL_DOC_HOST_BLOCKLIST,
