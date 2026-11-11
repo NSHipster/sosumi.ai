@@ -240,21 +240,25 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
           }
         }
 
-        const page = await fetchDocumentationPage(normalizeDocumentationPath(path))
+        const requestedPath = normalizeDocumentationPath(path)
+        const page = await fetchDocumentationPage(requestedPath)
         const markdown = await renderFromJSON(page.data, generateAppleDocUrl(page.path))
 
         if (!markdown || markdown.trim().length < 100) {
           throw new Error("Insufficient content in documentation")
         }
 
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: markdown,
-            },
-          ],
+        const content = [{ type: "text" as const, text: markdown }]
+        // Say when the page is at another path, because a resolved path
+        // can have a different signature from the requested one.
+        if (page.path.toLowerCase() !== requestedPath.toLowerCase()) {
+          content.unshift({
+            type: "text" as const,
+            text: `No page exists at /documentation/${requestedPath}. This is the page at /documentation/${page.path}.`,
+          })
         }
+
+        return { content }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error"
 

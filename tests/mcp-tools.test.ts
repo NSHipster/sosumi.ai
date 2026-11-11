@@ -5,6 +5,7 @@ let serverOptions: { instructions?: string } | undefined
 const fetchVideoTranscriptMarkdown = vi.fn()
 const searchAppleDeveloperDocs = vi.fn()
 const fetchDocumentationPage = vi.fn()
+const renderFromJSON = vi.fn()
 const fetchExternalDocumentationMarkdown = vi.fn()
 
 vi.mock("@modelcontextprotocol/sdk/server/mcp.js", () => {
@@ -37,7 +38,7 @@ vi.mock("../src/lib/search", () => ({
 
 vi.mock("../src/lib/reference", () => ({
   fetchDocumentationPage,
-  renderFromJSON: vi.fn(),
+  renderFromJSON,
 }))
 
 vi.mock("../src/lib/external", () => ({
@@ -51,6 +52,7 @@ describe("MCP tools registration", () => {
     fetchVideoTranscriptMarkdown.mockReset()
     searchAppleDeveloperDocs.mockReset()
     fetchDocumentationPage.mockReset()
+    renderFromJSON.mockReset()
     fetchExternalDocumentationMarkdown.mockReset()
   })
 
@@ -171,6 +173,41 @@ describe("MCP tools registration", () => {
     // An empty `results` array would read as "no such documentation exists",
     // which is exactly the answer the caller must not trust here.
     expect(result.structuredContent).toBeUndefined()
+  })
+
+  it("says when a fetched page is at another path", async () => {
+    fetchDocumentationPage.mockResolvedValue({
+      path: "examplekit/canvas/draw(in:options:)",
+      data: {},
+    })
+    renderFromJSON.mockResolvedValue(`# draw(in:options:)\n\n${"Draws the canvas. ".repeat(10)}`)
+
+    const { createMcpServer } = await import("../src/lib/mcp")
+    createMcpServer()
+
+    const result = (await toolHandlers.get("fetchAppleDocumentation")?.({
+      path: "/documentation/examplekit/canvas/draw(in:)",
+    })) as { content: Array<{ text: string }> }
+
+    expect(result.content).toHaveLength(2)
+    expect(result.content[0].text).toBe(
+      "No page exists at /documentation/examplekit/canvas/draw(in:). This is the page at /documentation/examplekit/canvas/draw(in:options:).",
+    )
+    expect(result.content[1].text).toContain("# draw(in:options:)")
+  })
+
+  it("does not add a note when a fetched page is at the requested path", async () => {
+    fetchDocumentationPage.mockResolvedValue({ path: "examplekit/canvas", data: {} })
+    renderFromJSON.mockResolvedValue(`# Canvas\n\n${"A drawing surface. ".repeat(10)}`)
+
+    const { createMcpServer } = await import("../src/lib/mcp")
+    createMcpServer()
+
+    const result = (await toolHandlers.get("fetchAppleDocumentation")?.({
+      path: "/documentation/ExampleKit/Canvas/",
+    })) as { content: Array<{ text: string }> }
+
+    expect(result.content).toHaveLength(1)
   })
 
   it.each([

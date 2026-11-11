@@ -161,13 +161,115 @@ describe("Integration Tests with Mocked Apple API", () => {
       )
     })
 
-    it("should not resolve a path that already has a signature", async () => {
+    it("should not resolve a signature that no page starts with", async () => {
       mockApple({ [`${base}/observation.json`]: parentData })
 
-      await expect(
-        fetchDocumentationPage("observation/withobservationtracking(_:)"),
-      ).rejects.toBeInstanceOf(NotFoundError)
-      expect(global.fetch).toHaveBeenCalledTimes(1)
+      const error = await fetchDocumentationPage(
+        "observation/withobservationtracking(onchange:)",
+      ).catch((e) => e)
+
+      expect(error).toBeInstanceOf(NotFoundError)
+      expect(error.candidates).toEqual([])
+      expect(global.fetch).toHaveBeenCalledTimes(2)
+    })
+
+    describe("in a framework with Swift and Objective-C symbols", () => {
+      const reference = (title: string, url: string) => ({ title, url })
+      const frameworkData = {
+        metadata: { title: "ExampleKit" },
+        references: {
+          "doc://test/Widget-swift": reference(
+            "Widget",
+            "/documentation/examplekit/widget-swift.struct",
+          ),
+          "doc://test/Widget-objc": reference("Widget", "/documentation/examplekit/widget-c.class"),
+          "doc://test/Canvas": reference("Canvas", "/documentation/examplekit/canvas"),
+        },
+      }
+      const widgetData = {
+        metadata: { title: "Widget" },
+        references: {
+          "doc://test/Widget/size": reference(
+            "size",
+            "/documentation/examplekit/widget-swift.struct/size",
+          ),
+        },
+      }
+      const canvasData = {
+        metadata: { title: "Canvas" },
+        references: {
+          "doc://test/Canvas/draw": reference(
+            "draw(in:options:)",
+            "/documentation/examplekit/canvas/draw(in:options:)",
+          ),
+          "doc://test/Canvas/fill-1": reference(
+            "fill(_:)",
+            "/documentation/examplekit/canvas/fill(_:)-1a2b3",
+          ),
+          "doc://test/Canvas/fill-2": reference(
+            "fill(_:)",
+            "/documentation/examplekit/canvas/fill(_:)-4c5d6",
+          ),
+        },
+      }
+      const pages = {
+        [`${base}/examplekit.json`]: frameworkData,
+        [`${base}/examplekit/widget-swift.struct.json`]: widgetData,
+        [`${base}/examplekit/canvas.json`]: canvasData,
+        [`${base}/examplekit/widget-swift.struct/size.json`]: { metadata: { title: "size" } },
+        [`${base}/examplekit/canvas/draw(in:options:).json`]: {
+          metadata: { title: "draw(in:options:)" },
+        },
+      }
+
+      it("should fetch the Swift symbol instead of listing its Objective-C counterpart", async () => {
+        mockApple(pages)
+
+        const page = await fetchDocumentationPage("examplekit/widget")
+
+        expect(page.path).toBe("examplekit/widget-swift.struct")
+        expect(page.data).toEqual(widgetData)
+      })
+
+      it("should resolve a parent path that omits its disambiguation suffix", async () => {
+        mockApple(pages)
+
+        const page = await fetchDocumentationPage("/documentation/examplekit/widget/size")
+
+        expect(page.path).toBe("examplekit/widget-swift.struct/size")
+        expect(page.data).toEqual({ metadata: { title: "size" } })
+        expect(global.fetch).toHaveBeenCalledTimes(5)
+      })
+
+      it("should not resolve parents beyond one level", async () => {
+        mockApple(pages)
+
+        await expect(
+          fetchDocumentationPage("examplekit/widget/missing/size"),
+        ).rejects.toBeInstanceOf(NotFoundError)
+        // The page, its parent, and its grandparent
+        expect(global.fetch).toHaveBeenCalledTimes(3)
+      })
+
+      it("should resolve a signature that omits trailing argument labels", async () => {
+        mockApple(pages)
+
+        const page = await fetchDocumentationPage("examplekit/canvas/draw(in:)")
+
+        expect(page.path).toBe("examplekit/canvas/draw(in:options:)")
+      })
+
+      it("should list the overloads of a signature without its disambiguation suffix", async () => {
+        mockApple(pages)
+
+        const error = await fetchDocumentationPage("examplekit/canvas/fill(_:)").catch((e) => e)
+
+        expect(error).toBeInstanceOf(NotFoundError)
+        expect(error.candidates.map((c: { path: string }) => c.path)).toEqual([
+          "examplekit/canvas/fill(_:)-1a2b3",
+          "examplekit/canvas/fill(_:)-4c5d6",
+        ])
+      })
     })
   })
 
