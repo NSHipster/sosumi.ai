@@ -213,9 +213,10 @@ Each cell shows the pass rate and the cost per attempt at list prices.
 | Claude Opus 5.5 | 98.4% ($0.0573) | 83.7% ($0.1116) | 38.2% ($0.0251) |
 | GPT-6.1 Sol | 96.7% ($0.0127) | 99.2% ($0.0396) | 33.3% ($0.0155) |
 
-With Sosumi, Claude models score 12 to 30 points higher than with web search,
-at half the cost or less.
-GPT-6.1 Sol's web search ties Sosumi, but costs about 3 times as much.
+With Sosumi, Claude models score 12 to 30 percentage points higher than with web search,
+at about half the cost or less.
+GPT-6.1 Sol scored 2.5 percentage points higher with web search than with Sosumi,
+at about 3 times the cost per attempt.
 Each score has a 95% interval of about ±9 points,
 and the providers' web tools differ,
 so compare conditions for one model.

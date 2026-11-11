@@ -88,10 +88,10 @@ Every condition had a limit of 12 tool calls.
 The results support these claims:
 
 - Without documentation, the strongest models pass about a third of the tasks.
-- With Sosumi, Claude models score 12 to 30 points higher
-  than with their built-in web search, at half the cost or less.
-- GPT-6.1 Sol's built-in web search and Sosumi score the same within noise,
-  but web search costs about 3 times as much per task.
+- With Sosumi, Claude models score 12 to 30 percentage points higher
+  than with their built-in web search, at about half the cost or less.
+- GPT-6.1 Sol scored 2.5 percentage points higher with web search than with Sosumi,
+  at about 3 times the cost per attempt.
 
 Running the eval led to seven fixes in Sosumi.
 Six of them, #122 through #127, are in `25bc75a`, the commit that these runs used.
@@ -103,7 +103,6 @@ which was 3 MB for Observation.
 ### Caveats
 
 - Each score has a 95% interval of about ±9 points.
-  A difference smaller than that is noise.
 - The two providers' web tools are different,
   so compare conditions for one provider, not web search across providers.
 - In these runs, the `sosumi` condition did not include
@@ -115,18 +114,28 @@ which was 3 MB for Observation.
 
 ### Reproduce
 
-From the repository root, check out the Sosumi commit that these runs used
-into its own worktree, and install its dependencies:
+The published results came from two versions of the runner:
+the `sosumi` condition used runner commit `7954250`,
+and the `web` condition used runner commit `fc377f4`.
+The commands below rerun the conditions with the current runner
+against the Sosumi commit that these runs used,
+so their results can differ from the published ones.
+The grader needs Xcode with the SDKs that the cases name, as [Setup](#setup) describes.
+
+Start from the repository root.
+Check out the Sosumi commit that these runs used into its own worktree,
+and install its dependencies:
 
 ```bash
 git worktree add ../sosumi-25bc75a 25bc75a
 (cd ../sosumi-25bc75a && npm ci)
 ```
 
-Then, from `evals/swift-api` in this checkout, run each model in the three conditions:
+Then install the runner's dependencies and run each model in the three conditions:
 
 ```bash
 cd evals/swift-api
+npm ci
 for model in claude-haiku-5-5 claude-sonnet-5-5 claude-opus-5-5; do
   ANTHROPIC_API_KEY=... npm run eval -- --model "$model" \
     --condition sosumi,web,none --reps 3 \
