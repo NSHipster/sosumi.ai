@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest"
 
 const toolHandlers = new Map<string, (input: unknown) => Promise<unknown>>()
 let serverOptions: { instructions?: string } | undefined
@@ -28,7 +28,8 @@ vi.mock("@modelcontextprotocol/sdk/server/mcp.js", () => {
   }
 })
 
-vi.mock("../src/lib/video", () => ({
+vi.mock("../src/lib/video", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../src/lib/video")>()),
   fetchVideoTranscriptMarkdown,
 }))
 
@@ -46,6 +47,9 @@ vi.mock("../src/lib/external", () => ({
 }))
 
 describe("MCP tools registration", () => {
+  let consoleError: MockInstance<typeof console.error>
+  let consoleWarn: MockInstance<typeof console.warn>
+
   beforeEach(() => {
     toolHandlers.clear()
     serverOptions = undefined
@@ -54,6 +58,13 @@ describe("MCP tools registration", () => {
     fetchDocumentationPage.mockReset()
     renderFromJSON.mockReset()
     fetchExternalDocumentationMarkdown.mockReset()
+    // Tool handlers log the failures that they return as results.
+    consoleError = vi.spyOn(console, "error").mockImplementation(() => {})
+    consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   it("gives instructions about conformance conditions", async () => {
@@ -208,6 +219,37 @@ describe("MCP tools registration", () => {
     })) as { content: Array<{ text: string }> }
 
     expect(result.content).toHaveLength(1)
+  })
+
+  it.each([
+    {
+      failure: "an invalid path",
+      input: { path: "/videos/wwdc2099" },
+      fail: () => {},
+    },
+    {
+      failure: "a missing transcript",
+      input: { path: "/videos/play/wwdc2099/1" },
+      fail: async () => {
+        const { TranscriptNotFoundError } = await import("../src/lib/video")
+        fetchVideoTranscriptMarkdown.mockRejectedValue(
+          new TranscriptNotFoundError("Video not found."),
+        )
+      },
+    },
+  ])("logs $failure of a video transcript as a client error", async ({ input, fail }) => {
+    await fail()
+
+    const { createMcpServer } = await import("../src/lib/mcp")
+    createMcpServer()
+
+    const result = (await toolHandlers.get("fetchAppleVideoTranscript")?.(input)) as {
+      isError?: boolean
+    }
+
+    expect(result.isError).toBe(true)
+    expect(consoleWarn).toHaveBeenCalledOnce()
+    expect(consoleError).not.toHaveBeenCalled()
   })
 
   it.each([

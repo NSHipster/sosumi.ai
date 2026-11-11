@@ -13,6 +13,12 @@ export class NotFoundError extends Error {
   }
 }
 
+/**
+ * A missing resource that no client chose, such as the fixed HIG table of contents.
+ * Callers answer it as a missing page, but it is logged as an upstream fault.
+ */
+export class UpstreamNotFoundError extends NotFoundError {}
+
 const USER_AGENTS = [
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.2.20",
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",

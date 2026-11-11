@@ -128,7 +128,7 @@ describe("Error logging", () => {
   })
   it("logs a 404 for the HIG table of contents as an error", async () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {})
-    vi.spyOn(console, "warn").mockImplementation(() => {})
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {})
     global.fetch = vi.fn().mockResolvedValue(new Response("Not Found", { status: 404 }))
 
     const response = await app.request(
@@ -138,7 +138,36 @@ describe("Error logging", () => {
     )
 
     expect(response.status).toBe(404)
-    expect(consoleError).toHaveBeenCalledWith("Failed to fetch HIG ToC: 404 Not Found")
+    expect(consoleError).toHaveBeenCalledOnce()
+    expect(consoleError).toHaveBeenCalledWith(
+      "Error occurred:",
+      expect.objectContaining({ message: expect.stringContaining("HIG table of contents") }),
+    )
+    expect(consoleWarn).not.toHaveBeenCalled()
+  })
+
+  it("logs one error for an Apple 5xx", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {})
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    global.fetch = vi
+      .fn()
+      .mockResolvedValue(
+        new Response("Service Unavailable", { status: 503, statusText: "Service Unavailable" }),
+      )
+
+    const response = await app.request(
+      "https://sosumi.ai/documentation/swift",
+      { headers: { Accept: "application/json" } },
+      bindings,
+    )
+
+    expect(response.status).toBe(500)
+    expect(consoleError).toHaveBeenCalledOnce()
+    expect(consoleError).toHaveBeenCalledWith(
+      "Error occurred:",
+      expect.objectContaining({ message: "Failed to fetch JSON: 503 Service Unavailable" }),
+    )
+    expect(consoleWarn).not.toHaveBeenCalled()
   })
 })
 
@@ -208,6 +237,36 @@ describe("Error logging for MCP tool calls", () => {
     expect(consoleWarn).toHaveBeenCalledOnce()
     expect(consoleWarn).toHaveBeenCalledWith("Client error occurred:", expect.any(Error))
     expect(consoleError).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    {
+      failure: "an Apple 5xx",
+      fail: () =>
+        Promise.resolve(
+          new Response("Service Unavailable", { status: 503, statusText: "Service Unavailable" }),
+        ),
+      message: "Failed to fetch JSON: 503 Service Unavailable",
+    },
+    {
+      failure: "a network failure",
+      fail: () => Promise.reject(new TypeError("fetch failed")),
+      message: "fetch failed",
+    },
+  ])("logs one error and no warning for $failure", async ({ fail, message }) => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {})
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    global.fetch = vi.fn().mockImplementation(fail)
+
+    const body = await fetchAppleDocumentation("/documentation/swift")
+
+    expect(body).toContain('"isError":true')
+    expect(consoleError).toHaveBeenCalledOnce()
+    expect(consoleError).toHaveBeenCalledWith(
+      "Error occurred:",
+      expect.objectContaining({ message }),
+    )
+    expect(consoleWarn).not.toHaveBeenCalled()
   })
 
   it("logs nothing when a missing path resolves to a page", async () => {

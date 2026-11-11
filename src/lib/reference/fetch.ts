@@ -140,7 +140,6 @@ async function fetchAppleJSON(jsonUrl: string): Promise<AppleDocJSON> {
     if (response.status === 404) {
       throw new NotFoundError(`Apple documentation page not found at ${jsonUrl}`)
     }
-    console.error(`Failed to fetch JSON: ${response.status} ${response.statusText}`)
     throw new Error(`Failed to fetch JSON: ${response.status} ${response.statusText}`)
   }
 
