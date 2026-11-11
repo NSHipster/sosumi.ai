@@ -115,8 +115,8 @@ which was 3 MB for Observation.
 ### Reproduce
 
 The published results came from two versions of the runner:
-the `sosumi` condition used runner commit `7954250`,
-and the `web` condition used runner commit `fc377f4`.
+runner commit `7954250` for the `sosumi` and `none` conditions,
+which ran together, and runner commit `fc377f4` for the `web` condition.
 The commands below rerun the conditions with the current runner
 against the Sosumi commit that these runs used,
 so their results can differ from the published ones.
