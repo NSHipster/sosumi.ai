@@ -66,11 +66,12 @@ https://sosumi.ai/external/https://swiftlang.github.io/swift-docc-plugin/documen
 
 ### MCP Integration
 
-Sosumi's MCP server supports Streamable HTTP and Server-Sent Events (SSE) transport.
-If your client supports either of these,
+Sosumi's MCP server supports the Streamable HTTP transport.
+If your client supports it,
 configure it to connect directly to `https://sosumi.ai/mcp`.
 
-Otherwise,
+If your client supports stdio but not Streamable HTTP,
+such as a client whose only remote transport is the older HTTP+SSE transport,
 you can run this command to proxy over stdio:
 
 ```json
