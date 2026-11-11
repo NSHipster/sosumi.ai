@@ -1,5 +1,6 @@
-import { SELF } from "cloudflare:test"
+import { env, SELF } from "cloudflare:test"
 import { afterEach, describe, expect, it, vi } from "vitest"
+import app from "../src/index"
 
 const MCP_URL = "https://sosumi.ai/mcp"
 
@@ -68,5 +69,60 @@ describe("MCP endpoint", () => {
 
     expect(response.status).toBe(200)
     expect(await response.text()).toContain('"serverInfo"')
+  })
+})
+
+describe("Error logging", () => {
+  const originalFetch = global.fetch
+  const bindings = { ASSETS: env.ASSETS, NODE_ENV: "production" }
+
+  afterEach(() => {
+    global.fetch = originalFetch
+    vi.restoreAllMocks()
+  })
+
+  it("logs an HTTPException with a 4xx status as a warning", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {})
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {})
+
+    const response = await app.request("https://sosumi.ai/search", undefined, bindings)
+
+    expect(response.status).toBe(400)
+    expect(consoleWarn).toHaveBeenCalledOnce()
+    expect(consoleError).not.toHaveBeenCalled()
+  })
+
+  it("logs a NotFoundError as a warning", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {})
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    global.fetch = vi.fn().mockResolvedValue(new Response("Not Found", { status: 404 }))
+
+    const response = await app.request(
+      "https://sosumi.ai/documentation/nonexistentframework",
+      { headers: { Accept: "application/json" } },
+      bindings,
+    )
+
+    expect(response.status).toBe(404)
+    expect(consoleWarn).toHaveBeenCalled()
+    expect(consoleError).not.toHaveBeenCalled()
+  })
+
+  it("logs an HTTPException with a 5xx status as an error", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {})
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {})
+
+    const response = await app.request(
+      "https://sosumi.ai/",
+      { headers: { Accept: "text/markdown" } },
+      {
+        ...bindings,
+        ASSETS: { fetch: async () => new Response("Not Found", { status: 404 }) },
+      },
+    )
+
+    expect(response.status).toBe(500)
+    expect(consoleError).toHaveBeenCalledOnce()
+    expect(consoleWarn).not.toHaveBeenCalled()
   })
 })

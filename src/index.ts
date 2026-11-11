@@ -794,8 +794,22 @@ function renderCandidates(candidates: NotFoundError["candidates"]): string {
   return `\n## Did you mean:\n\n${list}\n`
 }
 
+function isClientError(err: Error): boolean {
+  if (err instanceof HTTPException) {
+    return err.status < 500
+  }
+  if (err instanceof ExternalAccessError) {
+    return err.status < 500
+  }
+  return err instanceof NotFoundError
+}
+
 app.onError((err, c) => {
-  console.error("Error occurred:", err)
+  if (isClientError(err)) {
+    console.warn("Client error occurred:", err)
+  } else {
+    console.error("Error occurred:", err)
+  }
 
   if (err instanceof HTTPException) {
     // Get the custom response
