@@ -811,11 +811,12 @@
 
                             <div class="tab-pane" id="other-tab">
                                 <h3>Other MCP Clients</h3>
-                                <p>Sosumi's MCP server supports Streamable HTTP and Server-Sent Events (SSE) transport.
-                                    If your client supports either of these,
+                                <p>Sosumi's MCP server supports the Streamable HTTP transport.
+                                    If your client supports it,
                                     configure it to connect directly to <code>https://sosumi.ai/mcp</code>.</p>
 
-                                <p>Otherwise,
+                                <p>If your client supports stdio but not Streamable HTTP,
+                                    such as a client whose only remote transport is the older HTTP+SSE transport,
                                     you can run this command to proxy over stdio:</p>
 
                                 <pre><code class="mcp-config"><span class="dimmed"><span class="punctuation">{</span></span>
