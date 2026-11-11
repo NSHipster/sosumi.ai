@@ -58,6 +58,90 @@ The grader type-checks every case in the Swift 6 language mode,
 unless the case's `swift_flags` set another mode,
 and each task states its mode.
 
+## Results
+
+These results come from runs on 2026-11-10
+against Sosumi's `main` branch at `25bc75a`.
+
+The eval has 41 Swift tasks.
+31 use APIs that are new in the macOS 27.0 or iOS 27 SDKs,
+5 come from recorded agent failures,
+and 5 are controls that use APIs that have been stable for a long time.
+Each model ran each task 3 times in each condition,
+so each cell below comes from 123 attempts.
+A score is the mean of the per-task pass rates for the `passes` metric.
+The cost is the provider's list price for the tokens that the attempts used,
+plus web search fees, divided by 123.
+
+| Model | Sosumi | Built-in web search | No documentation |
+| --- | --- | --- | --- |
+| Claude Haiku 5.5 | 76.4% ($0.0022) | 64.2% ($0.0197) | 22.8% ($0.0009) |
+| Claude Sonnet 5.5 | 93.5% ($0.0218) | 63.4% ($0.0446) | 30.9% ($0.0083) |
+| Claude Opus 5.5 | 98.4% ($0.0573) | 83.7% ($0.1116) | 38.2% ($0.0251) |
+| GPT-6.1 Sol | 96.7% ($0.0127) | 99.2% ($0.0396) | 33.3% ($0.0155) |
+
+The columns are the `sosumi`, `web`, and `none` conditions.
+In `web`, Anthropic models had at most 6 searches and 6 fetches,
+and OpenAI models had one limit for all built-in calls.
+Every condition had a limit of 12 tool calls.
+
+The results support these claims:
+
+- Without documentation, the strongest models pass about a third of the tasks.
+- With Sosumi, Claude models score 12 to 30 points higher
+  than with their built-in web search, at half the cost or less.
+- GPT-6.1 Sol's built-in web search and Sosumi score the same within noise,
+  but web search costs about 3 times as much per task.
+
+Failures in these runs led to seven fixes in Sosumi,
+#122 through #127 and #129.
+For example, framework pages had rendered Apple's whole navigator index,
+which was 3 MB for Observation.
+
+### Caveats
+
+- Each score has a 95% interval of about ±9 points.
+  A difference smaller than that is noise.
+- The two providers' web tools are different,
+  so compare conditions for one provider, not web search across providers.
+- In these runs, the `sosumi` condition did not include
+  Sosumi's server instructions in the system prompt.
+  The runner now includes them by default;
+  `--no-server-instructions` matches these runs.
+- Costs are list prices from `prices.json` at the time of the runs,
+  not billed amounts.
+
+### Reproduce
+
+From the repository root, check out the Sosumi commit that these runs used
+into its own worktree, and install its dependencies:
+
+```bash
+git worktree add ../sosumi-25bc75a 25bc75a
+(cd ../sosumi-25bc75a && npm ci)
+```
+
+Then, from `evals/swift-api` in this checkout, run each model in the three conditions:
+
+```bash
+cd evals/swift-api
+for model in claude-haiku-5-5 claude-sonnet-5-5 claude-opus-5-5; do
+  ANTHROPIC_API_KEY=... npm run eval -- --model "$model" \
+    --condition sosumi,web,none --reps 3 \
+    --sosumi-root ../../../sosumi-25bc75a --no-server-instructions \
+    --max-usd-anthropic 40
+done
+OPENAI_API_KEY=... npm run eval -- --model gpt-6.1-sol \
+  --condition sosumi,web,none --reps 3 \
+  --sosumi-root ../../../sosumi-25bc75a --no-server-instructions \
+  --max-usd-openai 10
+```
+
+The other options keep their defaults, including 12 tool calls per attempt.
+The spend caps are cumulative across `runs/`,
+and they leave some room above the cost of the runs above.
+A model's results and its summary are in `runs/<model>/<condition>/baseline/`.
+
 ## Layout
 
 - `cases/<id>/`: the task, check file, reference, stale, and stub answers, and metadata.

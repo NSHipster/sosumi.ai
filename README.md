@@ -197,6 +197,31 @@ which adds a "Copy sosumi Link" button
 to Apple Developer documentation pages.
 [Source code](https://github.com/FromAtom/Link-Generator-for-sosumi.ai) is available on GitHub.
 
+## Evaluation
+
+The [Swift API eval](evals/swift-api#results) gives agents 41 Swift tasks,
+most of which use APIs that are new in the macOS 27 and iOS 27 SDKs,
+and type-checks each answer against the SDK.
+Each model tried each task 3 times with Sosumi,
+with its provider's built-in web search, and with no documentation.
+Each cell shows the pass rate and the cost per attempt at list prices.
+
+| Model | Sosumi | Built-in web search | No documentation |
+| --- | --- | --- | --- |
+| Claude Haiku 5.5 | 76.4% ($0.0022) | 64.2% ($0.0197) | 22.8% ($0.0009) |
+| Claude Sonnet 5.5 | 93.5% ($0.0218) | 63.4% ($0.0446) | 30.9% ($0.0083) |
+| Claude Opus 5.5 | 98.4% ($0.0573) | 83.7% ($0.1116) | 38.2% ($0.0251) |
+| GPT-6.1 Sol | 96.7% ($0.0127) | 99.2% ($0.0396) | 33.3% ($0.0155) |
+
+With Sosumi, Claude models score 12 to 30 points higher than with web search,
+at half the cost or less.
+GPT-6.1 Sol's web search ties Sosumi, but costs about 3 times as much.
+Each score has a 95% interval of about ±9 points,
+and the providers' web tools differ,
+so compare conditions for one model.
+The eval's README describes the method, the caveats,
+and the commands that reproduce the runs.
+
 ## Self-Hosting
 
 This project is designed to be easily run on your own machine
