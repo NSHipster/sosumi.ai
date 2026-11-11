@@ -93,8 +93,10 @@ The results support these claims:
 - GPT-6.1 Sol's built-in web search and Sosumi score the same within noise,
   but web search costs about 3 times as much per task.
 
-Failures in these runs led to seven fixes in Sosumi,
-#122 through #127 and #129.
+Running the eval led to seven fixes in Sosumi.
+Six of them, #122 through #127, are in `25bc75a`, the commit that these runs used.
+The seventh, #129, came from a later investigation
+and was merged after these runs.
 For example, framework pages had rendered Apple's whole navigator index,
 which was 3 MB for Observation.
 
