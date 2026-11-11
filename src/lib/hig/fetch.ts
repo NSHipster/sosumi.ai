@@ -35,10 +35,11 @@ export async function fetchHIGTableOfContents(): Promise<HIGTableOfContents> {
   })
 
   if (!response.ok) {
+    // No client chooses this URL, so a 404 here is an upstream fault.
+    console.error(`Failed to fetch HIG ToC: ${response.status} ${response.statusText}`)
     if (response.status === 404) {
       throw new NotFoundError(`HIG table of contents not found at ${tocUrl}`)
     }
-    console.error(`Failed to fetch HIG ToC: ${response.status} ${response.statusText}`)
     throw new Error(`Failed to fetch HIG ToC: ${response.status} ${response.statusText}`)
   }
 

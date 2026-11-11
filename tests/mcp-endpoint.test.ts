@@ -1,6 +1,7 @@
 import { env, SELF } from "cloudflare:test"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import app from "../src/index"
+import arrayData from "./fixtures/reference/array.json"
 
 const MCP_URL = "https://sosumi.ai/mcp"
 
@@ -124,5 +125,113 @@ describe("Error logging", () => {
     expect(response.status).toBe(500)
     expect(consoleError).toHaveBeenCalledOnce()
     expect(consoleWarn).not.toHaveBeenCalled()
+  })
+  it("logs a 404 for the HIG table of contents as an error", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {})
+    vi.spyOn(console, "warn").mockImplementation(() => {})
+    global.fetch = vi.fn().mockResolvedValue(new Response("Not Found", { status: 404 }))
+
+    const response = await app.request(
+      "https://sosumi.ai/design/human-interface-guidelines",
+      undefined,
+      bindings,
+    )
+
+    expect(response.status).toBe(404)
+    expect(consoleError).toHaveBeenCalledWith("Failed to fetch HIG ToC: 404 Not Found")
+  })
+})
+
+describe("Error logging for MCP tool calls", () => {
+  const originalFetch = global.fetch
+  const bindings = { ASSETS: env.ASSETS, NODE_ENV: "production" }
+
+  afterEach(() => {
+    global.fetch = originalFetch
+    vi.restoreAllMocks()
+  })
+
+  function mockApple(pages: Record<string, unknown>) {
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      const page = pages[url]
+      return Promise.resolve(
+        page
+          ? new Response(JSON.stringify(page), { status: 200 })
+          : new Response("Not Found", { status: 404 }),
+      )
+    })
+  }
+
+  async function fetchAppleDocumentation(path: string): Promise<string> {
+    const response = await app.request(
+      MCP_URL,
+      {
+        method: "POST",
+        headers: {
+          Accept: "application/json, text/event-stream",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "tools/call",
+          params: { name: "fetchAppleDocumentation", arguments: { path } },
+        }),
+      },
+      bindings,
+    )
+    expect(response.status).toBe(200)
+    return response.text()
+  }
+
+  it("logs one warning and no error for a missing reference page", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {})
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    mockApple({})
+
+    const body = await fetchAppleDocumentation("/documentation/swift/nonexistent")
+
+    expect(body).toContain('"isError":true')
+    expect(consoleWarn).toHaveBeenCalledOnce()
+    expect(consoleWarn).toHaveBeenCalledWith("Client error occurred:", expect.any(Error))
+    expect(consoleError).not.toHaveBeenCalled()
+  })
+
+  it("logs one warning and no error for a missing HIG page", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {})
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    mockApple({})
+
+    const body = await fetchAppleDocumentation("/design/human-interface-guidelines/nonexistent")
+
+    expect(body).toContain('"isError":true')
+    expect(consoleWarn).toHaveBeenCalledOnce()
+    expect(consoleWarn).toHaveBeenCalledWith("Client error occurred:", expect.any(Error))
+    expect(consoleError).not.toHaveBeenCalled()
+  })
+
+  it("logs nothing when a missing path resolves to a page", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {})
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    const base = "https://developer.apple.com/tutorials/data/documentation"
+    mockApple({
+      [`${base}/swift.json`]: {
+        metadata: { title: "Swift" },
+        references: {
+          "doc://com.apple.documentation/documentation/Swift/Array": {
+            title: "Array",
+            url: "/documentation/swift/array-1a2b3",
+          },
+        },
+      },
+      [`${base}/swift/array-1a2b3.json`]: arrayData,
+    })
+
+    const body = await fetchAppleDocumentation("/documentation/swift/array")
+
+    expect(body).not.toContain('"isError":true')
+    expect(body).toContain("No page exists at /documentation/swift/array.")
+    expect(consoleWarn).not.toHaveBeenCalled()
+    expect(consoleError).not.toHaveBeenCalled()
   })
 })
