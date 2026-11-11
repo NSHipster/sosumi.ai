@@ -1,0 +1,18 @@
+{
+  "id": "virtualization-secure-boot",
+  "framework": "Virtualization",
+  "source": "sdk-diff",
+  "tags": [
+    "Virtualization",
+    "throwing-property"
+  ],
+  "target": "arm64-apple-macos27.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "isSecureBootEnabled"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/virtualization/vzefivariablestore/issecurebootenabled"
+  ],
+  "notes": "The macOS 27 SDK adds VZEFIVariableStore.isSecureBootEnabled as a throwing property (get throws). Reading it without try does not compile."
+}

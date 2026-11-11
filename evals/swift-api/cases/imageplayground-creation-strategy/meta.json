@@ -1,0 +1,20 @@
+{
+  "id": "imageplayground-creation-strategy",
+  "framework": "ImagePlayground",
+  "source": "sdk-diff",
+  "tags": [
+    "ImagePlayground",
+    "availability"
+  ],
+  "target": "arm64-apple-macos26.4",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "creationStrategy",
+    "editExisting"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/imageplayground/imageplaygroundoptions",
+    "https://sosumi.ai/documentation/imageplayground/imageplaygroundoptions/creationstrategy-swift.property"
+  ],
+  "notes": "ImagePlaygroundOptions is available from macOS 26.4. The macOS 27 SDK adds its creationStrategy property and the CreationStrategy enum (automatic, editExisting, generateNew). At a macOS 26.4 deployment target the property needs #available(macOS 27.0, *)."
+}

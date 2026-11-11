@@ -1,0 +1,24 @@
+{
+  "id": "fm-session-property-sendable",
+  "framework": "FoundationModels",
+  "source": "failure",
+  "tags": [
+    "FoundationModels",
+    "sendable",
+    "conditional-conformance",
+    "property-wrapper"
+  ],
+  "target": "arm64-apple-macos27.0",
+  "sdk": "macosx27.0",
+  "swift_flags": [
+    "-swift-version",
+    "6"
+  ],
+  "required_symbols": [
+    "SessionProperty"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/foundationmodels/languagemodelsession/sessionproperty"
+  ],
+  "notes": "LanguageModelSession.SessionProperty conforms to Sendable only where Value: Sendable (FoundationModels.swiftinterface, MacOSX27.0.sdk). Apple's documentation data lists the conformance without the condition. An unconditional Sendable conformance on a generic wrapper fails in Swift 6 mode. Swift 5 mode does not diagnose the missing conformance, so this case needs -swift-version 6."
+}

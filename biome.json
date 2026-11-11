@@ -15,7 +15,8 @@
       "vitest.config.ts",
       "src/**/*",
       "tests/**/*",
-      "monitor/tests/**/*"
+      "monitor/tests/**/*",
+      "evals/**/*.ts"
     ]
   },
   "formatter": {

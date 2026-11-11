@@ -1,0 +1,18 @@
+{
+  "id": "control-iso8601-fractional-seconds",
+  "framework": "Foundation",
+  "source": "control",
+  "tags": [
+    "Foundation",
+    "dates",
+    "formatting"
+  ],
+  "target": "arm64-apple-macos27.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [],
+  "docs": [
+    "https://sosumi.ai/documentation/foundation/iso8601dateformatter",
+    "https://sosumi.ai/documentation/foundation/iso8601dateformatter/options/withfractionalseconds"
+  ],
+  "notes": "Control case. ISO8601DateFormatter.Options.withFractionalSeconds has been available since macOS 10.13. Date.ISO8601FormatStyle(includingFractionalSeconds: true) is an equally valid answer, so the required symbol is only ISO8601."
+}

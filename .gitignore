@@ -35,3 +35,7 @@ lerna-debug.log*
 
 # demo recording
 docs/demo.mp4
+
+# Swift API eval output
+evals/swift-api/runs/
+evals/swift-api/runs-*/

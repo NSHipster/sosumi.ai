@@ -1,0 +1,24 @@
+{
+  "id": "swift-array-sendable",
+  "framework": "Swift",
+  "source": "failure",
+  "tags": [
+    "Swift",
+    "sendable",
+    "conditional-conformance",
+    "generics"
+  ],
+  "target": "arm64-apple-macos27.0",
+  "sdk": "macosx27.0",
+  "swift_flags": [
+    "-swift-version",
+    "6"
+  ],
+  "required_symbols": [
+    "Sendable"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/swift/array"
+  ],
+  "notes": "The standard library declares extension Array : @unchecked Sendable where Element : Sendable (Swift.swiftinterface, MacOSX27.0.sdk). Apple's documentation data puts other conditions on Array's conformances, such as Sendable when Element conforms to IntentValueConvertible. A generic type that stores [Item] can be Sendable only where Item is Sendable. Swift 5 mode does not diagnose the missing conformance, so this case needs -swift-version 6."
+}

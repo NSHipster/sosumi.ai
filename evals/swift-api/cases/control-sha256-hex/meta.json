@@ -1,0 +1,19 @@
+{
+  "id": "control-sha256-hex",
+  "framework": "CryptoKit",
+  "source": "control",
+  "tags": [
+    "CryptoKit",
+    "hashing"
+  ],
+  "target": "arm64-apple-macos27.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "SHA256"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/cryptokit/sha256",
+    "https://sosumi.ai/documentation/cryptokit/hashfunction/hash(data:)"
+  ],
+  "notes": "Control case. SHA256.hash(data:) has been available since macOS 10.15. SHA256Digest is a Sequence of UInt8 and has no hexadecimal string property."
+}

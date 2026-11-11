@@ -1,0 +1,20 @@
+{
+  "id": "swiftdata-sectioned-results",
+  "framework": "SwiftData",
+  "source": "sdk-diff",
+  "tags": [
+    "SwiftData",
+    "observation",
+    "sections"
+  ],
+  "target": "arm64-apple-macos27.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "sectionBy"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/swiftdata/resultsobserver",
+    "https://sosumi.ai/documentation/swiftdata/sectionedresults"
+  ],
+  "notes": "The macOS 27 SDK adds ResultsObserver<Element, SectionTitle>, with throwing initializers that take sortBy:, sectionBy:, and modelContext:, and a sections property of type SectionedResults<Element, SectionTitle>? with sectionTitles."
+}

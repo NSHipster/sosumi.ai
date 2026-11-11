@@ -1,0 +1,21 @@
+{
+  "id": "ios-uikit-scene-closure-confirmation",
+  "framework": "UIKit",
+  "source": "sdk-diff",
+  "tags": [
+    "UIKit",
+    "scenes",
+    "multiwindow"
+  ],
+  "target": "arm64-apple-ios27.0",
+  "sdk": "iphoneos",
+  "required_symbols": [
+    "closureConfirmation"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/uikit/uiwindowscene/closureconfirmation",
+    "https://sosumi.ai/documentation/uikit/uisceneclosureconfirmation"
+  ],
+  "notes": "The iOS 27 SDK adds UISceneClosureConfirmation, created with init(title:message:actions:) from UIAlertAction values, and UIWindowScene.closureConfirmation. Both are unavailable on tvOS, watchOS, and visionOS.",
+  "round": 2
+}

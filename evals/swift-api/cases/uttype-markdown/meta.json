@@ -1,0 +1,19 @@
+{
+  "id": "uttype-markdown",
+  "framework": "UniformTypeIdentifiers",
+  "source": "sdk-diff",
+  "tags": [
+    "UniformTypeIdentifiers",
+    "availability"
+  ],
+  "target": "arm64-apple-macos26.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "markdown"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/uniformtypeidentifiers/uttype-swift.struct/markdown",
+    "https://sosumi.ai/documentation/uniformtypeidentifiers/uttype-swift.struct/init(importedas:conformingto:)"
+  ],
+  "notes": "The macOS 27 SDK adds UTType.markdown. At a macOS 26.0 deployment target, it needs #available(macOS 27.0, *); the fallback is UTType(importedAs:)."
+}

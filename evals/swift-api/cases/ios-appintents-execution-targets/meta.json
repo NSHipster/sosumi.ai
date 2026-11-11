@@ -1,0 +1,22 @@
+{
+  "id": "ios-appintents-execution-targets",
+  "framework": "AppIntents",
+  "source": "sdk-diff",
+  "tags": [
+    "AppIntents",
+    "shortcuts",
+    "extensions"
+  ],
+  "target": "arm64-apple-ios27.0",
+  "sdk": "iphoneos",
+  "required_symbols": [
+    "allowedExecutionTargets",
+    "refresh"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/appintents/appintent/allowedexecutiontargets",
+    "https://sosumi.ai/documentation/appintents/intentexecutiontargets"
+  ],
+  "notes": "The iOS 27 SDK adds AppIntent.allowedExecutionTargets and the IntentExecutionTargets option set (default, main, appIntentsExtension, widgetKitExtension). The check cannot see which targets an answer allows, because the protocol supplies a default; the required_symbols check rejects an answer that never sets allowedExecutionTargets.",
+  "round": 2
+}

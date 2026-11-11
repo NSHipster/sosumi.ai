@@ -1,0 +1,20 @@
+{
+  "id": "avfoundation-resumable-export",
+  "framework": "AVFoundation",
+  "source": "sdk-diff",
+  "tags": [
+    "AVFoundation",
+    "async",
+    "enums"
+  ],
+  "target": "arm64-apple-macos27.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "configureForResumableExport"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/avfoundation/avassetexportsession/configureforresumableexport()",
+    "https://sosumi.ai/documentation/avfoundation/avassetexportsession/resumptionstate"
+  ],
+  "notes": "The macOS 27 SDK adds AVAssetExportSession.configureForResumableExport() async -> ResumptionState, an enum with resumable(isResumingFromPreviousState:) and notResumable(failureReason:)."
+}

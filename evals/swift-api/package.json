@@ -1,0 +1,24 @@
+{
+  "name": "@nshipster/sosumi-swift-api-eval",
+  "private": true,
+  "description": "Measures whether Swift that agents write for Apple APIs type-checks, with and without Sosumi",
+  "type": "module",
+  "engines": {
+    "node": ">=22.6"
+  },
+  "scripts": {
+    "eval": "node --experimental-strip-types --disable-warning=ExperimentalWarning src/run.ts",
+    "regrade": "node --experimental-strip-types --disable-warning=ExperimentalWarning src/regrade.ts",
+    "test:mock": "node --experimental-strip-types --disable-warning=ExperimentalWarning src/mock-pipeline.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.7.0",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "openai": "^7.55.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "typescript": "^5.9"
+  }
+}

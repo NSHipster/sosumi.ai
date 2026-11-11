@@ -1,0 +1,21 @@
+{
+  "id": "ios-photosui-picker-search",
+  "framework": "PhotosUI",
+  "source": "sdk-diff",
+  "tags": [
+    "PhotosUI",
+    "photos",
+    "picker"
+  ],
+  "target": "arm64-apple-ios27.0",
+  "sdk": "iphoneos",
+  "required_symbols": [
+    "searchText"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/photosui/phpickerconfiguration-swift.struct/searchtext",
+    "https://sosumi.ai/documentation/photosui/phpickersearchtext-swift.struct"
+  ],
+  "notes": "The iOS 27 SDK adds PHPickerConfiguration.searchText of type PHPickerSearchText?, created from a string or a UIPhotoSearchSuggestion.",
+  "round": 2
+}

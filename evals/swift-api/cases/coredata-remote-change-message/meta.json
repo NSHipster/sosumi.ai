@@ -1,0 +1,18 @@
+{
+  "id": "coredata-remote-change-message",
+  "framework": "CoreData",
+  "source": "sdk-diff",
+  "tags": [
+    "CoreData",
+    "notifications",
+    "concurrency"
+  ],
+  "target": "arm64-apple-macos27.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [],
+  "docs": [
+    "https://sosumi.ai/documentation/coredata/nspersistentstorecoordinator/remotechangemessage",
+    "https://sosumi.ai/documentation/foundation/notificationcenter/messages(of:for:buffersize:)-4tof0"
+  ],
+  "notes": "The macOS 27 SDK adds NSPersistentStoreCoordinator.RemoteChangeMessage (a NotificationCenter.AsyncMessage) and the MessageIdentifier .remoteChange. NotificationCenter.messages(of:for:bufferSize:) is available from macOS 26. The older notifications(named:object:) yields Notification values."
+}

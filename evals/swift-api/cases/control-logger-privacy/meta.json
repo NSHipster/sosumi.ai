@@ -1,0 +1,20 @@
+{
+  "id": "control-logger-privacy",
+  "framework": "os",
+  "source": "control",
+  "tags": [
+    "os",
+    "logging",
+    "privacy"
+  ],
+  "target": "arm64-apple-macos27.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "privacy"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/os/logger",
+    "https://sosumi.ai/documentation/os/oslogprivacy/private"
+  ],
+  "notes": "Control case. Logger and OSLogPrivacy have been available since macOS 11. os_log(_:log:type:_:) takes an OSLog, not a Logger."
+}

@@ -1,0 +1,24 @@
+{
+  "id": "fm-image-attachment",
+  "framework": "FoundationModels",
+  "source": "failure",
+  "tags": [
+    "FoundationModels",
+    "transcript",
+    "images",
+    "capabilities"
+  ],
+  "target": "arm64-apple-macos27.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "capabilities",
+    "vision"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/foundationmodels/transcript/segment/attachment(_:)",
+    "https://sosumi.ai/documentation/foundationmodels/transcript/attachmentsegment",
+    "https://sosumi.ai/documentation/foundationmodels/transcript/imageattachment",
+    "https://sosumi.ai/documentation/foundationmodels/languagemodelcapabilities/capability/vision"
+  ],
+  "notes": "On OS 27, Transcript.Segment has case attachment(Transcript.AttachmentSegment), whose content is Transcript.Attachment.image(Transcript.ImageAttachment). The recorded claim said the model reports supportsImageInput; the SDK has no such symbol. A model reports image support through capabilities.contains(.vision), so the case uses that instead."
+}

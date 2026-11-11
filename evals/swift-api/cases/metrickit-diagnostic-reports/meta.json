@@ -1,0 +1,22 @@
+{
+  "id": "metrickit-diagnostic-reports",
+  "framework": "MetricKit",
+  "source": "sdk-diff",
+  "tags": [
+    "MetricKit",
+    "async-sequence",
+    "enums"
+  ],
+  "target": "arm64-apple-macos27.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "diagnosticReports",
+    "crash"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/metrickit/metricmanager",
+    "https://sosumi.ai/documentation/metrickit/metricmanager/diagnosticreports",
+    "https://sosumi.ai/documentation/metrickit/diagnosticresult"
+  ],
+  "notes": "The macOS 27 SDK adds a Swift MetricManager whose diagnosticReports property is an AsyncSequence of DiagnosticReport. Each report's result is a DiagnosticResult enum with crash(CrashDiagnostic), whose signal is Int?. The Objective-C MXMetricManager delivers MXDiagnosticPayload objects to subscribers."
+}

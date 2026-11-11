@@ -1,0 +1,20 @@
+{
+  "id": "observation-continuous",
+  "framework": "Observation",
+  "source": "sdk-diff",
+  "tags": [
+    "Observation",
+    "noncopyable",
+    "concurrency"
+  ],
+  "target": "arm64-apple-macos27.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "withContinuousObservation"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/observation/withcontinuousobservation(options:apply:)",
+    "https://sosumi.ai/documentation/observation/observationtracking/token"
+  ],
+  "notes": "The macOS 27 SDK adds withContinuousObservation(options:apply:), which returns a noncopyable ObservationTracking.Token, with ObservationTracking.Options and ObservationTracking.Event. The older withObservationTracking(_:onChange:) fires once and returns the apply closure's result, not a token."
+}

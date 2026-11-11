@@ -1,0 +1,22 @@
+{
+  "id": "ios-uikit-reduced-resource-usage",
+  "framework": "UIKit",
+  "source": "sdk-diff",
+  "tags": [
+    "UIKit",
+    "availability",
+    "energy"
+  ],
+  "target": "arm64-apple-ios26.0",
+  "sdk": "iphoneos",
+  "required_symbols": [
+    "systemPrefersReducedResourceUsage",
+    "isLowPowerModeEnabled"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/uikit/uiapplication/systemprefersreducedresourceusage",
+    "https://sosumi.ai/documentation/foundation/processinfo/islowpowermodeenabled"
+  ],
+  "notes": "The iOS 27 SDK adds UIApplication.systemPrefersReducedResourceUsage, a matching trait, and a change notification. At an iOS 26.0 deployment target the property needs #available(iOS 27.0, *); the fallback is ProcessInfo.isLowPowerModeEnabled.",
+  "round": 2
+}

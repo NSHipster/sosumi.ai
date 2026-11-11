@@ -1,0 +1,22 @@
+{
+  "id": "cryptokit-one-time-kem",
+  "framework": "CryptoKit",
+  "source": "sdk-diff",
+  "tags": [
+    "CryptoKit",
+    "availability",
+    "noncopyable",
+    "post-quantum"
+  ],
+  "target": "arm64-apple-macos26.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "OneTimePrivateKey",
+    "decapsulate"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/cryptokit/mlkem768/onetimeprivatekey",
+    "https://sosumi.ai/documentation/cryptokit/mlkem768/privatekey"
+  ],
+  "notes": "The macOS 27 SDK adds MLKEM768.OneTimePrivateKey, a noncopyable key with a consuming decapsulate(_:). MLKEM768.PrivateKey is available from macOS 26.0. At a macOS 26.0 deployment target, the one-time key needs #available(macOS 27.0, *)."
+}

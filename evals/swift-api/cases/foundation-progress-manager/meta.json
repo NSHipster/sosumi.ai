@@ -1,0 +1,20 @@
+{
+  "id": "foundation-progress-manager",
+  "framework": "Foundation",
+  "source": "sdk-diff",
+  "tags": [
+    "Foundation",
+    "progress",
+    "noncopyable"
+  ],
+  "target": "arm64-apple-macos27.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "start(totalCount"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/foundation/subprogress",
+    "https://sosumi.ai/documentation/foundation/progressmanager"
+  ],
+  "notes": "The macOS 27 SDK adds ProgressManager, ProgressReporter, and the noncopyable Subprogress. A function receives a Subprogress, calls start(totalCount:) to get a ProgressManager, and reports work with complete(count:). Subprogress has none of NSProgress's unit-count properties."
+}

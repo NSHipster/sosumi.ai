@@ -1,0 +1,22 @@
+{
+  "id": "network-dtls",
+  "framework": "Network",
+  "source": "sdk-diff",
+  "tags": [
+    "Network",
+    "result-builder",
+    "security"
+  ],
+  "target": "arm64-apple-macos27.0",
+  "sdk": "macosx27.0",
+  "required_symbols": [
+    "NetworkConnection",
+    "DTLS",
+    "DTLSv12"
+  ],
+  "docs": [
+    "https://sosumi.ai/documentation/network/dtls",
+    "https://sosumi.ai/documentation/network/networkconnection"
+  ],
+  "notes": "NetworkConnection and its protocol stack builder arrived in macOS 26.0 with TLS, TCP, and UDP. The macOS 27 SDK adds the DTLS protocol for it, with init(_:) taking a UDP builder and version(min:max:). The older NWConnection API returns a different type."
+}

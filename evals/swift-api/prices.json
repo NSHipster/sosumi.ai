@@ -1,0 +1,50 @@
+{
+  "description": "USD per million tokens. Cache writes cost cache_write_multiplier times the input price. A request whose prompt is longer than long_context.above_prompt_tokens is priced with the long_context multipliers. The runner refuses to run a model whose price is missing or null.",
+  "cache_write_multiplier": 1.25,
+  "anthropic": {
+    "claude-opus-5-5": {
+      "input": 4,
+      "output": 20,
+      "cache_read": 0.2
+    },
+    "claude-sonnet-5-5": {
+      "input": 2,
+      "output": 10,
+      "cache_read": 0.1
+    },
+    "claude-haiku-5-5": {
+      "input": 0.1,
+      "output": 0.5,
+      "cache_read": 0.01
+    }
+  },
+  "openai": {
+    "gpt-6.1-sol": {
+      "input": 2.0,
+      "output": 10.0,
+      "cache_read": 0.1,
+      "long_context": {
+        "above_prompt_tokens": 272000,
+        "input_multiplier": 2,
+        "cache_read_multiplier": 2,
+        "output_multiplier": 1.5
+      },
+      "source": "https://developers.openai.com/api/docs/pricing, standard tier, read 2026-11-10"
+    }
+  },
+  "web_search": {
+    "description": "USD per 1,000 web searches in the web condition, added to token costs. The runner refuses the web condition for a provider without a number here.",
+    "anthropic": {
+      "usd_per_1000": 10,
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing (Web search tool: $10 per 1,000 searches; a search that fails with an error is not billed; web fetch has no additional charge), read 2026-11-10"
+    },
+    "openai": {
+      "usd_per_1000": 10,
+      "source": "https://developers.openai.com/api/docs/pricing (Built-in tools: web search, $10.00 per 1,000 calls plus search content tokens at model rates), read 2026-11-10. The web search guide says that search actions incur the call cost; the runner bills searches only, not open_page or find_in_page actions."
+    },
+    "mock": {
+      "usd_per_1000": 10,
+      "source": "Test value for the mock provider"
+    }
+  }
+}
