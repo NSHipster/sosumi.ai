@@ -20,8 +20,15 @@
         url.searchParams.set(param, String(input[key] ?? ""))
       }
     }
-    const response = await fetch(url, { headers: { Accept: "application/json" } })
-    const body = await response.text()
+    let response
+    let body
+    try {
+      response = await fetch(url, { headers: { Accept: "application/json" } })
+      body = await response.text()
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error)
+      return errorResult(`Request to Sosumi failed: ${reason}`)
+    }
     let data
     try {
       data = JSON.parse(body)
@@ -34,7 +41,13 @@
         : typeof data === "string"
           ? data
           : JSON.stringify(data, null, 2)
+    // Follow the MCP `CallToolResult` shape, so that an agent can tell a failure from a result.
+    if (!response.ok) return errorResult(text)
     return { content: [{ type: "text", text }] }
+  }
+
+  function errorResult(text) {
+    return { isError: true, content: [{ type: "text", text }] }
   }
 
   function registerTool(tool) {
