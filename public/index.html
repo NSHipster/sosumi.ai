@@ -372,6 +372,72 @@
             }
         }
 
+        .eval-results {
+            overflow-x: auto;
+        }
+
+        .eval-results table {
+            width: 100%;
+            border-collapse: collapse;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .eval-results caption {
+            text-align: start;
+            color: var(--text-secondary);
+            padding-bottom: 0.5rem;
+        }
+
+        .eval-results th,
+        .eval-results td {
+            padding: 0.375rem 0.75rem;
+            border-bottom: 1px solid var(--surface-inset-deep);
+            white-space: nowrap;
+        }
+
+        .eval-results th:first-child {
+            text-align: start;
+        }
+
+        .eval-results tbody th {
+            font-weight: normal;
+        }
+
+        .eval-results thead th:not(:first-child),
+        .eval-results td {
+            text-align: end;
+        }
+
+        .eval-results td:nth-child(2) {
+            background: var(--surface-inset);
+        }
+
+        .eval-results small {
+            display: inline-block;
+            min-width: 3.5em;
+            color: var(--text-secondary);
+        }
+
+        .eval-results .no-wrap {
+            white-space: nowrap;
+        }
+
+        @media (max-width: 40rem) {
+            .eval-results th,
+            .eval-results td {
+                padding: 0.375rem;
+            }
+
+            .eval-results th {
+                white-space: normal;
+            }
+
+            .eval-results small {
+                display: block;
+                min-width: 0;
+            }
+        }
+
         .tagline {
             color: var(--text-secondary);
             font-size: 1.25rem;
@@ -645,6 +711,75 @@
                 Access it in your <a href="#http">browser</a>, over <a href="#mcp">MCP</a>, from the <a href="#cli">command line</a>, as an <a href="#skill">AI skill</a>, or with an unofficial <a href="https://chromewebstore.google.com/detail/donffakeimppgoehccpfhlchmbfdmfpj" rel="noopener noreferrer">Chrome extension</a>.
             </p>
         </header>
+
+        <section id="eval">
+            <header>
+                <h2>Does It Help?</h2>
+                <p>
+                    We gave agents 41 Swift tasks,
+                    most of which use APIs new in the macOS 27 and iOS 27 SDKs,
+                    and type-checked each answer against the SDK.
+                    Each model tried each task 3 times
+                    with Sosumi, with its provider's built-in web search, and with no documentation.
+                </p>
+            </header>
+
+            <div class="eval-results">
+                <table>
+                    <caption>Tasks passed, with cost per attempt</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Model</th>
+                            <th scope="col">Sosumi</th>
+                            <th scope="col">Web search</th>
+                            <th scope="col">No docs</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row">Claude Opus 5.5</th>
+                            <td><strong>98%</strong> <small>5.7¢</small></td>
+                            <td>84% <small>11.2¢</small></td>
+                            <td>38% <small>2.5¢</small></td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Claude Sonnet 5.5</th>
+                            <td><strong>94%</strong> <small>2.2¢</small></td>
+                            <td>63% <small>4.5¢</small></td>
+                            <td>31% <small>0.8¢</small></td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Claude Haiku 5.5</th>
+                            <td><strong>76%</strong> <small>0.2¢</small></td>
+                            <td>64% <small>2.0¢</small></td>
+                            <td>23% <small>0.1¢</small></td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><span class="no-wrap">GPT-6.1</span> Sol</th>
+                            <td><strong>97%</strong> <small>1.3¢</small></td>
+                            <td>99% <small>4.0¢</small></td>
+                            <td>33% <small>1.5¢</small></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p>
+                Without documentation, even the strongest models pass only about a third of the tasks.
+                With Sosumi, Claude models score 12 to 30 percentage points higher than with web search,
+                at about half the cost or less.
+                GPT-6.1 Sol scored 2.5 percentage points higher with web search than with Sosumi,
+                at about 3 times the cost per attempt.
+            </p>
+            <p>
+                Each score has a 95% interval of about ±9 points.
+                The providers' web tools differ,
+                so compare conditions for one model, not web search across providers.
+                Costs are list prices from November 2026.
+                See the <a href="https://github.com/NSHipster/sosumi.ai/tree/main/evals/swift-api#results"
+                    rel="noopener noreferrer">eval</a> for the method and every caveat.
+            </p>
+        </section>
 
         <section id="http">
             <header>
