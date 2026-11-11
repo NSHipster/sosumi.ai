@@ -235,3 +235,93 @@ describe("Error logging for MCP tool calls", () => {
     expect(consoleError).not.toHaveBeenCalled()
   })
 })
+
+describe("Upstream failures while looking up the parent page", () => {
+  const originalFetch = global.fetch
+  const bindings = { ASSETS: env.ASSETS, NODE_ENV: "production" }
+  // Apple has no page at `swift/array`, so the lookup fetches `swift`.
+  const parentURL = "https://developer.apple.com/tutorials/data/documentation/swift.json"
+
+  afterEach(() => {
+    global.fetch = originalFetch
+    vi.restoreAllMocks()
+  })
+
+  const failures = [
+    {
+      failure: "a 5xx response",
+      fail: () =>
+        Promise.resolve(
+          new Response("Service Unavailable", { status: 503, statusText: "Service Unavailable" }),
+        ),
+      message: "Failed to fetch JSON: 503 Service Unavailable",
+    },
+    {
+      failure: "a network failure",
+      fail: () => Promise.reject(new TypeError("fetch failed")),
+      message: "fetch failed",
+    },
+  ]
+
+  function mockParentFailure(fail: () => Promise<Response>) {
+    global.fetch = vi
+      .fn()
+      .mockImplementation((url: string) =>
+        url === parentURL ? fail() : Promise.resolve(new Response("Not Found", { status: 404 })),
+      )
+  }
+
+  it.each(failures)("answers the HTTP route with 500 for $failure", async ({ fail }) => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {})
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    mockParentFailure(fail)
+
+    const response = await app.request(
+      "https://sosumi.ai/documentation/swift/array",
+      { headers: { Accept: "application/json" } },
+      bindings,
+    )
+
+    expect(response.status).toBe(500)
+    expect(await response.json()).toMatchObject({ error: "Service temporarily unavailable" })
+    expect(consoleError).toHaveBeenCalled()
+    expect(consoleWarn).not.toHaveBeenCalled()
+  })
+
+  it.each(failures)(
+    "reports the upstream failure from fetchAppleDocumentation for $failure",
+    async ({ fail, message }) => {
+      vi.spyOn(console, "error").mockImplementation(() => {})
+      const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {})
+      mockParentFailure(fail)
+
+      const response = await app.request(
+        MCP_URL,
+        {
+          method: "POST",
+          headers: {
+            Accept: "application/json, text/event-stream",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            id: 1,
+            method: "tools/call",
+            params: {
+              name: "fetchAppleDocumentation",
+              arguments: { path: "/documentation/swift/array" },
+            },
+          }),
+        },
+        bindings,
+      )
+
+      expect(response.status).toBe(200)
+      const body = await response.text()
+      expect(body).toContain('"isError":true')
+      expect(body).toContain(message)
+      expect(body).not.toContain("not found")
+      expect(consoleWarn).not.toHaveBeenCalled()
+    },
+  )
+})

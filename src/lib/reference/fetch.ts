@@ -40,6 +40,8 @@ export async function fetchJSONData(path: string): Promise<AppleDocJSON> {
  * If the matches are a Swift symbol and its Objective-C counterparts,
  * such as `-swift.struct` and `-c.class`, it fetches the Swift symbol.
  * Otherwise, if more than one matches, the `NotFoundError` lists them.
+ * Any other error while fetching a parent page propagates,
+ * so that an upstream failure is not reported as a missing page.
  */
 export async function fetchDocumentationPage(path: string): Promise<DocumentationPage> {
   return resolveDocumentationPage(normalizeDocumentationPath(path), 0)
@@ -175,7 +177,12 @@ async function findSymbolCandidates(
     // Use the page JSON even for a framework, because the index has no references.
     parent = await fetchAppleJSON(pageJSONUrl(parentPath))
   } catch (error) {
-    if (!(error instanceof NotFoundError) || depth >= MAX_PARENT_RESOLUTION_DEPTH) {
+    // Let other errors, such as a network failure or a 5xx response, propagate,
+    // so that the caller reports an upstream failure instead of a missing page.
+    if (!(error instanceof NotFoundError)) {
+      throw error
+    }
+    if (depth >= MAX_PARENT_RESOLUTION_DEPTH) {
       return []
     }
     try {
@@ -183,7 +190,10 @@ async function findSymbolCandidates(
       parent = resolvedParent.data
       parentPath = resolvedParent.path.toLowerCase()
       parentWasResolved = true
-    } catch {
+    } catch (resolutionError) {
+      if (!(resolutionError instanceof NotFoundError)) {
+        throw resolutionError
+      }
       return []
     }
   }

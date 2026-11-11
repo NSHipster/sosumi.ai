@@ -273,6 +273,66 @@ describe("Integration Tests with Mocked Apple API", () => {
     })
   })
 
+  describe("upstream failures while looking up the parent page", () => {
+    const base = "https://developer.apple.com/tutorials/data/documentation"
+
+    function mockApple(responses: Record<string, () => Promise<Response>>) {
+      global.fetch = vi.fn().mockImplementation((url: string) => {
+        const response = responses[url]
+        return response ? response() : Promise.resolve(new Response("Not Found", { status: 404 }))
+      })
+    }
+
+    it("should report a 5xx response for the parent page, not a missing page", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => {})
+      mockApple({
+        [`${base}/swift.json`]: async () =>
+          new Response("Service Unavailable", { status: 503, statusText: "Service Unavailable" }),
+      })
+
+      const error = await fetchDocumentationPage("swift/array").catch((e) => e)
+
+      expect(error).not.toBeInstanceOf(NotFoundError)
+      expect(error.message).toBe("Failed to fetch JSON: 503 Service Unavailable")
+    })
+
+    it("should report a network failure for the parent page, not a missing page", async () => {
+      mockApple({
+        [`${base}/swift.json`]: () => Promise.reject(new TypeError("fetch failed")),
+      })
+
+      const error = await fetchDocumentationPage("swift/array").catch((e) => e)
+
+      expect(error).toBeInstanceOf(TypeError)
+      expect(error.message).toBe("fetch failed")
+    })
+
+    it("should report an invalid JSON response for the parent page, not a missing page", async () => {
+      mockApple({
+        [`${base}/swift.json`]: async () => new Response("<html>", { status: 200 }),
+      })
+
+      const error = await fetchDocumentationPage("swift/array").catch((e) => e)
+
+      expect(error).toBeInstanceOf(SyntaxError)
+    })
+
+    it("should report a 5xx response while resolving the parent's path", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => {})
+      // The page and its parent are missing, and the grandparent fails.
+      mockApple({
+        [`${base}/examplekit.json`]: async () =>
+          new Response("Bad Gateway", { status: 502, statusText: "Bad Gateway" }),
+      })
+
+      const error = await fetchDocumentationPage("examplekit/widget/size").catch((e) => e)
+
+      expect(error).not.toBeInstanceOf(NotFoundError)
+      expect(error.message).toBe("Failed to fetch JSON: 502 Bad Gateway")
+      expect(global.fetch).toHaveBeenCalledTimes(3)
+    })
+  })
+
   it("should handle network errors when fetching from Apple", async () => {
     // Mock a network error
     global.fetch = vi.fn().mockRejectedValue(new Error("Network error"))
