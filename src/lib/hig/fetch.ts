@@ -2,7 +2,7 @@
  * Human Interface Guidelines (HIG) fetching functionality
  */
 
-import { getRandomUserAgent, NotFoundError } from "../fetch"
+import { getRandomUserAgent, NotFoundError, UpstreamNotFoundError } from "../fetch"
 import type { HIGPageJSON, HIGTableOfContents } from "./types"
 
 // ============================================================================
@@ -35,10 +35,9 @@ export async function fetchHIGTableOfContents(): Promise<HIGTableOfContents> {
   })
 
   if (!response.ok) {
-    // No client chooses this URL, so a 404 here is an upstream fault.
-    console.error(`Failed to fetch HIG ToC: ${response.status} ${response.statusText}`)
     if (response.status === 404) {
-      throw new NotFoundError(`HIG table of contents not found at ${tocUrl}`)
+      // No client chooses this URL, so a 404 here is an upstream fault.
+      throw new UpstreamNotFoundError(`HIG table of contents not found at ${tocUrl}`)
     }
     throw new Error(`Failed to fetch HIG ToC: ${response.status} ${response.statusText}`)
   }
@@ -74,7 +73,6 @@ export async function fetchHIGPageData(path: string): Promise<HIGPageJSON> {
     if (response.status === 404) {
       throw new NotFoundError(`HIG page not found at ${jsonUrl}`)
     }
-    console.error(`Failed to fetch HIG page: ${response.status} ${response.statusText}`)
     throw new Error(`Failed to fetch HIG page: ${response.status} ${response.statusText}`)
   }
 

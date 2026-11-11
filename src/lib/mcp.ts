@@ -1,9 +1,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
+import { HTTPException } from "hono/http-exception"
 import { z } from "zod"
-
+import { logError } from "./errors"
 import type { ExternalPolicyEnv } from "./external"
 import { fetchExternalDocumentationMarkdown } from "./external"
-import { NotFoundError } from "./fetch"
 import { fetchHIGPageData, renderHIGFromJSON } from "./hig"
 import { PUBLISHER_DOMAIN } from "./identity"
 import { fetchDocumentationPage, renderFromJSON } from "./reference"
@@ -131,6 +131,10 @@ export const TOOL_DEFINITIONS = {
   },
 } satisfies Record<string, ToolMeta>
 
+/**
+ * Each tool returns a failure as an `isError` result, so `app.onError` never sees it.
+ * The tool handler logs the failure instead.
+ */
 export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
   const server = new McpServer(MCP_SERVER_INFO, { instructions: MCP_SERVER_INSTRUCTIONS })
 
@@ -191,6 +195,7 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
           structuredContent,
         }
       } catch (error) {
+        logError(error)
         const errorMessage = error instanceof Error ? error.message : "Unknown error"
 
         // Report the failure as an error rather than as structured content.
@@ -261,12 +266,7 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
 
         return { content }
       } catch (error) {
-        // The tool returns this failure as a result, so `app.onError` never sees it.
-        // Log a missing page here as a client error, as `app.onError` does.
-        if (error instanceof NotFoundError) {
-          console.warn("Client error occurred:", error)
-        }
-
+        logError(error)
         const errorMessage = error instanceof Error ? error.message : "Unknown error"
 
         return {
@@ -308,6 +308,7 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
           ],
         }
       } catch (error) {
+        logError(error)
         const errorMessage = error instanceof Error ? error.message : "Unknown error"
 
         return {
@@ -337,9 +338,10 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
         const normalizedPath = path.startsWith("/") ? path : `/${path}`
         const match = normalizedPath.match(/^\/videos\/play\/([a-z0-9-]+)\/(\d+)\/?$/i)
         if (!match) {
-          throw new Error(
-            "Invalid Apple video path. Expected format: /videos/play/COLLECTION/VIDEO_ID",
-          )
+          // The HTTP route answers an invalid path with 400, so log it as a client error too.
+          throw new HTTPException(400, {
+            message: "Invalid Apple video path. Expected format: /videos/play/COLLECTION/VIDEO_ID",
+          })
         }
 
         const collection = match[1]
@@ -360,6 +362,7 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
           ],
         }
       } catch (error) {
+        logError(error)
         const errorMessage = error instanceof Error ? error.message : "Unknown error"
         return {
           isError: true,

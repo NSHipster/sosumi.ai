@@ -23,6 +23,7 @@ import {
 } from "./lib/a2a"
 import { AI_CATALOG_MEDIA_TYPE, buildAiCatalog } from "./lib/ard"
 import { buildDidDocument, DID_DOCUMENT_MEDIA_TYPE } from "./lib/did"
+import { logError } from "./lib/errors"
 import {
   decodeExternalTargetPath,
   ExternalAccessError,
@@ -794,22 +795,8 @@ function renderCandidates(candidates: NotFoundError["candidates"]): string {
   return `\n## Did you mean:\n\n${list}\n`
 }
 
-function isClientError(err: Error): boolean {
-  if (err instanceof HTTPException) {
-    return err.status < 500
-  }
-  if (err instanceof ExternalAccessError) {
-    return err.status < 500
-  }
-  return err instanceof NotFoundError
-}
-
 app.onError((err, c) => {
-  if (isClientError(err)) {
-    console.warn("Client error occurred:", err)
-  } else {
-    console.error("Error occurred:", err)
-  }
+  logError(err)
 
   if (err instanceof HTTPException) {
     // Get the custom response
