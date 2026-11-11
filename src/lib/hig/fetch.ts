@@ -35,6 +35,7 @@ export async function fetchHIGTableOfContents(): Promise<HIGTableOfContents> {
   })
 
   if (!response.ok) {
+    // No client chooses this URL, so a 404 here is an upstream fault.
     console.error(`Failed to fetch HIG ToC: ${response.status} ${response.statusText}`)
     if (response.status === 404) {
       throw new NotFoundError(`HIG table of contents not found at ${tocUrl}`)
@@ -70,10 +71,10 @@ export async function fetchHIGPageData(path: string): Promise<HIGPageJSON> {
   })
 
   if (!response.ok) {
-    console.error(`Failed to fetch HIG page: ${response.status} ${response.statusText}`)
     if (response.status === 404) {
       throw new NotFoundError(`HIG page not found at ${jsonUrl}`)
     }
+    console.error(`Failed to fetch HIG page: ${response.status} ${response.statusText}`)
     throw new Error(`Failed to fetch HIG page: ${response.status} ${response.statusText}`)
   }
 

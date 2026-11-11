@@ -3,6 +3,7 @@ import { z } from "zod"
 
 import type { ExternalPolicyEnv } from "./external"
 import { fetchExternalDocumentationMarkdown } from "./external"
+import { NotFoundError } from "./fetch"
 import { fetchHIGPageData, renderHIGFromJSON } from "./hig"
 import { PUBLISHER_DOMAIN } from "./identity"
 import { fetchDocumentationPage, renderFromJSON } from "./reference"
@@ -260,6 +261,12 @@ export function createMcpServer(externalPolicyEnv: ExternalPolicyEnv = {}) {
 
         return { content }
       } catch (error) {
+        // The tool returns this failure as a result, so `app.onError` never sees it.
+        // Log a missing page here as a client error, as `app.onError` does.
+        if (error instanceof NotFoundError) {
+          console.warn("Client error occurred:", error)
+        }
+
         const errorMessage = error instanceof Error ? error.message : "Unknown error"
 
         return {
