@@ -1,9 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
+  extractCodeSamplesFromHtml,
   extractTranscriptLinesFromHtml,
   fetchVideoTranscriptMarkdown,
   TranscriptNotFoundError,
 } from "../src/lib/video"
+import keynoteHtml from "./fixtures/video/wwdc2026-101.html?raw"
+import dragAndDropHtml from "./fixtures/video/wwdc2026-271.html?raw"
+
+function mockVideoPage(html: string) {
+  global.fetch = vi.fn().mockResolvedValue(
+    new Response(html, {
+      status: 200,
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    }),
+  )
+}
 
 describe("WWDC video transcript support", () => {
   const originalFetch = global.fetch
@@ -132,5 +144,128 @@ describe("WWDC video transcript support", () => {
     expect(markdown).toContain("**Collection:** meet-with-apple")
     expect(markdown).toContain("**Video:** 208")
     expect(markdown).toContain("- [00:10] Good morning everyone.")
+  })
+
+  describe("code samples", () => {
+    it("extracts code samples with titles and start times from a session page", () => {
+      const samples = extractCodeSamplesFromHtml(dragAndDropHtml)
+
+      expect(samples.map(({ title, startSeconds }) => ({ title, startSeconds }))).toEqual([
+        { title: "Add reorderable to the preview", startSeconds: 220 },
+        { title: "Add reorder container to the GameView", startSeconds: 280 },
+        { title: "Add reorderable to PileView", startSeconds: 358 },
+      ])
+
+      const [preview] = samples
+      expect(preview.code.startsWith("#Preview {\n    @Previewable @State var cards = [")).toBe(
+        true,
+      )
+      expect(preview.code.endsWith("    .background(.green.gradient)\n}")).toBe(true)
+      expect(preview.code).not.toContain("<span")
+      expect(preview.code).toContain(".reorderContainer(for: CardValue.self) { difference in")
+    })
+
+    it("decodes HTML entities in code", () => {
+      const samples = extractCodeSamplesFromHtml(`
+        <li class="supplement sample-code" data-supplement-id="sample-code">
+          <section>
+            <ul>
+              <li class="sample-code-main-container">
+                <p>0:05 - <a class="jump-to-time-sample" data-start-time="5">Compare &amp; swap</a></p>
+                <pre class="code-source"><code><span class="syntax-keyword">let</span> ok <span class="syntax-operator">=</span> a &lt; b &amp;&amp; b &gt; c</code></pre>
+              </li>
+            </ul>
+          </section>
+        </li>
+      `)
+
+      expect(samples).toEqual([
+        { title: "Compare & swap", startSeconds: 5, code: "let ok = a < b && b > c" },
+      ])
+    })
+
+    it("returns no code samples for a session page with an empty Code tab", () => {
+      expect(extractCodeSamplesFromHtml(keynoteHtml)).toEqual([])
+    })
+
+    it("returns no code samples for a page without a Code tab", () => {
+      expect(
+        extractCodeSamplesFromHtml(
+          '<section id="transcript-content"><span data-start="1.0">Hi</span></section>',
+        ),
+      ).toEqual([])
+    })
+
+    it("renders code samples after the transcript", async () => {
+      mockVideoPage(dragAndDropHtml)
+
+      const markdown = await fetchVideoTranscriptMarkdown(
+        "https://developer.apple.com/videos/play/wwdc2026/271/",
+        "wwdc2026",
+        "271",
+      )
+
+      expect(markdown).toContain("# Code-along: Build powerful drag and drop in SwiftUI - WWDC26")
+      expect(markdown).toContain(
+        [
+          "- [00:19] Since iOS 16, SwiftUI has provided drag and drop",
+          "",
+          "## Code",
+          "",
+          "### [03:40] Add reorderable to the preview",
+          "",
+          "```swift",
+          "#Preview {",
+        ].join("\n"),
+      )
+      expect(markdown).toContain(
+        ["    .background(.green.gradient)", "}", "```", "", "### [04:40] Add reorder"].join("\n"),
+      )
+      expect(markdown).toContain("### [05:58] Add reorderable to PileView")
+      expect(markdown.indexOf("## Code")).toBeLessThan(markdown.indexOf("*Extracted by"))
+    })
+
+    it("leaves the output unchanged for a session without code samples", async () => {
+      mockVideoPage(keynoteHtml)
+
+      const markdown = await fetchVideoTranscriptMarkdown(
+        "https://developer.apple.com/videos/play/wwdc2026/101/",
+        "wwdc2026",
+        "101",
+      )
+
+      expect(markdown).not.toContain("## Code")
+      expect(markdown).toMatch(
+        /- \[00:31\] and welcome to WWDC\.\n\n---\n\n\*Extracted by \[sosumi\.ai\]/,
+      )
+    })
+
+    it("uses a longer fence when the code contains backticks", async () => {
+      mockVideoPage(`
+        <title>Raw identifiers - WWDC26 - Videos - Apple Developer</title>
+        <section id="transcript-content"><span data-start="1.0">Hello.</span></section>
+        <li class="supplement sample-code">
+          <section>
+            <ul>
+              <li class="sample-code-main-container">
+                <p>Raw identifiers</p>
+                <pre class="code-source"><code>/// \`\`\`swift
+func \`test something\`() {}</code></pre>
+              </li>
+            </ul>
+          </section>
+        </li>
+      `)
+
+      const markdown = await fetchVideoTranscriptMarkdown(
+        "https://developer.apple.com/videos/play/wwdc2026/999/",
+        "wwdc2026",
+        "999",
+      )
+
+      expect(markdown).toContain(
+        "### Raw identifiers\n\n````swift\n/// ```swift\nfunc `test something`() {}\n````\n",
+      )
+    })
   })
 })

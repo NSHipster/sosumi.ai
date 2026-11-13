@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Code-along: Build powerful drag and drop in SwiftUI - WWDC26 - Videos - Apple Developer</title>
+</head>
+<body>
+	<!-- Trimmed from wwdc2026-271.html (fetched 2026-11-13). -->
+	<ul class="supplements">
+		<li class="supplement transcript">
+			<section id="transcript-content">
+				<p><span class="sentence"><span data-start="7.0">Hi, I'm Jack, an engineer on the UI Frameworks team. </span></span><span class="sentence"><span data-start="11.0">In this video, I'd like to share with you some of the new drag and drop APIs </span></span><span class="sentence"><span data-start="15.0">available in the 2027 releases.</p><p></span></span><span class="sentence"><span data-start="19.0">Since iOS 16, SwiftUI has provided drag and drop </span></span></p>
+			</section>
+		</li>
+
+		<!-- sample code -->
+		<li class="supplement sample-code" data-supplement-id="sample-code">
+			<section>
+				<ul class="no-bullet padding-top-small margin-bottom">
+			<li class="sample-code-main-container">
+											<button class="btn-copy-code" data-text-copied="Code Copied" data-text-default="Copy Code">Copy Code</button>
+											<p>3:40 - <a class="jump-to-time-sample" href="/videos/play/wwdc2026/271/?time=220" data-start-time="220">Add reorderable to the preview</a></p>
+											<pre class="code-source"><code>#<span class="syntax-type">Preview</span> {
+    <span class="syntax-meta">@Previewable</span> <span class="syntax-meta">@State</span> <span class="syntax-keyword">var</span> cards <span class="syntax-operator">=</span> [
+        <span class="syntax-type">CardValue</span>(rank: .ace, suit: .clubs),
+        <span class="syntax-type">CardValue</span>(rank: .ace, suit: .diamonds),
+        <span class="syntax-type">CardValue</span>(rank: .ace, suit: .hearts),
+        <span class="syntax-type">CardValue</span>(rank: .ace, suit: .spades)
+    ]
+
+    <span class="syntax-type">HStack</span> {
+        <span class="syntax-type">ForEach</span>(cards) { card <span class="syntax-keyword">in</span>
+            <span class="syntax-type">CardFaceView</span>(card: card)
+        }
+        .reorderable()
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .reorderContainer(for: <span class="syntax-type">CardValue</span>.<span class="syntax-keyword">self</span>) { difference <span class="syntax-keyword">in</span>
+        cards.apply(difference: difference)
+    }
+    .padding()
+    .background(.green.gradient)
+}</code></pre>
+										</li>
+			<li class="sample-code-main-container">
+											<button class="btn-copy-code" data-text-copied="Code Copied" data-text-default="Copy Code">Copy Code</button>
+											<p>4:40 - <a class="jump-to-time-sample" href="/videos/play/wwdc2026/271/?time=280" data-start-time="280">Add reorder container to the GameView</a></p>
+											<pre class="code-source"><code><span class="syntax-keyword">struct</span> <span class="syntax-title class_">GameView</span>: <span class="syntax-title class_">View</span> {
+    <span class="syntax-keyword">var</span> game: <span class="syntax-type">Game</span>
+
+    <span class="syntax-keyword">var</span> body: <span class="syntax-keyword">some</span> <span class="syntax-type">View</span> {
+        <span class="syntax-type">GeometryReader</span> { proxy <span class="syntax-keyword">in</span>
+            <span class="syntax-keyword">let</span> spacing: <span class="syntax-type">CGFloat</span> <span class="syntax-operator">=</span> <span class="syntax-number">10</span>
+            <span class="syntax-keyword">let</span> cardWidth <span class="syntax-operator">=</span> (proxy.size.width <span class="syntax-operator">-</span> <span class="syntax-number">6</span> <span class="syntax-operator">*</span> spacing) <span class="syntax-operator">/</span> <span class="syntax-number">7</span>
+            <span class="syntax-type">VStack</span> {
+                <span class="syntax-type">HStack</span>(alignment: .top, spacing: spacing) {
+                    <span class="syntax-type">Group</span> {
+                        <span class="syntax-type">RemainderView</span>(game: game)
+                        <span class="syntax-type">CardBackView</span>()
+                            .hidden()
+                        <span class="syntax-type">ForEach</span>(<span class="syntax-type">CardValue</span>.<span class="syntax-type">Suit</span>.allCases) { suit <span class="syntax-keyword">in</span>
+                            <span class="syntax-type">DestinationView</span>(game: game, suit: suit)
+                        }
+                    }
+                    .frame(width: cardWidth)
+                }
+                .padding(.bottom, <span class="syntax-number">20</span>)
+                <span class="syntax-type">HStack</span>(alignment: .top, spacing: spacing) {
+                    <span class="syntax-type">ForEach</span>(<span class="syntax-number">0</span><span class="syntax-operator">..&lt;</span><span class="syntax-number">7</span>) { index <span class="syntax-keyword">in</span>
+                        <span class="syntax-type">PileView</span>(game: game, index: index)
+                            .frame(width: cardWidth)
+                    }
+                }
+                .frame(maxHeight: .infinity, alignment: .top)
+              	<span class="syntax-comment">// Add the reorder container modifier.</span>
+                .reorderContainer(for: <span class="syntax-type">CardValue</span>.<span class="syntax-keyword">self</span>, in: <span class="syntax-type">Card</span>.<span class="syntax-type">Group</span>.<span class="syntax-keyword">self</span>) { difference <span class="syntax-keyword">in</span>
+                    game.moveCards(difference: difference)
+                }
+            }
+        }
+        .padding()
+    }
+}</code></pre>
+										</li>
+			<li class="sample-code-main-container">
+											<button class="btn-copy-code" data-text-copied="Code Copied" data-text-default="Copy Code">Copy Code</button>
+											<p>5:58 - <a class="jump-to-time-sample" href="/videos/play/wwdc2026/271/?time=358" data-start-time="358">Add reorderable to PileView</a></p>
+											<pre class="code-source"><code><span class="syntax-keyword">struct</span> <span class="syntax-title class_">PileView</span>: <span class="syntax-title class_">View</span> {
+    <span class="syntax-keyword">var</span> game: <span class="syntax-type">Game</span>
+    <span class="syntax-keyword">var</span> index: <span class="syntax-type">Int</span>
+    <span class="syntax-meta">@Query</span> <span class="syntax-keyword">var</span> cards: [<span class="syntax-type">Card</span>]
+
+    <span class="syntax-keyword">var</span> body: <span class="syntax-keyword">some</span> <span class="syntax-type">View</span> {
+        <span class="syntax-type">ZStack</span>(alignment: .topLeading) {
+            <span class="syntax-type">CardPlaceholderView</span>()
+            <span class="syntax-type">PileLayout</span> {
+                <span class="syntax-keyword">let</span> index <span class="syntax-operator">=</span> firstFaceUpIndex
+              	<span class="syntax-comment">// Iterates over the face down cards.</span>
+                <span class="syntax-type">ForEach</span>(cards[<span class="syntax-operator">..&lt;</span>index]) { card <span class="syntax-keyword">in</span>
+                    <span class="syntax-type">CardView</span>(card: card)
+                }
+                <span class="syntax-comment">// Iterates over the face up cards.</span>
+                <span class="syntax-type">ForEach</span>(cards[index<span class="syntax-operator">...</span>], id: \.value) { card <span class="syntax-keyword">in</span>
+                    <span class="syntax-type">CardView</span>(card: card)
+                }
+                .reorderable(collectionID: <span class="syntax-type">Card</span>.<span class="syntax-type">Group</span>.pile(index))
+            }
+        }
+    }
+
+    <span class="syntax-keyword">var</span> firstFaceUpIndex: <span class="syntax-type">Int</span> {
+        cards.firstIndex { <span class="syntax-operator">!</span><span class="syntax-variable">$0</span>.isFaceDown } <span class="syntax-operator">??</span> cards.endIndex
+    }
+}</code></pre>
+										</li>
+				</ul>
+			</section>
+		</li>
+	</ul>
+</body>
+</html>
