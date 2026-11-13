@@ -118,7 +118,7 @@ export const TOOL_DEFINITIONS = {
     name: "fetchAppleVideoTranscript",
     title: "Fetch Apple Video Transcript",
     description:
-      "Fetch the transcript of an Apple Developer video (https://developer.apple.com/videos) by path and return it as Markdown",
+      "Fetch the transcript of an Apple Developer video (https://developer.apple.com/videos) by path and return it as Markdown, followed by the session's code samples when it has any",
     inputSchema: {
       path: z
         .string()
