@@ -28,7 +28,11 @@ https://sosumi.ai/documentation/swift/array
 This works for all API reference docs,
 as well as Apple's [Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/) (HIG).
 
-WWDC session transcripts are also supported by replacing the same host for video URLs:
+WWDC session transcripts are also supported by replacing the same host for video URLs.
+When a session has code samples,
+the Markdown ends with a Code section that lists each sample with its timestamp and title.
+
+To get a transcript, replace the host in the video URL:
 
 **Original:**
 
@@ -121,7 +125,7 @@ A test fails when the two files differ.
 
 - `fetchAppleVideoTranscript` - Fetches video transcripts, including WWDC sessions
   - Parameters: `path` (string) - video path (e.g., `/videos/play/wwdc2021/10133`)
-  - Returns transcript content as Markdown
+  - Returns the transcript as Markdown, followed by the session's code samples when it has any
 
 - `fetchExternalDocumentation` - Fetches external Swift-DocC documentation by absolute HTTPS URL
   - Parameters: `url` (string) - External URL (e.g., `https://swiftlang.github.io/swift-docc-plugin/documentation/swiftdoccplugin`)
