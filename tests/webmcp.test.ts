@@ -1,6 +1,20 @@
 import { env, SELF } from "cloudflare:test"
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import { buildWebMcpManifest } from "../src/lib/webmcp"
+
+const searchResponse = {
+  query: "SwiftUI",
+  results: [
+    {
+      title: "SwiftUI",
+      url: "https://developer.apple.com/documentation/swiftui",
+      description: "Declare the user interface and behavior for your app on every platform.",
+      breadcrumbs: ["Documentation"],
+      tags: ["framework"],
+      type: "documentation",
+    },
+  ],
+}
 
 async function listMcpTools(): Promise<Array<{ name: string; outputSchema?: unknown }>> {
   const response = await SELF.fetch("https://sosumi.ai/mcp", {
@@ -15,6 +29,32 @@ async function listMcpTools(): Promise<Array<{ name: string; outputSchema?: unkn
   // The transport can answer with an SSE stream, which carries the JSON-RPC message in a `data:` line.
   const json = body.startsWith("{") ? body : (body.match(/^data: (.*)$/m)?.[1] ?? "")
   return JSON.parse(json).result.tools
+}
+
+interface Registration {
+  name: string
+  outputSchema?: unknown
+  execute: (input: Record<string, unknown>) => Promise<unknown>
+}
+
+/** Runs `public/webmcp.js` against a fake `navigator.modelContext` and `fetch`. */
+async function loadWebMcpScript(fetchSearch: (url: URL) => Promise<Response>) {
+  const asset = await env.ASSETS.fetch(new Request("https://sosumi.ai/webmcp.js"))
+  const script = await asset.text()
+  const registrations: Registration[] = []
+  const navigator = {
+    modelContext: { registerTool: (tool: Registration) => registrations.push(tool) },
+  }
+  const location = { origin: "https://sosumi.ai" }
+  const fetch = async (input: string | URL) => {
+    const url = new URL(input, location.origin)
+    if (url.pathname === "/webmcp/manifest.json") return Response.json(buildWebMcpManifest())
+    return await fetchSearch(url)
+  }
+
+  new Function("navigator", "document", "fetch", "location", script)(navigator, {}, fetch, location)
+  await vi.waitFor(() => expect(registrations).toHaveLength(4))
+  return registrations
 }
 
 describe("WebMCP", () => {
@@ -86,5 +126,57 @@ describe("WebMCP", () => {
 
     const html = await response.text()
     expect(html).toContain('<script src="/webmcp.js" defer></script>')
+  })
+
+  it("registers search with its output schema and the fetch tools without one", async () => {
+    const registrations = await loadWebMcpScript(async () => new Response(null, { status: 500 }))
+    const manifest = buildWebMcpManifest()
+
+    expect(registrations.map((tool) => tool.name)).toEqual(manifest.map((tool) => tool.name))
+    expect(registrations[0].outputSchema).toEqual(manifest[0].outputSchema)
+    for (const tool of registrations.slice(1)) {
+      expect(tool).not.toHaveProperty("outputSchema")
+    }
+  })
+
+  it("resolves a search with the search object", async () => {
+    const requests: URL[] = []
+    const [search] = await loadWebMcpScript(async (url) => {
+      requests.push(url)
+      return Response.json(searchResponse)
+    })
+
+    const result = await search.execute({ query: "SwiftUI" })
+
+    expect(requests.map((url) => `${url.pathname}${url.search}`)).toEqual(["/search?q=SwiftUI"])
+    expect(result).toEqual(searchResponse)
+    expect(Object.keys(result as object)).toEqual(["query", "results"])
+  })
+
+  it("resolves a failed search with a tool error instead of rejecting", async () => {
+    const [search] = await loadWebMcpScript(async () =>
+      Response.json(
+        { error: "Service temporarily unavailable", message: "Try again." },
+        { status: 500 },
+      ),
+    )
+
+    const result = await search.execute({ query: "SwiftUI" })
+
+    expect(result).toEqual({
+      isError: true,
+      content: [{ type: "text", text: expect.stringContaining("Service temporarily unavailable") }],
+    })
+  })
+
+  it("resolves a search that cannot reach Sosumi with a tool error", async () => {
+    const [search] = await loadWebMcpScript(async () => {
+      throw new TypeError("Failed to fetch")
+    })
+
+    await expect(search.execute({ query: "SwiftUI" })).resolves.toEqual({
+      isError: true,
+      content: [{ type: "text", text: "Request to Sosumi failed: Failed to fetch" }],
+    })
   })
 })

@@ -4,7 +4,11 @@
   if (!ctx) return
   if (typeof ctx.registerTool !== "function" && typeof ctx.provideContext !== "function") return
 
-  async function runHttpTool(http, input) {
+  // A tool with an output schema resolves with the parsed JSON response, which conforms to it.
+  // Other tools resolve with a `CallToolResult` that holds the response text.
+  // Either way, a failure resolves with an MCP `CallToolResult` error,
+  // because WebMCP does not pass the reason for a rejected promise to the agent.
+  async function runHttpTool(http, input, structured) {
     let pathname = http.path
     if (http.pathFrom) {
       const value = String(input[http.pathFrom] ?? "")
@@ -43,6 +47,10 @@
           : JSON.stringify(data, null, 2)
     // Follow the MCP `CallToolResult` shape, so that an agent can tell a failure from a result.
     if (!response.ok) return errorResult(text)
+    if (structured) {
+      if (data && typeof data === "object") return data
+      return errorResult(`Sosumi returned a response that is not JSON: ${text}`)
+    }
     return { content: [{ type: "text", text }] }
   }
 
@@ -57,8 +65,9 @@
       description: tool.description,
       inputSchema: tool.inputSchema,
       annotations: { readOnlyHint: tool.readOnly },
-      execute: (input) => runHttpTool(tool.http, input),
+      execute: (input) => runHttpTool(tool.http, input, Boolean(tool.outputSchema)),
     }
+    if (tool.outputSchema) registration.outputSchema = tool.outputSchema
     try {
       if (typeof ctx.registerTool === "function") {
         ctx.registerTool(registration)
