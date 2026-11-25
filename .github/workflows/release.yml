@@ -17,8 +17,20 @@ jobs:
   release:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      TAG_NAME: ${{ inputs.tag || github.ref_name }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          # For tag pushes, keep checkout's default event ref and commit.
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || '' }}
+      - name: Check release tag against package version
+        run: |
+          version=$(jq -er '.version | strings | select(length > 0)' package.json)
+          if [[ "$TAG_NAME" != "v$version" ]]; then
+            printf 'Release tag %s does not match package.json version %s\n' "$TAG_NAME" "$version" >&2
+            exit 1
+          fi
       - uses: actions/setup-node@v6
         with:
           node-version: 24
@@ -29,7 +41,6 @@ jobs:
       - name: Create release from tag
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG_NAME: ${{ inputs.tag || github.ref_name }}
         run: |
           if gh release view "$TAG_NAME" >/dev/null 2>&1; then
             echo "Release $TAG_NAME already exists"
