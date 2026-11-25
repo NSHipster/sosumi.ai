@@ -10,6 +10,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
+      - run: ruby tests/release_workflow_test.rb
       - uses: actions/setup-node@v6
         with:
           node-version: 24
