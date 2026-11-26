@@ -9,14 +9,17 @@ on:
         description: "Tag to release (for example: v1.2.3)"
         required: true
 
-permissions:
-  contents: write
-  id-token: write
+permissions: {}
 
 jobs:
   release:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      # Create the GitHub release.
+      contents: write
+      # Sign npm provenance.
+      id-token: write
     env:
       TAG_NAME: ${{ inputs.tag || github.ref_name }}
     steps:
@@ -48,6 +51,21 @@ jobs:
             gh release create "$TAG_NAME" --generate-notes
           fi
       - run: npm publish --provenance --access public
+
+  # This job publishes to the MCP Registry after npm has the release version.
+  # If it fails, re-run it alone with "Re-run failed jobs";
+  # the release job's GitHub release and npm publish steps do not run again.
+  mcp-registry:
+    needs: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # For tag pushes, keep checkout's default event ref and commit.
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || '' }}
 
       # MCP Registry publishing uses HTTP authentication for the sosumi.ai namespace.
       # The Worker must serve the matching public key at /.well-known/mcp-registry-auth.
